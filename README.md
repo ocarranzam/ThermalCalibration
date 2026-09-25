@@ -111,6 +111,23 @@ La API queda en `https://localhost:5001`. Hay solicitudes de ejemplo en [Thermal
 
 Implementado: `POST`, `GET` y `PUT` de `/api/v1/equipment-types` (HU-02).
 
+## Pruebas automatizadas
+
+| Proyecto | Qué prueba | Herramientas | Requiere |
+|---|---|---|---|
+| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) | Dominio (`EquipmentType`, `TemperatureLimit`), handlers CQRS y autorización del controlador | xUnit v3, FluentAssertions 7, NSubstitute | Nada |
+| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia con `RowVersion` | xUnit v3, FluentAssertions 7, Testcontainers (SQL Server 2022) | Docker en ejecución |
+
+```bash
+dotnet test --solution Thermal.slnx                         # todas (unitarias + integración)
+dotnet test --project tests/Thermal.UnitTests               # solo unitarias, sin Docker
+dotnet test --project tests/Thermal.UnitTests -- --filter-trait "Story=HU-02"   # por historia
+```
+
+- Cada prueba indica la historia y el escenario Gherkin que verifica: `[Trait("Story", "HU-02")]` y un comentario `// HU-02 · Scenario: …`.
+- **Docker:** el contenedor de SQL Server se limita a **2 GB de RAM** (el mínimo que exige SQL Server), se comparte entre todas las pruebas y se **elimina al terminar**; si la ejecución se interrumpe, el reaper de Testcontainers (Ryuk) lo borra igual. La imagen `mssql/server:2022-latest` (unos 2,3 GB en disco) queda en caché para las siguientes ejecuciones; se puede borrar con `docker rmi mcr.microsoft.com/mssql/server:2022-latest`.
+- **FluentAssertions 7.2.2:** es la última versión con licencia Apache 2.0. Desde la 8.0 es comercial; no actualizar sin revisar la licencia.
+
 ## Documentación
 
 | Documento | Contenido |

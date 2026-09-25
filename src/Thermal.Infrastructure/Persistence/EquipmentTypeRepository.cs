@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Thermal.Application.EquipmentTypes;
+using Thermal.Application.Exceptions;
 using Thermal.Domain.EquipmentTypes;
 
 namespace Thermal.Infrastructure.Persistence;
@@ -15,8 +16,17 @@ internal sealed class EquipmentTypeRepository(ThermalDbContext context) : IEquip
 
     public void Add(EquipmentType equipmentType) => context.EquipmentTypes.Add(equipmentType);
 
-    public void ExpectVersion(EquipmentType equipmentType, byte[] expectedRowVersion) =>
+    public void EnsureVersion(EquipmentType equipmentType, byte[] expectedRowVersion)
+    {
+        if (!expectedRowVersion.AsSpan().SequenceEqual(equipmentType.RowVersion))
+        {
+            throw new ConcurrencyConflictException(
+                "El tipo de equipo fue modificado por otro usuario. Vuelva a leerlo antes de guardar.");
+        }
+
+        // Si otro usuario guarda entre esta lectura y el SaveChanges, el UPDATE no encuentra la fila (412).
         context.Entry(equipmentType).Property(e => e.RowVersion).OriginalValue = expectedRowVersion;
+    }
 }
 
 internal sealed class EquipmentTypeReadStore(ThermalDbContext context) : IEquipmentTypeReadStore

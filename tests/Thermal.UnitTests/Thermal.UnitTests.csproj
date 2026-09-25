@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pruebas unitarias del dominio y de la aplicación: sin base de datos ni Docker. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Thermal.Api\Thermal.Api.csproj" />
+    <ProjectReference Include="..\..\src\Thermal.Application\Thermal.Application.csproj" />
+    <ProjectReference Include="..\..\src\Thermal.Domain\Thermal.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

@@ -25,6 +25,7 @@ public readonly record struct TemperatureLimit
     /// Crea el límite validando el rango y los decimales. La base redondearía un tercer decimal
     /// en silencio, así que el rechazo solo lo puede hacer el dominio.
     /// </summary>
+    /// <exception cref="DomainValidationException">Fuera de rango o con más de 2 decimales.</exception>
     public static TemperatureLimit Create(decimal? maxC)
     {
         if (maxC is not { } value)
@@ -34,18 +35,20 @@ public readonly record struct TemperatureLimit
 
         if (value is < MinValueC or > MaxValueC)
         {
-            throw new DomainValidationException(
-                "maxTemperatureC", $"El límite debe estar entre {MinValueC} y {MaxValueC} °C");
+            throw Invalid($"El límite debe estar entre {MinValueC} y {MaxValueC} °C");
         }
 
         if (decimal.Round(value, MaxDecimals) != value)
         {
-            throw new DomainValidationException("maxTemperatureC", "El límite admite como máximo 2 decimales");
+            throw Invalid($"El límite admite como máximo {MaxDecimals} decimales");
         }
 
         return new TemperatureLimit(value);
     }
 
-    /// <summary>Fuera de límite solo si la lectura es estrictamente mayor (RN-07).</summary>
+    /// <summary>Fuera de límite solo si la lectura es estrictamente mayor (RN-07). Pendiente: nunca (RN-09).</summary>
     public bool IsExceededBy(decimal temperatureC) => MaxC is { } max && temperatureC > max;
+
+    private static DomainValidationException Invalid(string message) =>
+        new(nameof(EquipmentType.MaxTemperatureC), message);
 }

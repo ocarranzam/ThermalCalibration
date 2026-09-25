@@ -8,4 +8,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Los handlers son internos; las pruebas unitarias los instancian directamente. -->
+    <InternalsVisibleTo Include="Thermal.UnitTests" />
+  </ItemGroup>
+
 </Project>

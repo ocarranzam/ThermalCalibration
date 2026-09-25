@@ -29,13 +29,7 @@ internal sealed class UpdateEquipmentTypeCommandHandler(
 
         if (command.ExpectedVersion is { } expected)
         {
-            if (!expected.AsSpan().SequenceEqual(equipmentType.RowVersion))
-            {
-                throw new ConcurrencyConflictException(
-                    "El tipo de equipo fue modificado por otro usuario. Vuelva a leerlo antes de guardar.");
-            }
-
-            repository.ExpectVersion(equipmentType, expected);
+            repository.EnsureVersion(equipmentType, expected);
         }
 
         equipmentType.Rename(command.Name);
@@ -54,7 +48,7 @@ internal sealed class UpdateEquipmentTypeCommandHandler(
         }
 
         // Después de las validaciones del dominio, para no consultar la base con un nombre inválido.
-        if (await repository.NameExistsAsync(equipmentType.Name, equipmentType.Id, cancellationToken))
+        if (await repository.NameExistsAsync(equipmentType.Name, command.Id, cancellationToken))
         {
             throw new ConflictException($"Ya existe el tipo de equipo {equipmentType.Name}");
         }

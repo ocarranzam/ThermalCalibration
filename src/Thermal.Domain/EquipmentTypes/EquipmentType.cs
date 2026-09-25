@@ -9,7 +9,8 @@ namespace Thermal.Domain.EquipmentTypes;
 /// <remarks>
 /// El constructor primario valida los datos de creación. Sus parámetros tienen los mismos nombres
 /// que las propiedades persistidas, de modo que EF Core también lo usa al materializar.
-/// El estado solo cambia mediante métodos con nombre del negocio (ADR-001 §2.3).
+/// El estado solo cambia mediante métodos con nombre del negocio (ADR-001 §2.3), y cada propiedad
+/// validada pasa por su setter (palabra clave <c>field</c> de C# 14), tanto al crear como al editar.
 /// </remarks>
 public sealed class EquipmentType(
     string name,
@@ -32,7 +33,8 @@ public sealed class EquipmentType(
     public int MinSessionDurationMinutes { get; private set => field = ValidMinSessionDuration(value); }
         = ValidMinSessionDuration(minSessionDurationMinutes);
 
-    public string? Description { get; private set => field = ValidDescription(value); } = ValidDescription(description);
+    public string? Description { get; private set => field = ValidDescription(value); }
+        = ValidDescription(description);
 
     public bool IsActive { get; private set; } = true;
 
@@ -61,40 +63,34 @@ public sealed class EquipmentType(
     /// <summary>Un tipo con equipos no se borra: se desactiva y deja de ofrecerse para equipos nuevos.</summary>
     public void Deactivate() => IsActive = false;
 
-    private static string ValidName(string value)
+    private static string ValidName(string value) => value switch
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new DomainValidationException("name", "El nombre del tipo de equipo es obligatorio");
-        }
-
-        if (value.Length > NameMaxLength)
-        {
-            throw new DomainValidationException("name", $"El nombre admite como máximo {NameMaxLength} caracteres");
-        }
-
-        if (value != value.Trim())
-        {
-            throw new DomainValidationException("name", "El nombre no puede empezar ni terminar con espacios");
-        }
-
-        return value;
-    }
+        _ when string.IsNullOrWhiteSpace(value) =>
+            throw Invalid(nameof(Name), "El nombre del tipo de equipo es obligatorio"),
+        { Length: > NameMaxLength } =>
+            throw Invalid(nameof(Name), $"El nombre admite como máximo {NameMaxLength} caracteres"),
+        _ when value != value.Trim() =>
+            throw Invalid(nameof(Name), "El nombre no puede empezar ni terminar con espacios"),
+        _ => value,
+    };
 
     private static int ValidMinSessionDuration(int minutes) => minutes switch
     {
-        < BaseSessionDurationMinutes => throw new DomainValidationException(
-            "minSessionDurationMinutes",
+        < BaseSessionDurationMinutes => throw Invalid(
+            nameof(MinSessionDurationMinutes),
             $"La duración mínima no puede ser menor que {BaseSessionDurationMinutes} minutos"),
-        > MaxSessionDurationMinutes => throw new DomainValidationException(
-            "minSessionDurationMinutes",
+        > MaxSessionDurationMinutes => throw Invalid(
+            nameof(MinSessionDurationMinutes),
             $"La duración mínima no puede ser mayor que {MaxSessionDurationMinutes} minutos"),
         _ => minutes,
     };
 
-    private static string? ValidDescription(string? value) =>
-        value is { Length: > DescriptionMaxLength }
-            ? throw new DomainValidationException(
-                "description", $"La descripción admite como máximo {DescriptionMaxLength} caracteres")
-            : value;
+    private static string? ValidDescription(string? value) => value switch
+    {
+        { Length: > DescriptionMaxLength } => throw Invalid(
+            nameof(Description), $"La descripción admite como máximo {DescriptionMaxLength} caracteres"),
+        _ => value,
+    };
+
+    private static DomainValidationException Invalid(string property, string message) => new(property, message);
 }

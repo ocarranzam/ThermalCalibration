@@ -68,11 +68,13 @@ src/
   Thermal.Infrastructure/    # EF Core 10, System.IO.Ports, OpenXML; depende de Application y Domain
   Thermal.Api/               # ASP.NET Core .NET 10; raíz de composición
 tests/
-  Thermal.Domain.Tests/          # reglas puras: límite, umbral, episodios, cierre
-  Thermal.Application.Tests/     # handlers con dobles de puertos
-  Thermal.IntegrationTests/      # API + SQL Server + SimulatedTransport con los escenarios TD-01..TD-22
-  Thermal.ArchitectureTests/     # verifican la regla de dependencias
+  Thermal.UnitTests/             # dominio (reglas puras) y handlers con dobles de puertos (NSubstitute)
+  Thermal.IntegrationTests/      # persistencia contra SQL Server en Docker (Testcontainers);
+                                 # después API + SimulatedTransport con los escenarios TD-01..TD-22
+  Thermal.ArchitectureTests/     # verifican la regla de dependencias (pendiente)
 ```
+
+Las pruebas usan xUnit v3 sobre Microsoft Testing Platform, FluentAssertions 7.x (última línea con licencia Apache 2.0) y NSubstitute. Cada clase o prueba se vincula a su historia con `[Trait("Story", "HU-xx")]`.
 
 ## 3. Alternativas consideradas
 

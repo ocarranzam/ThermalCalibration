@@ -5,4 +5,8 @@
     <Project Path="src/Thermal.Domain/Thermal.Domain.csproj" />
     <Project Path="src/Thermal.Infrastructure/Thermal.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Thermal.IntegrationTests/Thermal.IntegrationTests.csproj" />
+    <Project Path="tests/Thermal.UnitTests/Thermal.UnitTests.csproj" />
+  </Folder>
 </Solution>

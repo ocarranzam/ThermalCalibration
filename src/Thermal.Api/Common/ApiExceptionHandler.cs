@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Thermal.Application.Exceptions;
@@ -17,7 +18,10 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
         ProblemDetails? problem = exception switch
         {
             DomainValidationException validation => new ValidationProblemDetails(
-                new Dictionary<string, string[]> { [validation.Property] = [validation.Message] })
+                new Dictionary<string, string[]>
+                {
+                    [JsonNamingPolicy.CamelCase.ConvertName(validation.Property)] = [validation.Message],
+                })
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Uno o más datos no son válidos",

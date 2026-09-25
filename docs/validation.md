@@ -144,6 +144,28 @@ Resumen de [06 §7](specs/functional/06-test-data.md#7-uso-en-las-pruebas), con 
 | Rendimiento | TD-17 (72 h) | Exportación en menos de 15 s. |
 | Invariante PC-01 | Código fuente | Sin literales `120` ni `31`: todo se deriva de `SamplingIntervalSeconds` ([01 §12](specs/functional/01-vision-document.md#pc-01--intervalo-de-muestreo)). |
 
+### 5.1 Cobertura automatizada de HU-02 (2026-09-25)
+
+Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **55/55 correctas** (48 unitarias, 7 de integración con SQL Server 2022 en Docker).
+
+| Escenario Gherkin de HU-02 | Pruebas | Estado |
+|---|---|---|
+| Registrar un tipo de equipo con límite definido | `EquipmentTypeTests.Create_WithDefinedLimit_…`, `EquipmentTypeHandlersTests.Create_ValidCommand_…`, `EquipmentTypePersistenceTests.Add_Assigns…` | ✅ |
+| Exigir una duración mínima mayor para un tipo de equipo | `ChangeMinSessionDuration_To120Minutes_…` | ✅ (la planificación con ese mínimo se probará con `MeasurementSession`) |
+| Rechazar una duración mínima menor que la base | `ChangeMinSessionDuration_BelowBase_…`, `Create_MinSessionDuration_RespectsDatabaseRange` | ✅ |
+| Registrar un tipo de equipo con límite pendiente | `Create_WithoutLimit_LeavesLimitPending`, `TemperatureLimitTests.Create_WithNull_…`, `ReadStore_Returns…` | ✅ |
+| Rechazar un nombre de tipo duplicado | `Create_DuplicateName_ThrowsConflict…`, `Update_RenameToExistingName_…`, `Add_DuplicateNameWithDifferentCase_…`, `NameExists_IgnoresCase…` | ✅ |
+| Rechazar un límite con formato inválido | `Create_WithThreeDecimalLimit_IsRejected`, `TemperatureLimitTests.Create_AcceptsAtMostTwoDecimals`, `Create_InvalidLimit_ThrowsBeforeQuerying…` | ✅ |
+| Editar el límite sin afectar sesiones registradas | `ChangeLimit_ReplacesTheCatalogLimit`, `Update_ExistingType_…`, `Update_SetsUpdatedAt…` | ⚠️ Parcial: la copia del límite en la sesión (RN-08) requiere `MeasurementSession` |
+| Editar el límite de una sesión en curso no la afecta | — | ⏳ Pendiente de `MeasurementSession` |
+| Definir un límite que estaba pendiente | `ChangeLimit_FromPendingToDefined_…` | ⚠️ Parcial: el lado de la sesión 103 requiere `MeasurementSession` |
+| Cambiar el umbral de pérdida de sensores | — | ⏳ Pendiente de `AppSetting` |
+| Rechazar un umbral fuera de rango | — | ⏳ Pendiente de `AppSetting` |
+| Un técnico no puede editar límites | `EquipmentTypesControllerAuthorizationTests.WriteActions_RequireAdminRole` | ✅ (verificado además con la API en ejecución: 403) |
+| Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…` | ⚠️ Parcial: impedir el borrado con equipos requiere `Equipment` (HU-01) |
+
+Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00) y lecturas sin límite de HU-05, en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración.
+
 ## 6. Verificación de la especificación (2026-09-25)
 
 Comprobaciones automáticas de `generate-features.mjs`, más un análisis con el parser oficial `@cucumber/gherkin`:

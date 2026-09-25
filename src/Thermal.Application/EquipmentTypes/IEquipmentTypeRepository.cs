@@ -12,8 +12,12 @@ public interface IEquipmentTypeRepository
 
     void Add(EquipmentType equipmentType);
 
-    /// <summary>Exige que al guardar la versión en la base siga siendo <paramref name="expectedRowVersion"/>.</summary>
-    void ExpectVersion(EquipmentType equipmentType, byte[] expectedRowVersion);
+    /// <summary>
+    /// Comprueba que la versión guardada sea <paramref name="expectedRowVersion"/> y la exige también al
+    /// guardar, para detectar una edición concurrente entre la lectura y el guardado.
+    /// </summary>
+    /// <exception cref="Exceptions.ConcurrencyConflictException">La versión ya no es la esperada.</exception>
+    void EnsureVersion(EquipmentType equipmentType, byte[] expectedRowVersion);
 }
 
 /// <summary>Lecturas del catálogo, sin pasar por el agregado (CQRS lógico, ADR-001 §2.2).</summary>

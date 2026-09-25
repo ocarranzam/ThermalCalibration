@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pruebas de integración de la persistencia contra SQL Server 2022 en Docker (Testcontainers). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Thermal.Infrastructure\Thermal.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.MsSql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- El esquema real del proyecto: la base de prueba se crea con el mismo script que producción. -->
+    <None Include="..\..\docs\db\01-schema.sql" Link="Database\01-schema.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
