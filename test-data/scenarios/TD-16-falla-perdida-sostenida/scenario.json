@@ -1,0 +1,166 @@
+{
+  "code": "TD-16",
+  "title": "Pérdida de sensores sostenida 30 min: sesión fallida",
+  "category": "Caída de sensores",
+  "description": "Desde la muestra 20, 4 de 5 canales abiertos sin recuperarse. Advertencia en la 20, crítica en la 22 y, al cumplirse 30 min consecutivos (muestra 35), la sesión se declara fallida y se detiene.",
+  "protocolVersion": "1.0",
+  "seed": 116,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-16",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Invalid",
+    "closeReason": "DataLoss",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 4080,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 35,
+    "samplesWithData": 35,
+    "affectedSamples": [
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+    ],
+    "validSamples": 19,
+    "readingRows": 175,
+    "readingsByStatus": {
+      "OK": 111,
+      "OpenCircuit": 64
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "SensorFault": 4,
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1,
+      "SessionFailed": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": null,
+        "channelsWithoutData": 4,
+        "activeChannels": 5
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 22,
+        "channel": null,
+        "consecutiveSamples": 3
+      },
+      {
+        "alertType": "SessionFailed",
+        "severity": "Critical",
+        "sampleNumber": 35,
+        "channel": null,
+        "consecutiveSamples": 16
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

@@ -7,7 +7,7 @@
     "channels": 10,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 61,
@@ -22,12 +22,13 @@
     "channels": 5,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 10800,
     "programmedSamples": 91,
     "validSamples": 91,
     "affectedSamples": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "AboveLimit": 4
     }
   },
@@ -39,7 +40,7 @@
     "channels": 10,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 61,
@@ -52,36 +53,39 @@
     "code": "TD-04",
     "folder": "TD-04-caida-sensores-70",
     "category": "Caída de sensores",
-    "title": "Caída de sensores sobre el umbral (70 %)",
+    "title": "Caída de sensores sobre el umbral (70 %) con escalamiento",
     "channels": 10,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 51,
     "affectedSamples": 10,
     "alertsByType": {
       "SensorFault": 7,
-      "SensorLoss": 1
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1
     }
   },
   {
     "code": "TD-05",
     "folder": "TD-05-caida-sensores-incompleta",
     "category": "Caída de sensores",
-    "title": "Caída sobre el umbral que deja la sesión incompleta",
+    "title": "Sesión base de 1 h que queda incompleta por pérdida de sensores",
     "channels": 5,
     "mode": "Poll",
     "status": "Incomplete",
-    "closeReason": "Manual",
-    "durationSeconds": 4200,
-    "programmedSamples": 36,
-    "validSamples": 26,
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 3600,
+    "programmedSamples": 31,
+    "validSamples": 21,
     "affectedSamples": 10,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "SensorFault": 4,
-      "SensorLoss": 1
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1
     }
   },
   {
@@ -92,12 +96,13 @@
     "channels": 5,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 56,
     "affectedSamples": 5,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "CommunicationLost": 1
     }
   },
@@ -105,7 +110,7 @@
     "code": "TD-07",
     "folder": "TD-07-otro-adquisidor",
     "category": "Comunicación",
-    "title": "Reconexión con otro adquisidor (sesión no válida)",
+    "title": "Reconexión con otro adquisidor (sesión fallida)",
     "channels": 5,
     "mode": "Poll",
     "status": "Invalid",
@@ -115,6 +120,7 @@
     "validSamples": 49,
     "affectedSamples": 5,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "CommunicationLost": 1,
       "DeviceMismatch": 1
     }
@@ -123,7 +129,7 @@
     "code": "TD-08",
     "folder": "TD-08-otro-grupo-sensores",
     "category": "Comunicación",
-    "title": "Reconexión con otro grupo de sensores (sesión no válida)",
+    "title": "Reconexión con otro grupo de sensores (sesión fallida)",
     "channels": 5,
     "mode": "Poll",
     "status": "Invalid",
@@ -133,6 +139,7 @@
     "validSamples": 29,
     "affectedSamples": 3,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "CommunicationLost": 1,
       "DeviceMismatch": 1
     }
@@ -145,12 +152,13 @@
     "channels": 5,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 61,
     "affectedSamples": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "SensorFault": 6,
       "TypeMismatch": 1
     }
@@ -159,17 +167,18 @@
     "code": "TD-10",
     "folder": "TD-10-mezcla-tk-1h",
     "category": "Configuración",
-    "title": "Mezcla T/K con duración exacta de 1 h",
+    "title": "Mezcla T/K en una sesión base de 1 h",
     "channels": 5,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 3600,
     "programmedSamples": 31,
     "validSamples": 31,
     "affectedSamples": 0,
     "alertsByType": {
-      "MixedThermocoupleTypes": 1
+      "MixedThermocoupleTypes": 1,
+      "BelowMinimumPoints": 1
     }
   },
   {
@@ -180,22 +189,24 @@
     "channels": 5,
     "mode": "Stream",
     "status": "Completed",
-    "closeReason": "Manual",
-    "durationSeconds": 3900,
-    "programmedSamples": 33,
-    "validSamples": 33,
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 3600,
+    "programmedSamples": 31,
+    "validSamples": 31,
     "affectedSamples": 0,
-    "alertsByType": {}
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    }
   },
   {
     "code": "TD-12",
-    "folder": "TD-12-optimo-24h",
-    "category": "Funcionamiento óptimo",
-    "title": "Sesión de 24 h con cierre automático",
+    "folder": "TD-12-cliente-24h",
+    "category": "Duración",
+    "title": "Sesión ocasional de 24 h a pedido del cliente",
     "channels": 10,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "MaxDuration",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 86400,
     "programmedSamples": 721,
     "validSamples": 721,
@@ -206,7 +217,7 @@
     "code": "TD-13",
     "folder": "TD-13-sesion-corta",
     "category": "Duración",
-    "title": "Sesión corta de 45 min (incompleta)",
+    "title": "Sesión base cerrada a los 45 min (incompleta)",
     "channels": 5,
     "mode": "Poll",
     "status": "Incomplete",
@@ -215,7 +226,9 @@
     "programmedSamples": 23,
     "validSamples": 23,
     "affectedSamples": 0,
-    "alertsByType": {}
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    }
   },
   {
     "code": "TD-14",
@@ -225,12 +238,13 @@
     "channels": 5,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 7200,
     "programmedSamples": 61,
     "validSamples": 61,
     "affectedSamples": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "LimitNotDefined": 1
     }
   },
@@ -242,17 +256,148 @@
     "channels": 8,
     "mode": "Poll",
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "durationSeconds": 21600,
     "programmedSamples": 181,
     "validSamples": 174,
     "affectedSamples": 7,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "SensorFault": 21,
       "AboveLimit": 7,
       "SensorLoss": 1,
+      "SensorLossPersistent": 1,
       "TypeMismatch": 1,
       "CommunicationLost": 1
     }
+  },
+  {
+    "code": "TD-16",
+    "folder": "TD-16-falla-perdida-sostenida",
+    "category": "Caída de sensores",
+    "title": "Pérdida de sensores sostenida 30 min: sesión fallida",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Invalid",
+    "closeReason": "DataLoss",
+    "durationSeconds": 4080,
+    "programmedSamples": 35,
+    "validSamples": 19,
+    "affectedSamples": 16,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "SensorFault": 4,
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1,
+      "SessionFailed": 1
+    }
+  },
+  {
+    "code": "TD-17",
+    "folder": "TD-17-cliente-72h",
+    "category": "Duración",
+    "title": "Sesión de varios días a pedido del cliente (72 h)",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 259200,
+    "programmedSamples": 2161,
+    "validSamples": 2161,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    }
+  },
+  {
+    "code": "TD-18",
+    "folder": "TD-18-escalamiento-umbrales",
+    "category": "Caída de sensores",
+    "title": "Límites del escalamiento: 2, 3 y 15 muestras consecutivas",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 10800,
+    "programmedSamples": 91,
+    "validSamples": 71,
+    "affectedSamples": 20,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "SensorFault": 12,
+      "SensorLoss": 3,
+      "SensorLossPersistent": 2
+    }
+  },
+  {
+    "code": "TD-19",
+    "folder": "TD-19-duracion-por-tipo",
+    "category": "Duración",
+    "title": "Duración mínima por tipo de equipo (incubadora, 2 h)",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "durationSeconds": 5400,
+    "programmedSamples": 46,
+    "validSamples": 46,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "LimitNotDefined": 1
+    }
+  },
+  {
+    "code": "TD-20",
+    "folder": "TD-20-fuera-limite-sensor",
+    "category": "Variaciones de medida",
+    "title": "Un sensor fuera de límite 30 min: posible falla del sensor",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "AboveLimit": 26,
+      "AboveLimitSustained": 1
+    }
+  },
+  {
+    "code": "TD-21",
+    "folder": "TD-21-fuera-limite-equipo",
+    "category": "Variaciones de medida",
+    "title": "Todos los sensores fuera de límite 30 min: posible falla del equipo",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "AboveLimit": 141,
+      "AboveLimitSustained": 5
+    }
+  },
+  {
+    "code": "TD-22",
+    "folder": "TD-22-nueve-puntos",
+    "category": "Configuración",
+    "title": "Sesión base con exactamente 9 puntos (mínimo normativo)",
+    "channels": 9,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "durationSeconds": 3600,
+    "programmedSamples": 31,
+    "validSamples": 31,
+    "affectedSamples": 0,
+    "alertsByType": {}
   }
 ]

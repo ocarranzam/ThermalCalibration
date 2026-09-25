@@ -34,7 +34,7 @@ Requisitos mínimos para calibrar las indicaciones de temperatura del aire y de 
 
 | Regla del proyecto | Relación |
 |---|---|
-| RN-02 (intervalo de 120 s) | Da 15 valores en 30 min, **menos** que los 30 exigidos para la inestabilidad temporal. Si se calibra según esta guía, conviene usar 60 s o menos (pregunta abierta P-11). |
-| RN-01 (1 a 10 canales) | Permite los 9 puntos exigidos con un canal de sobra, p. ej. para un sensor junto a la carga o duplicado en el centro. |
-| RN-14 (umbral del 60 %) | Sirve para la integridad de la captura. Para la validez de una calibración según esta guía, importa **qué** posiciones faltan (esquinas o centro), no solo cuántas (pregunta abierta P-13). |
+| RN-02 (intervalo de 120 s) | Da 15 valores en 30 min, **menos** que los 30 exigidos para la inestabilidad temporal. Si se calibra según esta guía, conviene usar 60 s o menos. Se mantiene 120 s en la fase 1: punto de cambio PC-01. |
+| RN-01 y RN-20 (mínimo 9 puntos) | Alineado con §5 a) y §7.1.1: 9 puntos, con un canal de sobra (p. ej. junto a la carga). Menos puntos solo encajan en el método C (puntos individuales a pedido del cliente); el sistema lo advierte y lo marca. |
+| RN-14 (umbral del 60 %) | Sirve para la integridad de la captura. Para la validez de una calibración según esta guía, importa **qué** posiciones faltan (esquinas o centro), no solo cuántas. El mínimo de 9 puntos ya se exige al iniciar (RN-20). Evaluar qué posiciones faltan por fallas queda para una fase futura. |
 | RN-03 (duración mínima de 1 h) | Compatible con los 30 min de registro en estado estable, si la estabilización previa ocurre antes de iniciar la sesión. |

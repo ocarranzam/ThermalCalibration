@@ -1,4 +1,4 @@
-# Transcripción serial de referencia · TD-10 · Mezcla T/K con duración exacta de 1 h
+# Transcripción serial de referencia · TD-10 · Mezcla T/K en una sesión base de 1 h
 # Formato: <offset_s>\t<origen>\t<línea>   origen = PC | ADQ | # (comentario)
 # offset_s: segundos desde StartedAt (muestra 1). Negativo = antes del inicio.
 # Se omiten PING / ACK,PING entre muestras.
@@ -224,7 +224,7 @@
 3600.240	ADQ	$RD,31,2,T,-17.43,OK*58
 3600.360	ADQ	$RD,31,3,T,-18.31,OK*53
 3600.480	ADQ	$RD,31,4,T,-15.09,OK*52
-3600.500	#	Cierre manual del técnico
+3600.500	#	Cierre automático al cumplir la duración planificada
 3600.500	PC	$STOP*18
 3600.550	ADQ	$ACK,STOP*7D
 3600.600	ADQ	$RD,31,5,K,-19.39,OK*43

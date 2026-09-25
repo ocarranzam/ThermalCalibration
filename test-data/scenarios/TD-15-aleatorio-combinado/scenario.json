@@ -2,15 +2,23 @@
   "code": "TD-15",
   "title": "Estrés aleatorio combinado, 8 canales, 6 h",
   "category": "Aleatorio combinado",
-  "description": "Combinación pseudoaleatoria (semilla 20260925) de aperturas de puerta, episodios de termopar abierto, tramas corruptas, un episodio de tipo no coincidente, una caída de 6 de 8 sensores (75 %) y un hueco de comunicación.",
+  "description": "Combinación pseudoaleatoria (semilla 20260925) de aperturas de puerta, episodios de termopar abierto, tramas corruptas, un episodio de tipo no coincidente, una caída de 6 de 8 sensores (75 %) durante 4 muestras y un hueco de comunicación.",
   "protocolVersion": "1.0",
   "seed": 115,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 360,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-15",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -62,8 +70,7 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 21600
+      "type": "PlannedDuration"
     }
   },
   "events": [
@@ -80,10 +87,11 @@
   ],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 21600,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 181,
     "samplesWithData": 178,
     "affectedSamples": [
@@ -105,13 +113,23 @@
     },
     "aboveLimitReadings": 7,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "SensorFault": 21,
       "AboveLimit": 7,
       "SensorLoss": 1,
+      "SensorLossPersistent": 1,
       "TypeMismatch": 1,
       "CommunicationLost": 1
     },
     "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 8,
+        "minimumPoints": 9
+      },
       {
         "alertType": "SensorFault",
         "severity": "Warning",
@@ -208,11 +226,18 @@
       },
       {
         "alertType": "SensorLoss",
-        "severity": "Critical",
+        "severity": "Warning",
         "sampleNumber": 65,
         "channel": null,
         "channelsWithoutData": 6,
         "activeChannels": 8
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 67,
+        "channel": null,
+        "consecutiveSamples": 3
       },
       {
         "alertType": "SensorFault",

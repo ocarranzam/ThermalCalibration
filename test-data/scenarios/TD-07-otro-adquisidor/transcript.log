@@ -1,4 +1,4 @@
-# Transcripción serial de referencia · TD-07 · Reconexión con otro adquisidor (sesión no válida)
+# Transcripción serial de referencia · TD-07 · Reconexión con otro adquisidor (sesión fallida)
 # Formato: <offset_s>\t<origen>\t<línea>   origen = PC | ADQ | # (comentario)
 # offset_s: segundos desde StartedAt (muestra 1). Negativo = antes del inicio.
 # Se omiten PING / ACK,PING entre muestras.

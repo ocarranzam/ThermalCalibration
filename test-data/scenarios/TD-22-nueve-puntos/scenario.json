@@ -1,16 +1,24 @@
 {
-  "code": "TD-12",
-  "title": "Sesión de 24 h con cierre automático",
-  "category": "Funcionamiento óptimo",
-  "description": "10 canales, variación diaria suave. Se cierra automáticamente con la muestra 721.",
+  "code": "TD-22",
+  "title": "Sesión base con exactamente 9 puntos (mínimo normativo)",
+  "category": "Configuración",
+  "description": "9 canales: 8 esquinas y el centro, según IEC 60068-3-5 y DKD-R 5-7. Caso límite: no genera la advertencia BelowMinimumPoints. Con 8 canales (TD-15) sí se genera.",
   "protocolVersion": "1.0",
-  "seed": 112,
+  "seed": 122,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 60,
+    "durationSource": "Base",
+    "clientRequestReference": null,
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -23,72 +31,68 @@
       {
         "channelNumber": 1,
         "thermocoupleType": "T",
-        "position": "Superior"
+        "position": "Esquina sup. izq. frontal"
       },
       {
         "channelNumber": 2,
         "thermocoupleType": "T",
-        "position": "Centro"
+        "position": "Esquina sup. der. frontal"
       },
       {
         "channelNumber": 3,
         "thermocoupleType": "T",
-        "position": "Inferior"
+        "position": "Esquina sup. izq. fondo"
       },
       {
         "channelNumber": 4,
         "thermocoupleType": "T",
-        "position": "Puerta"
+        "position": "Esquina sup. der. fondo"
       },
       {
         "channelNumber": 5,
         "thermocoupleType": "T",
-        "position": "Fondo"
+        "position": "Esquina inf. izq. frontal"
       },
       {
         "channelNumber": 6,
         "thermocoupleType": "T",
-        "position": "Lateral izq."
+        "position": "Esquina inf. der. frontal"
       },
       {
         "channelNumber": 7,
         "thermocoupleType": "T",
-        "position": "Lateral der."
+        "position": "Esquina inf. izq. fondo"
       },
       {
         "channelNumber": 8,
         "thermocoupleType": "T",
-        "position": "Esquina sup. izq."
+        "position": "Esquina inf. der. fondo"
       },
       {
         "channelNumber": 9,
         "thermocoupleType": "T",
-        "position": "Esquina inf. der."
-      },
-      {
-        "channelNumber": 10,
-        "thermocoupleType": "T",
-        "position": "Bandeja media"
+        "position": "Centro"
       }
     ],
     "close": {
-      "type": "MaxDuration"
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "MaxDuration",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
-    "endedAtOffsetSeconds": 86400,
+    "endedAtOffsetSeconds": 3600,
     "hasMixedThermocoupleTypes": false,
-    "programmedSamples": 721,
-    "samplesWithData": 721,
+    "isBelowMinimumPoints": false,
+    "programmedSamples": 31,
+    "samplesWithData": 31,
     "affectedSamples": [],
-    "validSamples": 721,
-    "readingRows": 7210,
+    "validSamples": 31,
+    "readingRows": 279,
     "readingsByStatus": {
-      "OK": 7210
+      "OK": 279
     },
     "aboveLimitReadings": 0,
     "alertsByType": {},

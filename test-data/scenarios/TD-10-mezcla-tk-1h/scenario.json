@@ -1,16 +1,24 @@
 {
   "code": "TD-10",
-  "title": "Mezcla T/K con duración exacta de 1 h",
+  "title": "Mezcla T/K en una sesión base de 1 h",
   "category": "Configuración",
-  "description": "S1-S4 tipo T y S5 tipo K. Se cierra exactamente a los 3600 s con 31 muestras válidas: caso límite de sesión completa.",
+  "description": "S1-S4 tipo T y S5 tipo K. Sesión base: cierre automático a los 3600 s con 31 muestras válidas, el caso límite de sesión completa.",
   "protocolVersion": "1.0",
   "seed": 110,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 60,
+    "durationSource": "Base",
+    "clientRequestReference": null,
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,17 +55,17 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 3600
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 3600,
     "hasMixedThermocoupleTypes": true,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 31,
     "samplesWithData": 31,
     "affectedSamples": [],
@@ -68,7 +76,8 @@
     },
     "aboveLimitReadings": 0,
     "alertsByType": {
-      "MixedThermocoupleTypes": 1
+      "MixedThermocoupleTypes": 1,
+      "BelowMinimumPoints": 1
     },
     "alerts": [
       {
@@ -76,6 +85,14 @@
         "severity": "Warning",
         "sampleNumber": null,
         "channel": null
+      },
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
       }
     ],
     "communicationGaps": [],

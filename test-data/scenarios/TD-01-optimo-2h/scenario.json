@@ -2,15 +2,23 @@
   "code": "TD-01",
   "title": "Funcionamiento óptimo, 10 canales T, 2 h",
   "category": "Funcionamiento óptimo",
-  "description": "Congeladora estable alrededor de -18 °C con variación normal entre zonas. Sin fallas ni alertas.",
+  "description": "Congeladora estable alrededor de -18 °C con variación normal entre zonas. Duración de 2 h a pedido del cliente, con cierre automático. Sin fallas ni alertas.",
   "protocolVersion": "1.0",
   "seed": 101,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-01",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -72,17 +80,17 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 7200
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 7200,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": false,
     "programmedSamples": 61,
     "samplesWithData": 61,
     "affectedSamples": [],

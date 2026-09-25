@@ -1,4 +1,4 @@
-# Transcripción serial de referencia · TD-13 · Sesión corta de 45 min (incompleta)
+# Transcripción serial de referencia · TD-13 · Sesión base cerrada a los 45 min (incompleta)
 # Formato: <offset_s>\t<origen>\t<línea>   origen = PC | ADQ | # (comentario)
 # offset_s: segundos desde StartedAt (muestra 1). Negativo = antes del inicio.
 # Se omiten PING / ACK,PING entre muestras.

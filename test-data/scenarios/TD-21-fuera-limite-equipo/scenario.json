@@ -1,0 +1,1274 @@
+{
+  "code": "TD-21",
+  "title": "Todos los sensores fuera de límite 30 min: posible falla del equipo",
+  "category": "Variaciones de medida",
+  "description": "Desde la muestra 30 el compresor deja de enfriar: todos los canales suben 3 °C por muestra hasta +15 °C sobre lo normal y superan el límite. A los 30 min de cada canal fuera de límite se genera una crítica AboveLimitSustained con causa probable \"Equipment\". La sesión no falla: los datos son válidos.",
+  "protocolVersion": "1.0",
+  "seed": 121,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-21",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 305,
+    "readingsByStatus": {
+      "OK": 305
+    },
+    "aboveLimitReadings": 141,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "AboveLimit": 141,
+      "AboveLimitSustained": 5
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 33,
+        "channel": 4,
+        "valueC": -4.27,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 1,
+        "valueC": -2.59,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 2,
+        "valueC": -3.41,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 3,
+        "valueC": -3.49,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 4,
+        "valueC": -1.14,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 5,
+        "valueC": -3.79,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 1,
+        "valueC": -2.43,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 2,
+        "valueC": -3.56,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 3,
+        "valueC": -3.79,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 4,
+        "valueC": -1.01,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 5,
+        "valueC": -3.58,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 1,
+        "valueC": -2.19,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 2,
+        "valueC": -3.61,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 3,
+        "valueC": -3.66,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 4,
+        "valueC": -0.86,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 5,
+        "valueC": -3.11,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 1,
+        "valueC": -2.68,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 2,
+        "valueC": -3.81,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 3,
+        "valueC": -4.15,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 4,
+        "valueC": -0.35,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 5,
+        "valueC": -2.98,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 1,
+        "valueC": -2.24,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 2,
+        "valueC": -3.72,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 3,
+        "valueC": -4.27,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 4,
+        "valueC": 0.06,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 5,
+        "valueC": -2.84,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 1,
+        "valueC": -2.3,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 2,
+        "valueC": -3.54,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 3,
+        "valueC": -4.67,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 4,
+        "valueC": -0.14,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 5,
+        "valueC": -2.64,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 1,
+        "valueC": -1.91,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 2,
+        "valueC": -3.6,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 3,
+        "valueC": -4.24,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 4,
+        "valueC": 0.13,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 5,
+        "valueC": -2.66,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 1,
+        "valueC": -1.33,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 2,
+        "valueC": -3.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 3,
+        "valueC": -4.34,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 4,
+        "valueC": -0.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 5,
+        "valueC": -2.62,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 1,
+        "valueC": -1.31,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 2,
+        "valueC": -3.01,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 3,
+        "valueC": -4.27,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 4,
+        "valueC": -0.08,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 5,
+        "valueC": -2.85,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 1,
+        "valueC": -1.16,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 2,
+        "valueC": -2.82,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 3,
+        "valueC": -4.52,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 4,
+        "valueC": -0.13,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 5,
+        "valueC": -2.89,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 1,
+        "valueC": -1.1,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 2,
+        "valueC": -2.71,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 3,
+        "valueC": -4.37,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 4,
+        "valueC": -0.81,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 5,
+        "valueC": -3.66,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 1,
+        "valueC": -1.3,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 2,
+        "valueC": -2.47,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 3,
+        "valueC": -4.02,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 4,
+        "valueC": -0.93,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 5,
+        "valueC": -3.5,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 46,
+        "channel": 1,
+        "valueC": -1.06,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 46,
+        "channel": 2,
+        "valueC": -2.01,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 46,
+        "channel": 3,
+        "valueC": -3.68,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 46,
+        "channel": 4,
+        "valueC": -1.18,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 46,
+        "channel": 5,
+        "valueC": -3.4,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 47,
+        "channel": 1,
+        "valueC": -0.87,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 47,
+        "channel": 2,
+        "valueC": -2.14,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 47,
+        "channel": 3,
+        "valueC": -3.44,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 47,
+        "channel": 4,
+        "valueC": -1.41,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 47,
+        "channel": 5,
+        "valueC": -3.67,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 48,
+        "channel": 1,
+        "valueC": -1.23,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 48,
+        "channel": 2,
+        "valueC": -2.38,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 48,
+        "channel": 3,
+        "valueC": -3.05,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 48,
+        "channel": 4,
+        "valueC": -1.74,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 48,
+        "channel": 4,
+        "valueC": -1.74,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Equipment"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 48,
+        "channel": 5,
+        "valueC": -3.9,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 49,
+        "channel": 1,
+        "valueC": -1.56,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 49,
+        "channel": 1,
+        "valueC": -1.56,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Equipment"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 49,
+        "channel": 2,
+        "valueC": -2.41,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 49,
+        "channel": 2,
+        "valueC": -2.41,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Equipment"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 49,
+        "channel": 3,
+        "valueC": -3.15,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 49,
+        "channel": 3,
+        "valueC": -3.15,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Equipment"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 49,
+        "channel": 4,
+        "valueC": -1.66,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 49,
+        "channel": 5,
+        "valueC": -3.99,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 49,
+        "channel": 5,
+        "valueC": -3.99,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Equipment"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 1,
+        "valueC": -1.76,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 2,
+        "valueC": -2.47,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 3,
+        "valueC": -3.01,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 4,
+        "valueC": -1.44,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 5,
+        "valueC": -4.22,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 1,
+        "valueC": -2.29,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 2,
+        "valueC": -2.91,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 3,
+        "valueC": -3.06,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 4,
+        "valueC": -1.4,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 5,
+        "valueC": -4.2,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 52,
+        "channel": 1,
+        "valueC": -2.13,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 52,
+        "channel": 2,
+        "valueC": -2.85,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 52,
+        "channel": 3,
+        "valueC": -3.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 52,
+        "channel": 4,
+        "valueC": -1.51,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 52,
+        "channel": 5,
+        "valueC": -4.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 53,
+        "channel": 1,
+        "valueC": -2.7,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 53,
+        "channel": 2,
+        "valueC": -3.12,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 53,
+        "channel": 3,
+        "valueC": -3.1,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 53,
+        "channel": 4,
+        "valueC": -1.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 53,
+        "channel": 5,
+        "valueC": -4.12,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 54,
+        "channel": 1,
+        "valueC": -2.35,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 54,
+        "channel": 2,
+        "valueC": -3.64,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 54,
+        "channel": 3,
+        "valueC": -3.32,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 54,
+        "channel": 4,
+        "valueC": -1.35,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 54,
+        "channel": 5,
+        "valueC": -3.82,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 55,
+        "channel": 1,
+        "valueC": -2.65,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 55,
+        "channel": 2,
+        "valueC": -3.63,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 55,
+        "channel": 3,
+        "valueC": -3.86,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 55,
+        "channel": 4,
+        "valueC": -0.99,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 55,
+        "channel": 5,
+        "valueC": -3.52,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 56,
+        "channel": 1,
+        "valueC": -2.37,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 56,
+        "channel": 2,
+        "valueC": -3.55,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 56,
+        "channel": 3,
+        "valueC": -4,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 56,
+        "channel": 4,
+        "valueC": -0.47,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 56,
+        "channel": 5,
+        "valueC": -3.19,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 57,
+        "channel": 1,
+        "valueC": -2.37,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 57,
+        "channel": 2,
+        "valueC": -3.92,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 57,
+        "channel": 3,
+        "valueC": -4.21,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 57,
+        "channel": 4,
+        "valueC": -0.41,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 57,
+        "channel": 5,
+        "valueC": -2.96,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 58,
+        "channel": 1,
+        "valueC": -1.97,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 58,
+        "channel": 2,
+        "valueC": -3.91,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 58,
+        "channel": 3,
+        "valueC": -4.18,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 58,
+        "channel": 4,
+        "valueC": -0.45,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 58,
+        "channel": 5,
+        "valueC": -2.84,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 59,
+        "channel": 1,
+        "valueC": -2.35,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 59,
+        "channel": 2,
+        "valueC": -3.65,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 59,
+        "channel": 3,
+        "valueC": -4.46,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 59,
+        "channel": 4,
+        "valueC": 0.25,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 59,
+        "channel": 5,
+        "valueC": -2.73,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 60,
+        "channel": 1,
+        "valueC": -1.88,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 60,
+        "channel": 2,
+        "valueC": -3.61,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 60,
+        "channel": 3,
+        "valueC": -4.31,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 60,
+        "channel": 4,
+        "valueC": -0.02,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 60,
+        "channel": 5,
+        "valueC": -2.71,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 1,
+        "valueC": -1.46,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 2,
+        "valueC": -3.12,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 3,
+        "valueC": -4.32,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 4,
+        "valueC": 0.08,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 5,
+        "valueC": -2.49,
+        "limitC": -5
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

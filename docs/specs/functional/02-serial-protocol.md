@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Versión del protocolo | **1.0** (propuesta) |
-| Versión del documento | 0.2. Añade el modo `Stream`, el grupo de sensores en `IDN`, el inicio de la sesión con la primera muestra recibida, la invalidación por cambio de adquisidor o de grupo, y el simulador. |
+| Versión del documento | 0.3. Duración planificada en lugar del tope de 721 muestras y falla de sesión por 30 min sin datos. 0.2: modo `Stream`, el grupo de sensores en `IDN`, el inicio de la sesión con la primera muestra recibida, la invalidación por cambio de adquisidor o de grupo, y el simulador. |
 | Estado | Borrador. El hardware está en diseño y este documento es el contrato que deben cumplir tanto el firmware como el adquisidor simulado. |
 | Relacionado | [01-vision-document.md](01-vision-document.md), [04-sequence-diagrams.md](04-sequence-diagrams.md), [05-data-model.md](05-data-model.md), [06-test-data.md](06-test-data.md) |
 
@@ -73,7 +73,7 @@ Ejemplo: `$RD,16,1,T,-18.25,OK*51` (el XOR de `RD,16,1,T,-18.25,OK` es 0x51).
 |---|---|---|---|---|
 | **Identificar** | `$IDN*43` | `IDN` | Ambos | Solicita la identidad, las capacidades y el grupo de sensores. Se puede enviar en cualquier estado. |
 | **Iniciar** | `$START,<Mascara>*CS` | `ACK,START` o `NAK,START,<Err>` | Ambos | Arma el adquisidor para los canales indicados. `Mascara`: 3 dígitos hexadecimales. El bit 0 corresponde al canal 1 y el bit 9 al canal 10. Ej.: canales 1–5 → `01F`. En `STREAM` limita los canales transmitidos. Si no se recibe, el adquisidor transmite todos sus canales. |
-| **Leer muestra** | `$READ,<Muestra>*CS` | *k* tramas `RD` + 1 trama `EOS`, o `NAK,READ,<Err>` | Solo `POLL` | Pide medir ahora todos los canales armados. `Muestra`: entero de 1 a 721 asignado por la PC. En `STREAM` responde `NAK,READ,E02`. |
+| **Leer muestra** | `$READ,<Muestra>*CS` | *k* tramas `RD` + 1 trama `EOS`, o `NAK,READ,<Err>` | Solo `POLL` | Pide medir ahora todos los canales armados. `Muestra`: entero desde 1, asignado por la PC (31 en la sesión base de 1 h; el máximo depende de la duración planificada). En `STREAM` responde `NAK,READ,E02`. |
 | **Latido** | `$PING*10` | `ACK,PING` | Ambos | Comprueba el enlace entre muestras. |
 | **Detener** | `$STOP*18` | `ACK,STOP` | Ambos | Desarma el adquisidor. En `POLL`, después `READ` responde `NAK,READ,E04`. En `STREAM`, el adquisidor puede seguir transmitiendo, pero la PC ya no almacena nada. |
 
@@ -99,7 +99,7 @@ Ejemplo: `$RD,16,1,T,-18.25,OK*51` (el XOR de `RD,16,1,T,-18.25,OK` es 0x51).
 | `ChannelCount` | `1`…`10` | Canales físicos disponibles. Se corresponde con `AcquisitionDevice.ChannelCount`. |
 | `Mode` | `POLL` \| `STREAM` | Modo de adquisición. Se corresponde con `AcquisitionDevice.AcquisitionMode` (`Poll`/`Stream`). |
 | `SensorGroupId` | `[A-Z0-9-]{0,50}` | Identificador del grupo de sensores conectado (arnés o placa de termopares). **Puede ir vacío** si el hardware no lo soporta. Se guarda en `MeasurementSession.SensorGroupId`. |
-| `Muestra` | `1`…`721` | Modo `POLL`: eco del número recibido en `READ`. |
+| `Muestra` | `1`…`99999` | Modo `POLL`: eco del número recibido en `READ`. |
 | `Seq` | `1`…`65535` | Modo `STREAM`: contador de bloques del adquisidor. Da la vuelta a 1 después de 65535. Solo se usa para detectar bloques repetidos o saltados. **No** es el número de muestra. |
 | `Canal` | `1`…`10` | Número de canal físico. |
 | `Tipo` | `T` \| `K` | Tipo de termopar **configurado en el adquisidor** para ese canal (jumper, configuración o módulo). Se corresponde con `Reading.ReportedThermocoupleType`. |
@@ -135,19 +135,19 @@ Para el umbral de pérdida de sensores ([01 RN-14](01-vision-document.md#6-regla
 
 | Parámetro | Valor | Uso |
 |---|---|---|
-| Intervalo de muestreo | 120 s (`MeasurementSession.SamplingIntervalSeconds`) | |
+| Intervalo de muestreo **[PC-01]** | 120 s (`MeasurementSession.SamplingIntervalSeconds`, copiado del parámetro del sistema al crear la sesión) | |
 | Inicio de la sesión | Primera muestra con al menos una trama `RD` válida de un canal activo, recibida **después** de pulsar "Iniciar captura" | Esa muestra es la número 1 y su instante es `StartedAt` (t = 0). Ver §6.4. |
 | Programación (modo `POLL`) | La muestra *n* se solicita en `StartedAt + (n − 1) × 120 s` | Se calcula desde el inicio para no acumular deriva. |
 | Asignación (modo `STREAM`) | Un bloque recibido en el instante *t* se asigna a la muestra `n = 1 + round((t − StartedAt) / 120 s)` | Si llegan dos bloques para la misma muestra se conserva el primero y el otro se anota en el log. |
-| Tolerancia de llegada (`STREAM`) | ± 30 s respecto del instante programado | Si no llega ningún bloque en la ventana y el enlace sigue vivo (responde `PING`), todos los canales de esa muestra se registran como `InvalidFrame`. |
+| Tolerancia de llegada (`STREAM`) | ± intervalo / 4 (± 30 s con 120 s) respecto del instante programado | Si no llega ningún bloque en la ventana y el enlace sigue vivo (responde `PING`), todos los canales de esa muestra se registran como `InvalidFrame`. |
 | Espera tras abrir el puerto | hasta 3 s o la llegada de `BOOT` | §2, nota Arduino. |
 | Tiempo máximo de respuesta a `IDN`, `START`, `STOP` y `PING` | 2 s | |
 | Tiempo máximo del bloque `READ` (hasta `EOS`) | 5 s | Con 10 canales y conversiones de ≈ 100–250 ms por canal. |
 | Intentos por muestra (`POLL`) | 3 (1 + 2 reintentos, cada 5 s) | Ver §7.1. En `STREAM` no hay reintentos. |
 | Latido | `PING` cada 30 s entre muestras | Detecta la pérdida del enlace antes de la siguiente muestra. |
 | Umbral de pérdida de comunicación | 3 fallos consecutivos (sin respuesta válida a `READ` o `PING`) **o** error del sistema operativo en el puerto (dispositivo retirado o puerto cerrado) | Abre un `CommunicationGap`. |
-| Reintento de reconexión | cada 10 s | Hasta que se recupera la comunicación, el técnico cierra la sesión o se llega a las 24 h. |
-| Última muestra | 721 (t = 24 h) | Tras almacenarla, la sesión se cierra automáticamente. |
+| Reintento de reconexión | cada 10 s | Hasta que se recupera la comunicación, el técnico cierra la sesión, se cumplen 30 min sin datos (sesión fallida, 01 RN-15) o se llega a la duración planificada. |
+| Última muestra | La que corresponde a la duración planificada: 31 en la sesión base de 1 h, 721 en 24 h | Tras almacenarla, la sesión se cierra automáticamente (`CloseReason` = `PlannedDuration`). |
 
 **Marcas de tiempo:** `Reading.ReadAt` es el instante programado de la muestra. En `POLL` es el envío del primer `READ` de la muestra, y en `STREAM` la recepción de la primera trama del bloque, en ambos casos truncado al segundo. Todas las lecturas de una muestra comparten el mismo `ReadAt`. `Reading.ReceivedAt` guarda el instante de recepción de cada trama, con milisegundos.
 
@@ -230,7 +230,7 @@ Cada línea recibida pasa por las siguientes validaciones, en este orden. La pri
 
 En todos los casos en que se registra una lectura, `Reading.RawFrame` guarda la línea tal como se recibió, sin el fin de línea.
 
-Después de registrar todas las lecturas de la muestra, la PC evalúa la **pérdida de sensores**: si `(canales activos − lecturas OK) × 100 > SensorLossThresholdPct × canales activos`, la muestra queda afectada. Si además es la primera de un episodio, se genera la alerta `SensorLoss` (01 RN-14).
+Después de registrar todas las lecturas de la muestra, la PC evalúa la **pérdida de sensores**: si `(canales activos − lecturas OK) × 100 > SensorLossThresholdPct × canales activos`, la muestra queda afectada. Si además es la primera de un episodio, se genera la advertencia `SensorLoss` (01 RN-14). Si sigue afectada en la 3.ª muestra consecutiva, se genera la alerta crítica `SensorLossPersistent`. Si pasan 30 min consecutivos, la sesión falla (01 §6.2).
 
 ### 7.1 Manejo de tramas corruptas y faltantes
 
@@ -272,13 +272,14 @@ Un canal puede tener como máximo **una** lectura por muestra (`UQ_Reading_Chann
 
    Si todo coincide, la PC reenvía `START` con la misma máscara y **reanuda**.
 
-   Si algo no coincide, la sesión se declara **no válida** (01 RN-15):
+   Si algo no coincide, la sesión se declara **fallida** (no válida, 01 RN-15):
    - `Status` = `Invalid`, `CloseReason` = `DeviceMismatch`, `EndedAt` = instante de la comprobación.
    - Alerta `DeviceMismatch` (severidad `Critical`) con el identificador y el grupo encontrados.
    - El hueco se cierra con `RecoveredAt` = NULL, `MissedSamples` contadas hasta `EndedAt`, y una nota con lo que respondió.
    - La PC envía `STOP` al dispositivo conectado.
 5. **Reanudación:** se completa `CommunicationGap.RecoveredAt` y `MissedSamples` (número de muestras programadas entre `LostAt` y `RecoveredAt` sin lecturas). La captura sigue en la **siguiente muestra programada**, sin recuperar ni renumerar las perdidas. La numeración de muestras refleja siempre el tiempo transcurrido desde el inicio.
-6. Si se llega a las 24 h con el hueco abierto, la sesión se cierra (`CloseReason` = `MaxDuration`) y el hueco se cierra con `RecoveredAt` = NULL y `MissedSamples` calculado hasta el cierre.
+6. Las muestras perdidas durante el hueco cuentan como afectadas consecutivas (01 §6.2). Si el hueco dura **30 min**, la sesión se declara **fallida** (Invalid, CloseReason = DataLoss, alerta SessionFailed) y se deja de intentar la reconexión.
+7. Si se llega a la duración planificada con el hueco abierto, la sesión se cierra (CloseReason = PlannedDuration) y el hueco se cierra con RecoveredAt = NULL y MissedSamples calculado hasta el cierre.
 
 ## 10. Requisitos para el firmware y el simulador (resumen de conformidad)
 

@@ -1,16 +1,24 @@
 {
   "code": "TD-05",
-  "title": "Caída sobre el umbral que deja la sesión incompleta",
+  "title": "Sesión base de 1 h que queda incompleta por pérdida de sensores",
   "category": "Caída de sensores",
-  "description": "Sesión de 1 h 10 min. Muestras 5 a 14: 4 de 5 canales abiertos (80 %). Quedan 26 muestras válidas (< 31): la sesión se cierra como incompleta aunque dure más de 1 h.",
+  "description": "Sesión base de 1 h. Muestras 5 a 14: 4 de 5 canales abiertos (80 %). Quedan 21 muestras válidas (< 31): al cumplir la hora la sesión se cierra como incompleta.",
   "protocolVersion": "1.0",
   "seed": 105,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 60,
+    "durationSource": "Base",
+    "clientRequestReference": null,
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,19 +55,19 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 4200
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Incomplete",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
-    "endedAtOffsetSeconds": 4200,
+    "endedAtOffsetSeconds": 3600,
     "hasMixedThermocoupleTypes": false,
-    "programmedSamples": 36,
-    "samplesWithData": 36,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 31,
+    "samplesWithData": 31,
     "affectedSamples": [
       5,
       6,
@@ -72,18 +80,28 @@
       13,
       14
     ],
-    "validSamples": 26,
-    "readingRows": 180,
+    "validSamples": 21,
+    "readingRows": 155,
     "readingsByStatus": {
-      "OK": 140,
+      "OK": 115,
       "OpenCircuit": 40
     },
     "aboveLimitReadings": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "SensorFault": 4,
-      "SensorLoss": 1
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1
     },
     "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
       {
         "alertType": "SensorFault",
         "severity": "Warning",
@@ -114,11 +132,18 @@
       },
       {
         "alertType": "SensorLoss",
-        "severity": "Critical",
+        "severity": "Warning",
         "sampleNumber": 5,
         "channel": null,
         "channelsWithoutData": 4,
         "activeChannels": 5
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 7,
+        "channel": null,
+        "consecutiveSamples": 3
       }
     ],
     "communicationGaps": [],

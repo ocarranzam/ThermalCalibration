@@ -1,0 +1,94 @@
+{
+  "code": "TD-17",
+  "title": "Sesión de varios días a pedido del cliente (72 h)",
+  "category": "Duración",
+  "description": "Caso extremo: 72 h solicitadas por el cliente por exigencia de control. 2161 muestras, cierre automático. Prueba que no hay un tope fijo de 24 h ni de 721 muestras.",
+  "protocolVersion": "1.0",
+  "seed": 117,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 4320,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-2026-0142",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 259200,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 2161,
+    "samplesWithData": 2161,
+    "affectedSamples": [],
+    "validSamples": 2161,
+    "readingRows": 10805,
+    "readingsByStatus": {
+      "OK": 10805
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

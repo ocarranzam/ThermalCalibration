@@ -12,6 +12,35 @@ USE ThermalCalibration;
 GO
 
 /* ---------------------------------------------------------------------
+   Parámetros y tabla auxiliar
+   --------------------------------------------------------------------- */
+
+-- Parámetros del sistema que mantiene el administrador.
+-- Los que afectan la evaluación de una sesión se COPIAN en MeasurementSession al iniciarla.
+CREATE TABLE dbo.AppSetting (
+    SettingKey    VARCHAR(50)        NOT NULL,
+    SettingValue  NVARCHAR(100)      NOT NULL,
+    Description   NVARCHAR(300)      NULL,
+    UpdatedAt     DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_AppSetting_UpdatedAt DEFAULT (SYSDATETIMEOFFSET()),
+    UpdatedById   INT                NULL,
+    CONSTRAINT PK_AppSetting PRIMARY KEY (SettingKey)
+);
+GO
+
+-- Números 1..100 000 para generar las muestras programadas (hasta 30 días a 30 s)
+CREATE TABLE dbo.Tally (
+    N  INT  NOT NULL,
+    CONSTRAINT PK_Tally PRIMARY KEY (N)
+);
+GO
+
+WITH Digit AS (SELECT d FROM (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9)) AS v (d))
+INSERT INTO dbo.Tally (N)
+SELECT a.d + 10 * b.d + 100 * c.d + 1000 * e.d + 10000 * f.d + 1
+FROM Digit AS a CROSS JOIN Digit AS b CROSS JOIN Digit AS c CROSS JOIN Digit AS e CROSS JOIN Digit AS f;
+GO
+
+/* ---------------------------------------------------------------------
    Catálogos
    --------------------------------------------------------------------- */
 
@@ -29,16 +58,19 @@ GO
 -- Tipos de equipo con límite MÁXIMO configurable.
 -- Regla: una lectura está fuera de límite si TemperatureC > MaxTemperatureC.
 -- MaxTemperatureC admite NULL mientras el límite no esté definido.
+-- MinSessionDurationMinutes: duración mínima que exige el tipo por su forma de funcionar (base: 60 min).
 CREATE TABLE dbo.EquipmentType (
-    EquipmentTypeId   INT IDENTITY(1, 1) NOT NULL,
-    Name              NVARCHAR(100)      NOT NULL,
-    MaxTemperatureC   DECIMAL(6, 2)      NULL,
+    EquipmentTypeId            INT IDENTITY(1, 1) NOT NULL,
+    Name                       NVARCHAR(100)      NOT NULL,
+    MaxTemperatureC            DECIMAL(6, 2)      NULL,
+    MinSessionDurationMinutes  INT                NOT NULL CONSTRAINT DF_EquipmentType_MinDuration DEFAULT (60),
     Description       NVARCHAR(500)      NULL,
     IsActive          BIT                NOT NULL CONSTRAINT DF_EquipmentType_IsActive DEFAULT (1),
     CreatedAt         DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_EquipmentType_CreatedAt DEFAULT (SYSDATETIMEOFFSET()),
     UpdatedAt         DATETIMEOFFSET(0)  NULL,
     CONSTRAINT PK_EquipmentType PRIMARY KEY (EquipmentTypeId),
-    CONSTRAINT UQ_EquipmentType_Name UNIQUE (Name)
+    CONSTRAINT UQ_EquipmentType_Name UNIQUE (Name),
+    CONSTRAINT CK_EquipmentType_MinDuration CHECK (MinSessionDurationMinutes BETWEEN 60 AND 43200)
 );
 GO
 
@@ -129,11 +161,31 @@ CREATE TABLE dbo.MeasurementSession (
     AcquisitionDeviceId         INT                NULL,
     ComPort                     VARCHAR(20)        NOT NULL,   -- p. ej. COM3, /dev/ttyUSB0 o SIM (simulador)
     SensorGroupId               VARCHAR(50)        NULL,       -- grupo de sensores informado por el adquisidor (IDN)
+    -- [PC-01] Punto de cambio: intervalo de muestreo. Ver docs/specs/functional/01-vision-document.md §12
     SamplingIntervalSeconds     SMALLINT           NOT NULL CONSTRAINT DF_MeasurementSession_Interval DEFAULT (120),
+    -- Duración planificada: base 60 min, o la exigida por el tipo de equipo, o la solicitada por el cliente (hasta varios días)
+    PlannedDurationMinutes      INT                NOT NULL CONSTRAINT DF_MeasurementSession_Planned DEFAULT (60),
+    DurationSource              VARCHAR(20)        NOT NULL CONSTRAINT DF_MeasurementSession_DurationSource DEFAULT ('Base'),
+    ClientRequestReference      NVARCHAR(100)      NULL,       -- p. ej. orden de servicio del cliente
     -- Copia del límite vigente al iniciar: editar el tipo de equipo no altera sesiones pasadas
     MaxTemperatureC             DECIMAL(6, 2)      NULL,
-    -- Copia del umbral vigente al iniciar: una muestra queda afectada si el % de canales sin lectura OK es MAYOR que este valor
+    -- Copias de la política de pérdida de sensores vigente al iniciar:
+    -- muestra afectada si el % de canales sin lectura OK es MAYOR que el umbral;
+    -- alerta crítica si sigue afectada en la N-ésima muestra consecutiva;
+    -- sesión fallida si lleva FailMinutes consecutivos afectada.
     SensorLossThresholdPct      DECIMAL(5, 2)      NOT NULL CONSTRAINT DF_MeasurementSession_SensorLoss DEFAULT (60.00),
+    SensorLossCriticalAfterSamples TINYINT         NOT NULL CONSTRAINT DF_MeasurementSession_LossCritical DEFAULT (3),
+    SensorLossFailMinutes       SMALLINT           NOT NULL CONSTRAINT DF_MeasurementSession_LossFail DEFAULT (30),
+    -- Copia al iniciar: un canal fuera de límite estos minutos seguidos genera una alerta crítica
+    AboveLimitCriticalMinutes   SMALLINT           NOT NULL CONSTRAINT DF_MeasurementSession_AboveCritical DEFAULT (30),
+    -- Inicio antes de terminar el descanso del adquisidor: solo con autorización registrada
+    RestOverrideById            INT                NULL,
+    RestOverrideReason          NVARCHAR(300)      NULL,
+    -- Copia al iniciar del mínimo de puntos de medición (9: 8 esquinas + centro, IEC 60068-3-5 / DKD-R 5-7).
+    -- Con menos canales se permite iniciar, pero con advertencia y confirmación del técnico.
+    MinMeasurementPoints        TINYINT            NOT NULL CONSTRAINT DF_MeasurementSession_MinPoints DEFAULT (9),
+    IsBelowMinimumPoints        BIT                NOT NULL CONSTRAINT DF_MeasurementSession_BelowMin DEFAULT (0),
+    BelowMinimumAcknowledgedAt  DATETIMEOFFSET(0)  NULL,
     HasMixedThermocoupleTypes   BIT                NOT NULL CONSTRAINT DF_MeasurementSession_Mixed DEFAULT (0),
     MixedTypesAcknowledgedAt    DATETIMEOFFSET(0)  NULL,       -- confirmación del técnico ante la advertencia
     -- Sesiones con datos simulados (set de datos de prueba): nunca válidas para calibración
@@ -149,18 +201,31 @@ CREATE TABLE dbo.MeasurementSession (
     CONSTRAINT FK_MeasurementSession_Equipment FOREIGN KEY (EquipmentId) REFERENCES dbo.Equipment (EquipmentId),
     CONSTRAINT FK_MeasurementSession_Technician FOREIGN KEY (TechnicianId) REFERENCES dbo.AppUser (AppUserId),
     CONSTRAINT FK_MeasurementSession_Device FOREIGN KEY (AcquisitionDeviceId) REFERENCES dbo.AcquisitionDevice (AcquisitionDeviceId),
+    CONSTRAINT FK_MeasurementSession_RestOverrideBy FOREIGN KEY (RestOverrideById) REFERENCES dbo.AppUser (AppUserId),
+    -- Invalid = sesión fallida / no válida
     CONSTRAINT CK_MeasurementSession_Status CHECK (Status IN ('Configured', 'Running', 'Completed', 'Incomplete', 'Invalid', 'Cancelled')),
-    CONSTRAINT CK_MeasurementSession_CloseReason CHECK (CloseReason IS NULL OR CloseReason IN ('Manual', 'MaxDuration', 'Cancelled', 'CommunicationLost', 'DeviceMismatch')),
-    -- Otro adquisidor u otro grupo de sensores al reconectar: la sesión no es válida
-    CONSTRAINT CK_MeasurementSession_Invalid CHECK ((Status = 'Invalid' AND CloseReason = 'DeviceMismatch') OR (Status <> 'Invalid' AND (CloseReason IS NULL OR CloseReason <> 'DeviceMismatch'))),
+    CONSTRAINT CK_MeasurementSession_CloseReason CHECK (CloseReason IS NULL OR CloseReason IN ('Manual', 'PlannedDuration', 'Cancelled', 'CommunicationLost', 'DeviceMismatch', 'DataLoss')),
+    -- Sesión fallida: otro adquisidor u otro grupo de sensores al reconectar, o pérdida sostenida de datos
+    CONSTRAINT CK_MeasurementSession_Invalid CHECK (
+        (Status = 'Invalid' AND CloseReason IN ('DeviceMismatch', 'DataLoss'))
+        OR (Status <> 'Invalid' AND (CloseReason IS NULL OR CloseReason NOT IN ('DeviceMismatch', 'DataLoss')))),
     CONSTRAINT CK_MeasurementSession_Interval CHECK (SamplingIntervalSeconds > 0),
+    CONSTRAINT CK_MeasurementSession_Planned CHECK (PlannedDurationMinutes BETWEEN 60 AND 43200),
+    CONSTRAINT CK_MeasurementSession_DurationSource CHECK (DurationSource IN ('Base', 'EquipmentType', 'ClientRequest')),
+    CONSTRAINT CK_MeasurementSession_ClientRequest CHECK (DurationSource <> 'ClientRequest' OR ClientRequestReference IS NOT NULL),
     CONSTRAINT CK_MeasurementSession_SensorLoss CHECK (SensorLossThresholdPct > 0 AND SensorLossThresholdPct < 100),
+    CONSTRAINT CK_MeasurementSession_LossEscalation CHECK (SensorLossCriticalAfterSamples BETWEEN 2 AND 10 AND SensorLossFailMinutes BETWEEN 10 AND 240),
+    CONSTRAINT CK_MeasurementSession_AboveCritical CHECK (AboveLimitCriticalMinutes BETWEEN 10 AND 240),
+    CONSTRAINT CK_MeasurementSession_RestOverride CHECK ((RestOverrideById IS NULL AND RestOverrideReason IS NULL) OR (RestOverrideById IS NOT NULL AND RestOverrideReason IS NOT NULL)),
     CONSTRAINT CK_MeasurementSession_TestScenario CHECK (IsSimulation = 1 OR TestScenarioCode IS NULL),
     CONSTRAINT CK_MeasurementSession_Dates CHECK (EndedAt IS NULL OR (StartedAt IS NOT NULL AND EndedAt >= StartedAt)),
-    -- Duración máxima: 24 horas
-    CONSTRAINT CK_MeasurementSession_MaxDuration CHECK (EndedAt IS NULL OR DATEDIFF(SECOND, StartedAt, EndedAt) <= 86400),
-    -- Solo puede quedar como completa con al menos 1 hora de datos
-    CONSTRAINT CK_MeasurementSession_MinDuration CHECK (Status <> 'Completed' OR DATEDIFF(SECOND, StartedAt, EndedAt) >= 3600),
+    -- Duración máxima: la planificada (se puede extender durante la sesión, hasta 30 días)
+    CONSTRAINT CK_MeasurementSession_MaxDuration CHECK (EndedAt IS NULL OR DATEDIFF(SECOND, StartedAt, EndedAt) <= PlannedDurationMinutes * 60),
+    -- Solo puede quedar como completa si cumplió la duración planificada (la exigencia de 31 muestras válidas la aplica el dominio)
+    CONSTRAINT CK_MeasurementSession_MinDuration CHECK (Status <> 'Completed' OR DATEDIFF(SECOND, StartedAt, EndedAt) >= PlannedDurationMinutes * 60),
+    CONSTRAINT CK_MeasurementSession_MinPoints CHECK (MinMeasurementPoints BETWEEN 1 AND 10),
+    -- Con menos puntos que el mínimo, la sesión no puede iniciar sin la confirmación del técnico
+    CONSTRAINT CK_MeasurementSession_BelowMinAck CHECK (IsBelowMinimumPoints = 0 OR Status IN ('Configured', 'Cancelled') OR BelowMinimumAcknowledgedAt IS NOT NULL),
     -- Si hay mezcla de tipos, la sesión no puede iniciar sin la confirmación del técnico
     CONSTRAINT CK_MeasurementSession_MixedAck CHECK (HasMixedThermocoupleTypes = 0 OR Status IN ('Configured', 'Cancelled') OR MixedTypesAcknowledgedAt IS NOT NULL)
 );
@@ -168,6 +233,8 @@ GO
 
 CREATE INDEX IX_MeasurementSession_EquipmentId_StartedAt ON dbo.MeasurementSession (EquipmentId, StartedAt);
 CREATE INDEX IX_MeasurementSession_Status ON dbo.MeasurementSession (Status);
+-- Última sesión de cada adquisidor, para controlar el periodo de descanso
+CREATE INDEX IX_MeasurementSession_Device_EndedAt ON dbo.MeasurementSession (AcquisitionDeviceId, EndedAt);
 GO
 
 -- Canales (sensores) usados en la sesión. El tipo se guarda por canal para permitir mezcla.
@@ -192,8 +259,9 @@ GO
    --------------------------------------------------------------------- */
 
 -- Una fila por canal y por ciclo de muestreo (cada 2 minutos).
--- La muestra 1 es la primera recibida (t = 0) y la 721 cierra las 24 h.
--- Máximo esperado por sesión: 10 canales x 721 muestras = 7 210 filas.
+-- La muestra 1 es la primera recibida (t = 0). Sesión base de 1 h = 31 muestras;
+-- la última muestra depende de la duración planificada (24 h = 721, 72 h = 2 161).
+-- Volumen típico por sesión base: 10 canales x 31 muestras = 310 filas.
 CREATE TABLE dbo.Reading (
     ReadingId                 BIGINT IDENTITY(1, 1) NOT NULL,
     SessionChannelId          INT                   NOT NULL,
@@ -208,7 +276,7 @@ CREATE TABLE dbo.Reading (
     CONSTRAINT PK_Reading PRIMARY KEY (ReadingId),
     CONSTRAINT FK_Reading_SessionChannel FOREIGN KEY (SessionChannelId) REFERENCES dbo.SessionChannel (SessionChannelId),
     CONSTRAINT UQ_Reading_Channel_Sample UNIQUE (SessionChannelId, SampleNumber),
-    CONSTRAINT CK_Reading_SampleNumber CHECK (SampleNumber BETWEEN 1 AND 721),
+    CONSTRAINT CK_Reading_SampleNumber CHECK (SampleNumber >= 1),   -- el tope lo fija la duración planificada de la sesión
     CONSTRAINT CK_Reading_SensorStatus CHECK (SensorStatus IN ('OK', 'OpenCircuit', 'ShortCircuit', 'OutOfRange', 'InvalidFrame', 'TypeMismatch')),
     CONSTRAINT CK_Reading_TemperatureWhenOk CHECK (SensorStatus <> 'OK' OR TemperatureC IS NOT NULL)
 );
@@ -246,6 +314,9 @@ CREATE TABLE dbo.Alert (
     ValueC                DECIMAL(7, 2)         NULL,
     LimitC                DECIMAL(6, 2)         NULL,
     Message               NVARCHAR(500)         NOT NULL,
+    -- Solo en AboveLimitSustained: Sensor = solo una minoría de canales fuera de límite (revisar el termopar);
+    -- Equipment = la mayoría de canales válidos fuera de límite (revisar el equipo)
+    SuspectedCause        VARCHAR(20)           NULL,
     AcknowledgedById      INT                   NULL,
     AcknowledgedAt        DATETIMEOFFSET(0)     NULL,
     CONSTRAINT PK_Alert PRIMARY KEY (AlertId),
@@ -253,7 +324,13 @@ CREATE TABLE dbo.Alert (
     CONSTRAINT FK_Alert_SessionChannel FOREIGN KEY (SessionChannelId) REFERENCES dbo.SessionChannel (SessionChannelId),
     CONSTRAINT FK_Alert_Reading FOREIGN KEY (ReadingId) REFERENCES dbo.Reading (ReadingId),
     CONSTRAINT FK_Alert_AcknowledgedBy FOREIGN KEY (AcknowledgedById) REFERENCES dbo.AppUser (AppUserId),
-    CONSTRAINT CK_Alert_AlertType CHECK (AlertType IN ('AboveLimit', 'MixedThermocoupleTypes', 'TypeMismatch', 'SensorFault', 'SensorLoss', 'CommunicationLost', 'DeviceMismatch', 'LimitNotDefined')),
+    CONSTRAINT CK_Alert_SuspectedCause CHECK (
+        (AlertType = 'AboveLimitSustained' AND SuspectedCause IS NOT NULL AND SuspectedCause IN ('Sensor', 'Equipment'))
+        OR (AlertType <> 'AboveLimitSustained' AND SuspectedCause IS NULL)),
+    CONSTRAINT CK_Alert_AlertType CHECK (AlertType IN ('AboveLimit', 'AboveLimitSustained', 'MixedThermocoupleTypes', 'BelowMinimumPoints', 'TypeMismatch', 'SensorFault',
+                                                       'SensorLoss', 'SensorLossPersistent', 'SessionFailed',
+                                                       'CommunicationLost', 'DeviceMismatch', 'LimitNotDefined')),
+    -- Critical: se notifica visualmente y exige reconocimiento. Warning e Info: solo se registran y se listan.
     CONSTRAINT CK_Alert_Severity CHECK (Severity IN ('Info', 'Warning', 'Critical')),
     CONSTRAINT CK_Alert_Ack CHECK ((AcknowledgedById IS NULL AND AcknowledgedAt IS NULL) OR (AcknowledgedById IS NOT NULL AND AcknowledgedAt IS NOT NULL))
 );
@@ -321,17 +398,10 @@ GO
 -- Una sesión solo puede quedar completa con al menos 31 muestras no afectadas (1 h de datos).
 CREATE VIEW dbo.vSessionSampleCoverage
 AS
-WITH Digit AS (
-    SELECT d FROM (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9)) AS v (d)
-),
-Numbers AS (
-    SELECT a.d + 10 * b.d + 100 * c.d + 1 AS n
-    FROM Digit AS a CROSS JOIN Digit AS b CROSS JOIN Digit AS c
-)
 SELECT
     s.MeasurementSessionId,
-    num.n AS SampleNumber,
-    DATEADD(SECOND, (num.n - 1) * s.SamplingIntervalSeconds, s.StartedAt) AS ScheduledAt,
+    num.N AS SampleNumber,
+    DATEADD(SECOND, (num.N - 1) * s.SamplingIntervalSeconds, s.StartedAt) AS ScheduledAt,
     ch.ActiveChannels,
     COALESCE(r.ReadingRows, 0) AS ReadingRows,
     COALESCE(r.ValidReadings, 0) AS ValidReadings,
@@ -343,9 +413,9 @@ CROSS APPLY (
     FROM dbo.SessionChannel AS sc
     WHERE sc.MeasurementSessionId = s.MeasurementSessionId AND sc.IsActive = 1
 ) AS ch
-INNER JOIN Numbers AS num
-    ON num.n <= DATEDIFF(SECOND, s.StartedAt, COALESCE(s.EndedAt, SYSDATETIMEOFFSET())) / s.SamplingIntervalSeconds + 1
-   AND num.n <= 721
+INNER JOIN dbo.Tally AS num
+    ON num.N <= DATEDIFF(SECOND, s.StartedAt, COALESCE(s.EndedAt, SYSDATETIMEOFFSET())) / s.SamplingIntervalSeconds + 1
+   AND num.N <= s.PlannedDurationMinutes * 60 / s.SamplingIntervalSeconds + 1
 OUTER APPLY (
     SELECT
         COUNT(*) AS ReadingRows,
@@ -354,7 +424,7 @@ OUTER APPLY (
     INNER JOIN dbo.SessionChannel AS sc2 ON sc2.SessionChannelId = rd.SessionChannelId
     WHERE sc2.MeasurementSessionId = s.MeasurementSessionId
       AND sc2.IsActive = 1
-      AND rd.SampleNumber = num.n
+      AND rd.SampleNumber = num.N
 ) AS r
 WHERE s.StartedAt IS NOT NULL
   AND ch.ActiveChannels > 0;
@@ -377,4 +447,18 @@ VALUES
     (N'Congeladora',   -5.00, N'No debe superar -5,0 °C; -4,9 °C ya está fuera de límite'),
     (N'Conservadora',  NULL,  N'Límite máximo pendiente de definir'),
     (N'Incubadora',    NULL,  N'Límite máximo pendiente de definir');
+GO
+
+-- Parámetros iniciales (confirmados por el laboratorio el 2026-09-25)
+INSERT INTO dbo.AppSetting (SettingKey, SettingValue, Description)
+VALUES
+    ('SamplingIntervalSeconds',        N'120',   N'[PC-01] Intervalo de muestreo (s). 60 o menos para DKD-R 5-7 / IEC 60068-3-5'),   -- [PC-01] punto de cambio
+    ('BaseSessionMinutes',             N'60',    N'Duración base de una sesión (min)'),
+    ('MaxSessionMinutes',              N'10080', N'Duración máxima que se puede planificar (min); 7 días. La base admite hasta 30 días'),
+    ('RestPeriodMinutes',              N'15',    N'Descanso mínimo del kit de medición (adquisidor y sensores) entre sesiones (min)'),
+    ('MinMeasurementPoints',           N'9',     N'Mínimo de puntos de medición (8 esquinas + centro, IEC 60068-3-5 / DKD-R 5-7). Con menos se advierte y se exige confirmación'),
+    ('AboveLimitCriticalMinutes',      N'30',    N'Un canal fuera de límite estos minutos seguidos genera una alerta crítica con causa probable'),
+    ('SensorLossThresholdPct',         N'60',    N'Muestra afectada si MÁS de este % de canales no tiene lectura válida'),
+    ('SensorLossCriticalAfterSamples', N'3',     N'La pérdida pasa a alerta crítica si sigue en la N-ésima muestra consecutiva'),
+    ('SensorLossFailMinutes',          N'30',    N'La sesión falla tras estos minutos consecutivos de muestras afectadas');
 GO

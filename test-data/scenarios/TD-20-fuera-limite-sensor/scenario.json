@@ -1,0 +1,314 @@
+{
+  "code": "TD-20",
+  "title": "Un sensor fuera de límite 30 min: posible falla del sensor",
+  "category": "Variaciones de medida",
+  "description": "Desde la muestra 20, solo S3 (Inferior) marca alrededor de -2 °C mientras los demás siguen cerca de -18 °C. Cada lectura es una advertencia; a los 30 min (muestra 35) se genera la crítica AboveLimitSustained con causa probable \"Sensor\". En la muestra 46 S3 vuelve a la normalidad (termopar recolocado).",
+  "protocolVersion": "1.0",
+  "seed": 120,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-20",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 305,
+    "readingsByStatus": {
+      "OK": 305
+    },
+    "aboveLimitReadings": 26,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "AboveLimit": 26,
+      "AboveLimitSustained": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 3,
+        "valueC": -1.78,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 21,
+        "channel": 3,
+        "valueC": -1.9,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 22,
+        "channel": 3,
+        "valueC": -1.95,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 23,
+        "channel": 3,
+        "valueC": -2.11,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 24,
+        "channel": 3,
+        "valueC": -2.28,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 25,
+        "channel": 3,
+        "valueC": -2.31,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 26,
+        "channel": 3,
+        "valueC": -2.3,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 27,
+        "channel": 3,
+        "valueC": -2.33,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 28,
+        "channel": 3,
+        "valueC": -2.33,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 29,
+        "channel": 3,
+        "valueC": -2.18,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": 3,
+        "valueC": -2.18,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 31,
+        "channel": 3,
+        "valueC": -2.19,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 32,
+        "channel": 3,
+        "valueC": -1.96,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 33,
+        "channel": 3,
+        "valueC": -1.94,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 34,
+        "channel": 3,
+        "valueC": -1.65,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 35,
+        "channel": 3,
+        "valueC": -1.52,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimitSustained",
+        "severity": "Critical",
+        "sampleNumber": 35,
+        "channel": 3,
+        "valueC": -1.52,
+        "limitC": -5,
+        "consecutiveSamples": 16,
+        "suspectedCause": "Sensor"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 36,
+        "channel": 3,
+        "valueC": -1.56,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 37,
+        "channel": 3,
+        "valueC": -1.62,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 3,
+        "valueC": -1.67,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 39,
+        "channel": 3,
+        "valueC": -1.66,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 3,
+        "valueC": -1.91,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 3,
+        "valueC": -1.99,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 42,
+        "channel": 3,
+        "valueC": -2.07,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 43,
+        "channel": 3,
+        "valueC": -2.11,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 44,
+        "channel": 3,
+        "valueC": -2.17,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 3,
+        "valueC": -2.35,
+        "limitC": -5
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

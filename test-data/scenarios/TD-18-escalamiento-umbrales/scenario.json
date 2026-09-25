@@ -1,0 +1,241 @@
+{
+  "code": "TD-18",
+  "title": "Límites del escalamiento: 2, 3 y 15 muestras consecutivas",
+  "category": "Caída de sensores",
+  "description": "Tres episodios con 4 de 5 canales abiertos. Muestras 10-11 (2): solo advertencia. Muestras 30-32 (3): crítica en la 32. Muestras 50-64 (15, 28 min): crítica en la 52, sin llegar a los 30 min de la falla de sesión.",
+  "protocolVersion": "1.0",
+  "seed": 118,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 180,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-18",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 10800,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 91,
+    "samplesWithData": 91,
+    "affectedSamples": [
+      10,
+      11,
+      30,
+      31,
+      32,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64
+    ],
+    "validSamples": 71,
+    "readingRows": 455,
+    "readingsByStatus": {
+      "OK": 375,
+      "OpenCircuit": 80
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "SensorFault": 12,
+      "SensorLoss": 3,
+      "SensorLossPersistent": 2
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 10,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 10,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 10,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 10,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Warning",
+        "sampleNumber": 10,
+        "channel": null,
+        "channelsWithoutData": 4,
+        "activeChannels": 5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Warning",
+        "sampleNumber": 30,
+        "channel": null,
+        "channelsWithoutData": 4,
+        "activeChannels": 5
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 32,
+        "channel": null,
+        "consecutiveSamples": 3
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": null,
+        "channelsWithoutData": 4,
+        "activeChannels": 5
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 52,
+        "channel": null,
+        "consecutiveSamples": 3
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

@@ -1,4 +1,4 @@
-# Transcripción serial de referencia · TD-04 · Caída de sensores sobre el umbral (70 %)
+# Transcripción serial de referencia · TD-04 · Caída de sensores sobre el umbral (70 %) con escalamiento
 # Formato: <offset_s>\t<origen>\t<línea>   origen = PC | ADQ | # (comentario)
 # offset_s: segundos desde StartedAt (muestra 1). Negativo = antes del inicio.
 # Se omiten PING / ACK,PING entre muestras.
@@ -944,7 +944,7 @@
 7200.240	ADQ	$RD,61,2,T,-18.04,OK*51
 7200.360	ADQ	$RD,61,3,T,-19.69,OK*5A
 7200.480	ADQ	$RD,61,4,T,-14.94,OK*52
-7200.500	#	Cierre manual del técnico
+7200.500	#	Cierre automático al cumplir la duración planificada
 7200.500	PC	$STOP*18
 7200.550	ADQ	$ACK,STOP*7D
 7200.600	ADQ	$RD,61,5,T,-18.31,OK*50

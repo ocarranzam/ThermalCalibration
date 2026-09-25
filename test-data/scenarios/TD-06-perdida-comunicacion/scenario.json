@@ -2,15 +2,23 @@
   "code": "TD-06",
   "title": "Pérdida de comunicación y recuperación con el mismo adquisidor",
   "category": "Comunicación",
-  "description": "Sin respuesta desde la muestra 40; reconecta el mismo adquisidor y grupo antes de la muestra 45. Hueco de 5 muestras.",
+  "description": "Sin respuesta desde la muestra 40; reconecta el mismo adquisidor y grupo antes de la muestra 45. Hueco de 5 muestras (8 min), menos de 30 min: la sesión continúa.",
   "protocolVersion": "1.0",
   "seed": 106,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-06",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,8 +55,7 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 7200
+      "type": "PlannedDuration"
     }
   },
   "events": [
@@ -65,10 +72,11 @@
   ],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 7200,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 61,
     "samplesWithData": 56,
     "affectedSamples": [
@@ -85,9 +93,18 @@
     },
     "aboveLimitReadings": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "CommunicationLost": 1
     },
     "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
       {
         "alertType": "CommunicationLost",
         "severity": "Critical",

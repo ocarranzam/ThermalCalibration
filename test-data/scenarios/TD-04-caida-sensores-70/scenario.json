@@ -1,16 +1,24 @@
 {
   "code": "TD-04",
-  "title": "Caída de sensores sobre el umbral (70 %)",
+  "title": "Caída de sensores sobre el umbral (70 %) con escalamiento",
   "category": "Caída de sensores",
-  "description": "Muestras 30 a 39: 7 de 10 canales sin dato válido (OC, SC, trama ausente y trama truncada). Las 10 muestras quedan afectadas; la sesión sigue completa porque conserva ≥ 31 muestras válidas.",
+  "description": "Muestras 30 a 39: 7 de 10 canales sin dato válido (OC, SC, trama ausente y trama truncada). Advertencia en la muestra 30, alerta crítica en la 32 (no se restableció en la 3.ª medición). Dura 18 min, menos de 30: no falla la sesión. Sigue completa porque conserva ≥ 31 muestras válidas.",
   "protocolVersion": "1.0",
   "seed": 104,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-04",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -72,17 +80,17 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 7200
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 7200,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": false,
     "programmedSamples": 61,
     "samplesWithData": 61,
     "affectedSamples": [
@@ -108,7 +116,8 @@
     "aboveLimitReadings": 0,
     "alertsByType": {
       "SensorFault": 7,
-      "SensorLoss": 1
+      "SensorLoss": 1,
+      "SensorLossPersistent": 1
     },
     "alerts": [
       {
@@ -162,11 +171,18 @@
       },
       {
         "alertType": "SensorLoss",
-        "severity": "Critical",
+        "severity": "Warning",
         "sampleNumber": 30,
         "channel": null,
         "channelsWithoutData": 7,
         "activeChannels": 10
+      },
+      {
+        "alertType": "SensorLossPersistent",
+        "severity": "Critical",
+        "sampleNumber": 32,
+        "channel": null,
+        "consecutiveSamples": 3
       }
     ],
     "communicationGaps": [],

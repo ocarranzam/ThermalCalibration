@@ -1,0 +1,102 @@
+{
+  "code": "TD-19",
+  "title": "Duración mínima por tipo de equipo (incubadora, 2 h)",
+  "category": "Duración",
+  "description": "El tipo Incubadora exige 2 h (configuración de prueba). El técnico cierra a los 90 min: aunque tiene más de 31 muestras válidas, no cumplió la duración planificada y queda incompleta.",
+  "protocolVersion": "1.0",
+  "seed": 119,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Incubadora",
+    "maxTemperatureC": null,
+    "equipmentTypeMinSessionMinutes": 120,
+    "plannedDurationMinutes": 120,
+    "durationSource": "EquipmentType",
+    "clientRequestReference": null,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 5400
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 5400,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 46,
+    "samplesWithData": 46,
+    "affectedSamples": [],
+    "validSamples": 46,
+    "readingRows": 230,
+    "readingsByStatus": {
+      "OK": 230
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "BelowMinimumPoints": 1,
+      "LimitNotDefined": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
+      {
+        "alertType": "LimitNotDefined",
+        "severity": "Info",
+        "sampleNumber": null,
+        "channel": null
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

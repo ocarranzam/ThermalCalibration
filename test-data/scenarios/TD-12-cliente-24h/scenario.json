@@ -1,0 +1,108 @@
+{
+  "code": "TD-12",
+  "title": "Sesión ocasional de 24 h a pedido del cliente",
+  "category": "Duración",
+  "description": "10 canales, variación diaria suave. Duración de 24 h solicitada por el cliente. Se cierra automáticamente con la muestra 721.",
+  "protocolVersion": "1.0",
+  "seed": 112,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 1440,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-12",
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      },
+      {
+        "channelNumber": 6,
+        "thermocoupleType": "T",
+        "position": "Lateral izq."
+      },
+      {
+        "channelNumber": 7,
+        "thermocoupleType": "T",
+        "position": "Lateral der."
+      },
+      {
+        "channelNumber": 8,
+        "thermocoupleType": "T",
+        "position": "Esquina sup. izq."
+      },
+      {
+        "channelNumber": 9,
+        "thermocoupleType": "T",
+        "position": "Esquina inf. der."
+      },
+      {
+        "channelNumber": 10,
+        "thermocoupleType": "T",
+        "position": "Bandeja media"
+      }
+    ],
+    "close": {
+      "type": "PlannedDuration"
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "PlannedDuration",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 86400,
+    "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": false,
+    "programmedSamples": 721,
+    "samplesWithData": 721,
+    "affectedSamples": [],
+    "validSamples": 721,
+    "readingRows": 7210,
+    "readingsByStatus": {
+      "OK": 7210
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {},
+    "alerts": [],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

@@ -2055,7 +2055,7 @@
 21600.240	ADQ	$RD,181,2,T,-18.24,OK*6C
 21600.360	ADQ	$RD,181,3,T,-19.29,OK*61
 21600.480	ADQ	$RD,181,4,T,-15.24,OK*67
-21600.500	#	Cierre manual del técnico
+21600.500	#	Cierre automático al cumplir la duración planificada
 21600.500	PC	$STOP*18
 21600.550	ADQ	$ACK,STOP*7D
 21600.600	ADQ	$RD,181,5,T,-18.72,OK*68

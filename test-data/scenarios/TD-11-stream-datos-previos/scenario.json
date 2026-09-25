@@ -2,15 +2,23 @@
   "code": "TD-11",
   "title": "Adquisidor que transmite antes de conectar (modo STREAM)",
   "category": "Inicio por llegada de datos",
-  "description": "El adquisidor ya emitía bloques antes de abrir el puerto: se descarta una línea parcial y dos bloques de vista previa. La sesión inicia con el primer bloque recibido después de pulsar Iniciar.",
+  "description": "El adquisidor ya emitía bloques antes de abrir el puerto: se descarta una línea parcial y dos bloques de vista previa. La sesión base inicia con el primer bloque recibido después de pulsar Iniciar.",
   "protocolVersion": "1.0",
   "seed": 111,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 60,
+    "durationSource": "Base",
+    "clientRequestReference": null,
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Stream",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,28 +55,39 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 3900
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
-    "endedAtOffsetSeconds": 3900,
+    "endedAtOffsetSeconds": 3600,
     "hasMixedThermocoupleTypes": false,
-    "programmedSamples": 33,
-    "samplesWithData": 33,
+    "isBelowMinimumPoints": true,
+    "programmedSamples": 31,
+    "samplesWithData": 31,
     "affectedSamples": [],
-    "validSamples": 33,
-    "readingRows": 165,
+    "validSamples": 31,
+    "readingRows": 155,
     "readingsByStatus": {
-      "OK": 165
+      "OK": 155
     },
     "aboveLimitReadings": 0,
-    "alertsByType": {},
-    "alerts": [],
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      }
+    ],
     "communicationGaps": [],
     "discardedPreStartBlocks": 2
   }

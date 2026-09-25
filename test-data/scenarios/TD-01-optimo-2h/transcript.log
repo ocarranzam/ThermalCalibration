@@ -734,7 +734,7 @@
 7200.240	ADQ	$RD,61,2,T,-19.00,OK*54
 7200.360	ADQ	$RD,61,3,T,-19.06,OK*53
 7200.480	ADQ	$RD,61,4,T,-16.07,OK*5A
-7200.500	#	Cierre manual del técnico
+7200.500	#	Cierre automático al cumplir la duración planificada
 7200.500	PC	$STOP*18
 7200.550	ADQ	$ACK,STOP*7D
 7200.600	ADQ	$RD,61,5,T,-17.81,OK*54

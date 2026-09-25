@@ -1,4 +1,4 @@
-# Transcripción serial de referencia · TD-05 · Caída sobre el umbral que deja la sesión incompleta
+# Transcripción serial de referencia · TD-05 · Sesión base de 1 h que queda incompleta por pérdida de sensores
 # Formato: <offset_s>\t<origen>\t<línea>   origen = PC | ADQ | # (comentario)
 # offset_s: segundos desde StartedAt (muestra 1). Negativo = antes del inicio.
 # Se omiten PING / ACK,PING entre muestras.
@@ -224,43 +224,8 @@
 3600.240	ADQ	$RD,31,2,T,-18.84,OK*5C
 3600.360	ADQ	$RD,31,3,T,-18.36,OK*54
 3600.480	ADQ	$RD,31,4,T,-14.99,OK*5A
+3600.500	#	Cierre automático al cumplir la duración planificada
+3600.500	PC	$STOP*18
+3600.550	ADQ	$ACK,STOP*7D
 3600.600	ADQ	$RD,31,5,T,-17.99,OK*58
 3600.650	ADQ	$EOS,31,5*6E
-3720.000	PC	$READ,32*3F
-3720.120	ADQ	$RD,32,1,T,-17.76,OK*5E
-3720.240	ADQ	$RD,32,2,T,-18.48,OK*5F
-3720.360	ADQ	$RD,32,3,T,-18.88,OK*52
-3720.480	ADQ	$RD,32,4,T,-15.26,OK*5C
-3720.600	ADQ	$RD,32,5,T,-17.70,OK*5C
-3720.650	ADQ	$EOS,32,5*6D
-3840.000	PC	$READ,33*3E
-3840.120	ADQ	$RD,33,1,T,-17.39,OK*54
-3840.240	ADQ	$RD,33,2,T,-18.45,OK*53
-3840.360	ADQ	$RD,33,3,T,-18.65,OK*50
-3840.480	ADQ	$RD,33,4,T,-15.45,OK*58
-3840.600	ADQ	$RD,33,5,T,-17.79,OK*54
-3840.650	ADQ	$EOS,33,5*6C
-3960.000	PC	$READ,34*39
-3960.120	ADQ	$RD,34,1,T,-17.71,OK*5F
-3960.240	ADQ	$RD,34,2,T,-18.22,OK*55
-3960.360	ADQ	$RD,34,3,T,-19.14,OK*50
-3960.480	ADQ	$RD,34,4,T,-15.24,OK*58
-3960.600	ADQ	$RD,34,5,T,-17.39,OK*57
-3960.650	ADQ	$EOS,34,5*6B
-4080.000	PC	$READ,35*38
-4080.120	ADQ	$RD,35,1,T,-17.34,OK*5F
-4080.240	ADQ	$RD,35,2,T,-18.22,OK*54
-4080.360	ADQ	$RD,35,3,T,-19.50,OK*51
-4080.480	ADQ	$RD,35,4,T,-15.40,OK*5B
-4080.600	ADQ	$RD,35,5,T,-17.94,OK*51
-4080.650	ADQ	$EOS,35,5*6A
-4200.000	PC	$READ,36*3B
-4200.120	ADQ	$RD,36,1,T,-17.27,OK*5E
-4200.240	ADQ	$RD,36,2,T,-17.41,OK*5D
-4200.360	ADQ	$RD,36,3,T,-19.58,OK*5A
-4200.480	ADQ	$RD,36,4,T,-15.76,OK*5D
-4200.500	#	Cierre manual del técnico
-4200.500	PC	$STOP*18
-4200.550	ADQ	$ACK,STOP*7D
-4200.600	ADQ	$RD,36,5,T,-17.80,OK*57
-4200.650	ADQ	$EOS,36,5*69

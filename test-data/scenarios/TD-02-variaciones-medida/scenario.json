@@ -2,15 +2,23 @@
   "code": "TD-02",
   "title": "Aperturas de puerta y valores en el límite",
   "category": "Variaciones de medida",
-  "description": "S4 (Puerta) registra excursiones: -5,00 (cumple), -4,99 y -4,90 (fuera de límite), +2,10 y -3,50 (fuera de límite). S2 reporta con 1 decimal. S1 tiene un pico de ruido dentro del límite.",
+  "description": "S4 (Puerta) registra excursiones: -5,00 (cumple), -4,99 y -4,90 (fuera de límite), +2,10 y -3,50 (fuera de límite). S2 reporta con 1 decimal. S1 tiene un pico de ruido dentro del límite. Son alertas de advertencia: no interrumpen al técnico.",
   "protocolVersion": "1.0",
   "seed": 102,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 180,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-02",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,17 +55,17 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 10800
+      "type": "PlannedDuration"
     }
   },
   "events": [],
   "expected": {
     "status": "Completed",
-    "closeReason": "Manual",
+    "closeReason": "PlannedDuration",
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 10800,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 91,
     "samplesWithData": 91,
     "affectedSamples": [],
@@ -68,9 +76,18 @@
     },
     "aboveLimitReadings": 4,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "AboveLimit": 4
     },
     "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
       {
         "alertType": "AboveLimit",
         "severity": "Warning",

@@ -1,16 +1,24 @@
 {
   "code": "TD-13",
-  "title": "Sesión corta de 45 min (incompleta)",
+  "title": "Sesión base cerrada a los 45 min (incompleta)",
   "category": "Duración",
-  "description": "Cierre manual antes de 1 h.",
+  "description": "Cierre manual antes de cumplir la hora planificada.",
   "protocolVersion": "1.0",
   "seed": 113,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 60,
+    "durationSource": "Base",
+    "clientRequestReference": null,
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -58,6 +66,7 @@
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 2700,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 23,
     "samplesWithData": 23,
     "affectedSamples": [],
@@ -67,8 +76,19 @@
       "OK": 115
     },
     "aboveLimitReadings": 0,
-    "alertsByType": {},
-    "alerts": [],
+    "alertsByType": {
+      "BelowMinimumPoints": 1
+    },
+    "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      }
+    ],
     "communicationGaps": [],
     "discardedPreStartBlocks": 0
   }

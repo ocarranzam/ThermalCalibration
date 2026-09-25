@@ -4,7 +4,11 @@ Módulos: **Sesión de Medición** (SM), **Adquisición Serial** (AS) y **Export
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.2 (borrador para revisión) |
+| Versión | 0.6 (borrador para revisión) |
+| Cambios en 0.6 | Trazabilidad: TD-19 en HU-02, RN-13 citada en HU-08 y HU-09, enlace del índice a HU-10 corregido. Cada historia tiene su `.feature` en [docs/diagrams/gherkin/](../../diagrams/gherkin/) (ver [validation.md](../../validation.md)). |
+| Cambios en 0.5 | Mínimo de 9 puntos de medición con advertencia y confirmación (HU-17). Escenario TD-22. |
+| Cambios en 0.4 | Fuera de límite sostenido 30 min → alerta crítica con causa probable, sensor o equipo (HU-08). Descanso de 15 min confirmado. Escenarios TD-20 y TD-21. |
+| Cambios en 0.3 | Duración planificada (base de 1 h, por tipo de equipo o por pedido del cliente) y descanso del adquisidor (HU-16). Alertas críticas y advertencias (HU-15). Escalamiento de la pérdida de sensores y falla de sesión (HU-13). Cierre por duración planificada (HU-10). Escenarios TD-16 a TD-19. |
 | Cambios en 0.2 | Muestra 1 en t = 0 y 721 muestras en 24 h. Inicio al llegar la primera muestra. Umbral de pérdida de sensores del 60 % (HU-13). Sesión no válida por cambio de adquisidor o de grupo de sensores (HU-09). Sesión simulada con el set de datos de prueba (HU-14). Ajustes al Excel. |
 | Relacionado | [01-vision-document.md](01-vision-document.md), [02-serial-protocol.md](02-serial-protocol.md), [05-data-model.md](05-data-model.md), [06-test-data.md](06-test-data.md) |
 
@@ -22,19 +26,22 @@ Convenciones:
 | Id | Historia | Módulo | Perfil | Escenarios de prueba |
 |---|---|---|---|---|
 | [HU-01](#hu-01--registrar-empresa-cliente-y-equipo) | Registrar empresa cliente y equipo | SM | Técnico, Admin | — |
-| [HU-02](#hu-02--gestionar-tipos-de-equipo-y-límite-máximo) | Gestionar tipos de equipo y límite máximo | SM | Admin | TD-14 |
+| [HU-02](#hu-02--gestionar-tipos-de-equipo-y-límite-máximo) | Gestionar tipos de equipo y límite máximo | SM | Admin | TD-14, TD-19 |
 | [HU-03](#hu-03--configurar-una-sesión-de-medición) | Configurar una sesión de medición | SM, AS | Técnico | TD-01, TD-11 |
 | [HU-04](#hu-04--advertir-la-mezcla-de-termopares-t-y-k) | Advertir la mezcla de termopares T y K | SM | Técnico | TD-10 |
 | [HU-05](#hu-05--advertir-límite-no-definido) | Advertir límite no definido | SM | Técnico | TD-14 |
 | [HU-06](#hu-06--iniciar-al-llegar-datos-y-capturar-cada-2-minutos) | Iniciar al llegar datos y capturar cada 2 minutos | AS | Sistema | TD-01, TD-11, TD-12 |
 | [HU-07](#hu-07--registrar-lecturas-inválidas-sin-detener-la-sesión) | Registrar lecturas inválidas sin detener la sesión | AS | Sistema | TD-09, TD-15 |
-| [HU-08](#hu-08--alertar-lecturas-fuera-de-límite) | Alertar lecturas fuera de límite | SM | Sistema | TD-02, TD-15 |
+| [HU-08](#hu-08--alertar-lecturas-fuera-de-límite) | Alertar lecturas fuera de límite | SM | Sistema | TD-02, TD-15, TD-20, TD-21 |
 | [HU-09](#hu-09--detectar-pérdida-de-comunicación-reconectar-y-validar-el-adquisidor) | Detectar pérdida de comunicación, reconectar y validar el adquisidor | AS | Sistema | TD-06, TD-07, TD-08 |
-| [HU-10](#hu-10--cerrar-la-sesión-duración-mínima-y-máxima) | Cerrar la sesión (duración mínima y máxima) | SM | Técnico, Sistema | TD-05, TD-10, TD-12, TD-13 |
+| [HU-10](#hu-10--cerrar-la-sesión-duración-planificada) | Cerrar la sesión (duración planificada) | SM | Técnico, Sistema | TD-05, TD-10, TD-12, TD-13 |
 | [HU-11](#hu-11--exportar-una-sesión-a-excel) | Exportar una sesión a Excel | EX | Técnico, Supervisor | Todos |
 | [HU-12](#hu-12--consultar-el-historial-de-sesiones) | Consultar el historial de sesiones | SM | Todos | — |
-| [HU-13](#hu-13--evaluar-la-pérdida-de-sensores-por-muestra) | Evaluar la pérdida de sensores por muestra | SM | Sistema | TD-03, TD-04, TD-05, TD-15 |
+| [HU-13](#hu-13--evaluar-escalar-y-fallar-por-pérdida-de-sensores) | Evaluar, escalar y fallar por pérdida de sensores | SM | Sistema | TD-03, TD-04, TD-05, TD-15, TD-16, TD-18 |
 | [HU-14](#hu-14--ejecutar-una-sesión-simulada-con-el-set-de-datos-de-prueba) | Ejecutar una sesión simulada con el set de datos de prueba | AS | Técnico, Admin | Todos |
+| [HU-15](#hu-15--priorizar-alertas-críticas-y-advertencias) | Priorizar alertas: críticas y advertencias | SM | Técnico, Supervisor | TD-02, TD-04, TD-16, TD-20, TD-21 |
+| [HU-16](#hu-16--planificar-la-duración-y-respetar-el-descanso-del-adquisidor) | Planificar la duración y respetar el descanso del adquisidor | SM | Técnico, Supervisor | TD-10, TD-12, TD-17, TD-19 |
+| [HU-17](#hu-17--advertir-menos-de-9-puntos-de-medición) | Advertir menos de 9 puntos de medición | SM | Técnico | TD-15, TD-22 y los de 5 canales |
 
 ---
 
@@ -106,7 +113,7 @@ Feature: Registro de empresas cliente y equipos
 
 **Como** administrador **quiero** mantener el catálogo de tipos de equipo con su temperatura máxima admisible, o dejarla pendiente, **para** que las sesiones evalúen el límite correcto sin alterar las mediciones ya registradas.
 
-Reglas: RN-06, RN-07, RN-08. Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). El administrador también mantiene el umbral de pérdida de sensores (60 % por defecto), que se copia en cada sesión al iniciarla.
+Reglas: RN-04, RN-06, RN-07, RN-08. Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). Cada tipo tiene una **duración mínima de sesión** (60 min por defecto), por si su forma de funcionar exige más de 1 h de datos. El administrador también mantiene los parámetros de `AppSetting`: el umbral de pérdida de sensores (60 %), las muestras para escalar (3), los minutos para fallar (30), el descanso del adquisidor (15 min) y la duración máxima planificable (7 días).
 
 ```gherkin
 Feature: Catálogo de tipos de equipo con límite máximo
@@ -117,6 +124,16 @@ Feature: Catálogo de tipos de equipo con límite máximo
   Scenario: Registrar un tipo de equipo con límite definido
     When registro el tipo de equipo "Ultracongeladora" con límite máximo "-60,0" °C
     Then el tipo queda activo con límite máximo -60,00 °C
+    And su duración mínima de sesión es 60 minutos
+
+  Scenario: Exigir una duración mínima mayor para un tipo de equipo
+    When fijo la duración mínima de sesión de "Incubadora" en 120 minutos
+    Then las sesiones nuevas de incubadoras se planifican con al menos 120 minutos
+    And las sesiones ya registradas conservan su duración planificada
+
+  Scenario: Rechazar una duración mínima menor que la base
+    When intento fijar la duración mínima de sesión de "Congeladora" en 45 minutos
+    Then el sistema rechaza el valor con el mensaje "La duración mínima no puede ser menor que 60 minutos"
 
   Scenario: Registrar un tipo de equipo con límite pendiente
     When registro el tipo de equipo "Cámara de vacunas" sin límite máximo
@@ -403,7 +420,8 @@ Feature: Inicio por llegada de datos y captura periódica
     Given la sesión inició a las "2026-10-01 08:00:00 -05:00"
     Then la muestra 2 se programa a las 08:02:00
     And la muestra 31 se programa a las 09:00:00
-    And la muestra 721 se programa a las 08:00:00 del día siguiente
+    And en una sesión base de 1 h la última muestra es la 31, a las 09:00:00
+    And en una sesión de 24 h pedida por el cliente la última es la 721, a las 08:00:00 del día siguiente
 
   Scenario: Almacenar una muestra completa
     Given la sesión inició a las 08:00:00
@@ -509,13 +527,13 @@ Feature: Registro de lecturas inválidas
 
 **Como** supervisor **quiero** que cada lectura mayor que el límite aplicado genere una alerta asociada al sensor y a la marca de tiempo **para** revisar si fue una variación mínima o una falla del sensor.
 
-Reglas: RN-07, RN-10. Comparación estricta: `TemperatureC > MaxTemperatureC`. Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite.
+Reglas: RN-07, RN-10, RN-13, RN-18, RN-19 y [01 §6.4](01-vision-document.md#64-fuera-de-límite-sostenido-sensor-o-equipo). Comparación estricta: `TemperatureC > MaxTemperatureC`. Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite. Es una **advertencia**: se registra y se resalta, pero **no** interrumpe al técnico con avisos, porque la temperatura puede variar por distintas causas (HU-15).
 
 ```gherkin
 Feature: Alerta por lectura mayor que el límite máximo
 
   Background:
-    Given una sesión en curso de una "Congeladora" con límite aplicado -5,00 °C, iniciada a las 08:00:00
+    Given una sesión en curso de una "Congeladora" con límite aplicado -5,00 °C, iniciada a las 08:00:00 y planificada de 2 h
 
   Scenario Outline: Evaluación estricta del límite máximo
     When el canal 5 reporta <valor> °C con estado "OK" en la muestra 32
@@ -541,6 +559,39 @@ Feature: Alerta por lectura mayor que el límite máximo
       | Límite       | -5,00                                                             |
       | Mensaje      | S5 (Puerta): -4,90 °C supera el límite máximo de -5,00 °C          |
     And la pantalla de monitoreo resalta el valor del canal 5 en rojo
+    And el contador de advertencias de la sesión aumenta en 1
+    But no se muestra ningún aviso emergente ni sonido
+
+  Scenario: Un solo sensor fuera de límite 30 minutos: posible falla del sensor
+    Given los canales 1, 2, 4 y 5 están cerca de -18 °C
+    When el canal 3 (Inferior) está fuera de límite desde la muestra 20 (08:38:00)
+    Then cada lectura del canal 3 genera solo una advertencia "AboveLimit"
+    And en la muestra 35 (09:08:00), a los 30 min, se genera una alerta "AboveLimitSustained" con severidad "Critical" para el canal 3
+    And la alerta indica la causa probable "Sensor" con el mensaje "S3 (Inferior) lleva 30 min fuera de límite mientras los demás sensores están dentro: posible falla o mala colocación del termopar, o una zona localizada"
+    And sugiere "Revisar la colocación y la conexión del termopar, o compararlo con el sensor vecino"
+    And las lecturas del canal 3 se conservan como válidas
+
+  Scenario: La mayoría de sensores fuera de límite 30 minutos: posible falla del equipo
+    When desde la muestra 30 todos los canales suben y quedan fuera de límite
+    Then a los 30 min de cada canal fuera de límite se genera una alerta "AboveLimitSustained" con causa probable "Equipment"
+    And las alertas críticas que llegan en la misma muestra se muestran agrupadas en un solo aviso
+    And el mensaje sugiere "Revisar el equipo bajo prueba (compresor, puerta) e informar al supervisor"
+
+  Scenario: Una excursión breve no escala
+    When el canal 4 (Puerta) está fuera de límite en las muestras 21 y 22 y vuelve a estar dentro en la 23
+    Then solo existen advertencias "AboveLimit"
+    And no se genera "AboveLimitSustained"
+
+  Scenario: Una lectura dentro del límite o inválida reinicia la cuenta
+    Given el canal 3 lleva 25 min fuera de límite
+    When la siguiente lectura del canal 3 está dentro del límite, o es inválida
+    Then la cuenta de los 30 min vuelve a empezar
+
+  Scenario: El supervisor confirma la causa al reconocer la alerta
+    Given que he iniciado sesión con el rol "Supervisor"
+    When reconozco la alerta "AboveLimitSustained" del canal 3 con la nota "Termopar desprendido, recolocado a las 09:30"
+    Then la alerta registra mi usuario, la fecha y hora y la nota
+    But la causa probable calculada por el sistema no cambia
 
   Scenario: La alerta no invalida la sesión
     Given se generaron 12 alertas "AboveLimit" en la sesión
@@ -560,13 +611,13 @@ Feature: Alerta por lectura mayor que el límite máximo
 
 **Como** laboratorio **quiero** que el sistema detecte la pérdida de comunicación con el puerto COM, intente reconectar, registre los huecos de datos y verifique que reconecta el mismo adquisidor con el mismo grupo de sensores **para** no perder la sesión por una desconexión momentánea y no mezclar datos de otro equipo de medición.
 
-Reglas: RN-12, RN-14 (las muestras perdidas cuentan como afectadas) y RN-15. [02-serial-protocol.md §9](02-serial-protocol.md#9-pérdida-y-recuperación-de-la-comunicación).
+Reglas: RN-12, RN-13 (los huecos no se modifican una vez cerrados), RN-14 (las muestras perdidas cuentan como afectadas) y RN-15. [02-serial-protocol.md §9](02-serial-protocol.md#9-pérdida-y-recuperación-de-la-comunicación).
 
 ```gherkin
 Feature: Pérdida y recuperación de la comunicación serial
 
   Background:
-    Given una sesión en curso en "COM3" con el adquisidor "ADQ-ARD-0001", grupo de sensores "GRP-A", iniciada a las 08:00:00
+    Given una sesión en curso en "COM3" con el adquisidor "ADQ-ARD-0001", grupo de sensores "GRP-A", iniciada a las 08:00:00 y planificada de 4 h a pedido del cliente
 
   Scenario: Detectar la desconexión física del puerto
     When a las 10:05:10 el sistema operativo informa que "COM3" dejó de existir
@@ -594,16 +645,23 @@ Feature: Pérdida y recuperación de la comunicación serial
     Then el sistema reanuda la sesión en "COM6"
     And registra en las notas del hueco "Reconectado en COM6"
 
-  Scenario: Reaparece otro adquisidor: la sesión no es válida
+  Scenario: Reaparece otro adquisidor: la sesión falla
     Given hay un hueco abierto desde las 09:38:00
     When a las 09:47:43 en "COM3" responde un adquisidor con identificador "ADQ-ARD-0002"
     Then el sistema no reanuda la captura y envía "STOP" al adquisidor conectado
-    And la sesión queda "Invalid" con motivo "DeviceMismatch" y fin 09:47:43
+    And la sesión queda "Invalid" (fallida) con motivo "DeviceMismatch" y fin 09:47:43
     And se registra una alerta "DeviceMismatch" con severidad "Critical"
     And el hueco se cierra sin fecha de recuperación y con nota "Reconectó un adquisidor distinto (ADQ-ARD-0002)"
-    And la pantalla muestra "La sesión no es válida: el adquisidor conectado (ADQ-ARD-0002) no es el de la sesión (ADQ-ARD-0001)"
+    And la pantalla muestra "Sesión fallida: el adquisidor conectado (ADQ-ARD-0002) no es el de la sesión (ADQ-ARD-0001)"
 
-  Scenario: Reaparece el mismo adquisidor con otro grupo de sensores: la sesión no es válida
+  Scenario: El corte de comunicación dura 30 minutos: la sesión falla
+    Given hay un hueco abierto desde la muestra 64, programada a las 10:06:00
+    When llega la hora programada de la muestra 79 (10:36:00) sin haber recuperado la comunicación
+    Then la sesión queda "Invalid" (fallida) con motivo "DataLoss" y fin 10:36:00
+    And se registra una alerta "SessionFailed" con severidad "Critical"
+    And el sistema deja de intentar la reconexión
+
+  Scenario: Reaparece el mismo adquisidor con otro grupo de sensores: la sesión falla
     Given hay un hueco abierto
     When el adquisidor responde "IDN" con "ADQ-ARD-0001" pero con grupo de sensores "GRP-B"
     Then la sesión queda "Invalid" con motivo "DeviceMismatch"
@@ -616,10 +674,10 @@ Feature: Pérdida y recuperación de la comunicación serial
 
   Scenario: El técnico cierra la sesión durante un hueco
     Given hay un hueco abierto desde las 10:05:10 y la sesión tiene al menos 31 muestras válidas
-    When el técnico cierra la sesión a las 10:30:00
+    When el técnico cierra la sesión a las 10:30:00, antes de cumplir las 4 h planificadas
     Then el hueco se cierra sin fecha de recuperación y con las muestras perdidas contadas hasta el cierre
     And la sesión queda con motivo de cierre "CommunicationLost"
-    And su estado es "Completed"
+    And su estado es "Incomplete" porque no alcanzó la duración planificada
 
   Scenario: Varios huecos en una sesión
     Given la sesión tuvo 2 pérdidas de comunicación recuperadas
@@ -628,19 +686,20 @@ Feature: Pérdida y recuperación de la comunicación serial
 
 ---
 
-## HU-10 · Cerrar la sesión (duración mínima y máxima)
+## HU-10 · Cerrar la sesión (duración planificada)
 
-**Como** técnico de calibración **quiero** cerrar la sesión cuando termino y que el sistema la cierre solo a las 24 horas **para** que el estado final refleje si se cumplieron la duración mínima y la cantidad mínima de datos válidos.
+**Como** técnico de calibración **quiero** que la sesión se cierre sola al cumplir su duración planificada, y poder cerrarla antes si hace falta, **para** que el estado final refleje si se cumplieron la duración planificada y la cantidad mínima de datos válidos.
 
-Reglas: RN-03, RN-04, RN-14. `CK_MeasurementSession_MinDuration` y `CK_MeasurementSession_MaxDuration` en la base. La cantidad de muestras válidas se obtiene de `vSessionSampleCoverage`. Al cerrar se envía `STOP` y se fija `EndedAt`.
+Reglas: RN-03, RN-04, RN-14, RN-15. `CK_MeasurementSession_MinDuration` (completa solo si alcanzó `PlannedDurationMinutes`) y `CK_MeasurementSession_MaxDuration` (no más allá de lo planificado) en la base. La cantidad de muestras válidas se obtiene de `vSessionSampleCoverage`. Al cerrar se envía `STOP`, se fija `EndedAt` y empieza el descanso del adquisidor (HU-16).
 
 | Situación | `Status` | `CloseReason` |
 |---|---|---|
-| Cierre manual con duración ≥ 1 h **y** ≥ 31 muestras válidas | `Completed` | `Manual` |
-| Cierre manual con duración < 1 h, o con < 31 muestras válidas | `Incomplete` | `Manual` |
-| Cierre automático al tomar la muestra 721 | `Completed` o `Incomplete` según las muestras válidas | `MaxDuration` |
-| Cierre durante un hueco de comunicación abierto | `Completed` o `Incomplete` según las mismas reglas | `CommunicationLost` |
-| Reconexión con otro adquisidor u otro grupo de sensores | `Invalid` | `DeviceMismatch` |
+| Cierre automático al cumplir la duración planificada, con ≥ 31 muestras válidas | `Completed` | `PlannedDuration` |
+| Cierre automático al cumplir la duración planificada, con < 31 muestras válidas | `Incomplete` | `PlannedDuration` |
+| Cierre manual antes de cumplir la duración planificada | `Incomplete` | `Manual` |
+| Cierre durante un hueco de comunicación abierto | `Incomplete` (antes de la duración planificada) | `CommunicationLost` |
+| Reconexión con otro adquisidor u otro grupo de sensores | `Invalid` (fallida) | `DeviceMismatch` |
+| 30 min consecutivos de muestras afectadas o perdidas | `Invalid` (fallida) | `DataLoss` |
 | Cancelación (datos descartables) | `Cancelled` | `Cancelled` |
 
 ```gherkin
@@ -648,44 +707,46 @@ Feature: Cierre de la sesión de medición
 
   Background:
     Given que he iniciado sesión con el rol "Technician"
-    And una sesión en curso iniciada a las 08:00:00
+    And una sesión base de 1 h en curso, iniciada a las 08:00:00
 
-  Scenario: Cerrar como completa después de 1 hora
-    Given se capturó la muestra 31 a las 09:00:00 y hay 38 muestras válidas
-    When a las 09:15:00 pulso "Finalizar sesión" y confirmo
-    Then el sistema envía "STOP" al adquisidor
-    And la sesión queda "Completed" con fin 09:15:00 y motivo "Manual"
-
-  Scenario: Cerrar exactamente al cumplir 1 hora
+  Scenario: Cierre automático de la sesión base con todas las muestras válidas
     Given las muestras 1 a 31 son válidas
-    When a las 09:00:00, después de almacenar la muestra 31, pulso "Finalizar sesión"
-    Then la sesión queda "Completed"
+    When se almacena la muestra 31 a las 09:00:00
+    Then el sistema envía "STOP" al adquisidor
+    And la sesión queda "Completed" con fin 09:00:00 y motivo "PlannedDuration"
+    And no se programan más muestras
 
-  Scenario: Impedir cerrar como completa con menos de 1 hora
+  Scenario: Cierre automático con muestras afectadas
+    Given 10 de las 31 muestras están afectadas por pérdida de sensores
+    When se almacena la muestra 31 a las 09:00:00
+    Then la sesión queda "Incomplete" con motivo "PlannedDuration"
+    And el resumen indica "21 muestras válidas de las 31 necesarias"
+
+  Scenario: Extender la sesión para recuperar muestras válidas
+    Given a las 08:50:00 la sesión tiene 5 muestras afectadas
+    When extiendo la duración planificada a 75 minutos indicando el motivo "Recuperar datos tras falla de sensor"
+    Then la sesión se cierra automáticamente a las 09:15:00
+    And queda "Completed" si al cierre tiene al menos 31 muestras válidas
+
+  Scenario: Cerrar antes de la duración planificada
     When a las 08:45:00 pulso "Finalizar sesión"
-    Then el sistema advierte "La sesión dura 45 min. Con menos de 1 hora quedará como INCOMPLETA."
+    Then el sistema advierte "La sesión dura 45 min de los 60 planificados. Quedará como INCOMPLETA."
     And si confirmo, la sesión queda "Incomplete" con fin 08:45:00 y motivo "Manual"
     And si no confirmo, la sesión sigue en curso
 
-  Scenario: Más de 1 hora pero sin suficientes muestras válidas
-    Given la sesión dura 1 h 10 min con 36 muestras, de las cuales 10 están afectadas por pérdida de sensores
-    When pulso "Finalizar sesión"
-    Then el sistema advierte "La sesión tiene 26 muestras válidas de las 31 necesarias. Quedará como INCOMPLETA."
-    And si confirmo, la sesión queda "Incomplete"
-
-  Scenario: La base rechaza una sesión completa de menos de 1 hora
-    When cualquier proceso intenta guardar la sesión como "Completed" con 59 minutos de duración
+  Scenario: La base rechaza una sesión completa que no alcanzó su duración planificada
+    Given una sesión planificada de 120 minutos
+    When cualquier proceso intenta guardarla como "Completed" con 90 minutos de duración
     Then la base de datos rechaza el cambio
 
-  Scenario: Cierre automático a las 24 horas
+  Scenario: Cierre automático de una sesión larga pedida por el cliente
+    Given una sesión planificada de 24 h a pedido del cliente, con la referencia "OS-2026-0142"
     When se almacena la muestra 721 a las 08:00:00 del día siguiente
-    Then el sistema envía "STOP" al adquisidor
-    And la sesión queda "Completed" con fin a las 08:00:00 del día siguiente y motivo "MaxDuration"
-    And no se programan más muestras
+    Then la sesión queda "Completed" con motivo "PlannedDuration"
 
   Scenario: Aviso previo al cierre automático
-    When faltan 10 minutos para cumplir las 24 horas
-    Then la pantalla muestra "La sesión se cerrará automáticamente a las 08:00:00"
+    When faltan 10 minutos para cumplir la duración planificada
+    Then la pantalla muestra "La sesión se cerrará automáticamente a las 09:00:00"
 
   Scenario: Cancelar una sesión
     When pulso "Cancelar sesión", indico el motivo "Termopar mal instalado" y confirmo
@@ -697,7 +758,7 @@ Feature: Cierre de la sesión de medición
     Then el sistema advierte que hay una sesión en curso y pide finalizarla antes
 ```
 
-> **Recuperación tras la caída de la aplicación:** si la aplicación se reinicia y encuentra una sesión `Running` en esa PC, la reanuda: abre un hueco desde la última muestra almacenada hasta el momento del reinicio, valida la identidad del adquisidor como en una reconexión (HU-09) y continúa con la siguiente muestra programada. Si ya pasaron las 24 h, la cierra con `EndedAt` = instante programado de la muestra 721 y motivo `MaxDuration`.
+> **Recuperación tras la caída de la aplicación:** si la aplicación se reinicia y encuentra una sesión `Running` en esa PC, la reanuda: abre un hueco desde la última muestra almacenada hasta el momento del reinicio, valida la identidad del adquisidor como en una reconexión (HU-09) y continúa con la siguiente muestra programada. Si ya pasó la duración planificada, la cierra con `EndedAt` = instante programado de la última muestra y motivo `PlannedDuration`. Si el hueco por el reinicio llegó a 30 min, la sesión falla (`DataLoss`).
 
 ---
 
@@ -725,11 +786,16 @@ Feature: Exportación de la sesión a Excel
     When la exporto a Excel
     Then la hoja "Resumen" muestra "SESIÓN INCOMPLETA: 26 muestras válidas de las 31 necesarias" resaltado
 
-  Scenario: Exportar una sesión no válida
-    Given la sesión 125 está "Invalid" porque reconectó el adquisidor "ADQ-ARD-0002"
+  Scenario Outline: Exportar una sesión fallida
+    Given la sesión 125 está "Invalid" con motivo "<motivo>"
     When la exporto a Excel
-    Then la hoja "Resumen" muestra "SESIÓN NO VÁLIDA: al reconectar respondió otro adquisidor u otro grupo de sensores" en rojo
-    And el nombre del archivo termina en "_NO-VALIDA.xlsx"
+    Then la hoja "Resumen" muestra "<aviso>" en rojo
+    And el nombre del archivo termina en "_FALLIDA.xlsx"
+
+    Examples:
+      | motivo         | aviso                                                                                      |
+      | DeviceMismatch | SESIÓN FALLIDA: al reconectar respondió otro adquisidor u otro grupo de sensores           |
+      | DataLoss       | SESIÓN FALLIDA: 30 min consecutivos sin datos suficientes (muestras 20 a 35)               |
 
   Scenario: Aviso de mezcla de termopares en el Excel
     Given la sesión 122 mezcla tipos T y K
@@ -841,11 +907,11 @@ Feature: Historial de sesiones
 
 ---
 
-## HU-13 · Evaluar la pérdida de sensores por muestra
+## HU-13 · Evaluar, escalar y fallar por pérdida de sensores
 
-**Como** supervisor **quiero** que el sistema marque las muestras en las que más del 60 % de los sensores dejaron de enviar datos válidos **para** que esas muestras no cuenten como datos válidos, sin invalidar la sesión por fallas aisladas.
+**Como** supervisor **quiero** que el sistema marque las muestras en las que más del 60 % de los sensores dejaron de enviar datos válidos, que me avise de forma crítica si la pérdida no se restablece en la 3.ª medición, y que dé la sesión por fallida si dura 30 min, **para** actuar a tiempo sin invalidar la sesión por fallas aisladas.
 
-Reglas: RN-14, tabla de umbrales en [01 §6.1](01-vision-document.md#61-umbral-de-muestras-afectadas-según-el-número-de-canales) y base normativa en [01 §9](01-vision-document.md#9-base-normativa-del-umbral-de-pérdida-de-sensores). Solo cuenta como dato válido una lectura `OK`. Umbral copiado en `MeasurementSession.SensorLossThresholdPct`. Cálculo de referencia en la vista `vSessionSampleCoverage`.
+Reglas: RN-14, RN-15 (b), tabla de umbrales en [01 §6.1](01-vision-document.md#61-umbral-de-muestras-afectadas-según-el-número-de-canales), escalamiento en [01 §6.2](01-vision-document.md#62-escalamiento-de-la-pérdida-de-sensores) y base normativa en [01 §9.1](01-vision-document.md#91-base-normativa-del-escalamiento-la-falla-de-sesión-y-la-duración). Solo cuenta como dato válido una lectura `OK`. La política se copia en la sesión (`SensorLossThresholdPct`, `SensorLossCriticalAfterSamples`, `SensorLossFailMinutes`). Cálculo de referencia en la vista `vSessionSampleCoverage`.
 
 ```gherkin
 Feature: Pérdida de sensores sobre el umbral
@@ -862,13 +928,38 @@ Feature: Pérdida de sensores sobre el umbral
   Scenario: Más del 60 % afecta la muestra
     When en la muestra 30 los canales 1 a 7 no entregan una lectura "OK"
     Then la muestra 30 queda afectada
-    And se genera una alerta "SensorLoss" con severidad "Critical" y el mensaje "Muestra 30: 7 de 10 canales sin datos válidos (70 %), supera el umbral de 60 %"
+    And se genera una alerta "SensorLoss" con severidad "Warning" y el mensaje "Muestra 30: 7 de 10 canales sin datos válidos (70 %), supera el umbral de 60 %"
+    And no se muestra un aviso emergente
     And la sesión sigue en curso
 
-  Scenario: Un episodio de varias muestras genera una sola alerta
+  Scenario: Se restablece antes de la 3.ª medición
+    When las muestras 10 y 11 quedan afectadas y la muestra 12 vuelve a ser válida
+    Then solo existe la advertencia "SensorLoss" de la muestra 10
+    And no se genera ninguna alerta crítica
+
+  Scenario: No se restablece en la 3.ª medición: alerta crítica
+    When las muestras 30, 31 y 32 quedan afectadas
+    Then en la muestra 32 se genera una alerta "SensorLossPersistent" con severidad "Critical"
+    And la pantalla muestra un aviso destacado "Pérdida de sensores sin recuperar desde la muestra 30 (4 min). Revise conexiones y termopares."
+    And el aviso permanece hasta que alguien lo reconoce
+
+  Scenario: Un episodio de varias muestras genera una sola advertencia y una sola crítica
     When las muestras 30 a 39 quedan afectadas y la muestra 40 vuelve a ser válida
-    Then existe una sola alerta "SensorLoss" para las muestras 30 a 39
+    Then existe una sola alerta "SensorLoss" y una sola "SensorLossPersistent" para las muestras 30 a 39
     And la pantalla muestra "10 muestras afectadas" en el contador de la sesión
+    And la sesión sigue en curso porque el episodio duró 18 min, menos de 30
+
+  Scenario: 30 minutos consecutivos afectados: la sesión falla
+    Given una sesión de 5 canales iniciada a las 08:00:00
+    When desde la muestra 20 (08:38:00) 4 de los 5 canales siguen abiertos sin recuperarse
+    Then en la muestra 22 se genera la alerta crítica "SensorLossPersistent"
+    And en la muestra 35 (09:08:00), a los 30 min, se genera la alerta crítica "SessionFailed"
+    And la sesión queda "Invalid" (fallida) con motivo "DataLoss" y fin 09:08:00
+    And el sistema envía "STOP" y deja de capturar
+
+  Scenario: 15 muestras consecutivas (28 min) no hacen fallar la sesión
+    When las muestras 50 a 64 quedan afectadas y la 65 vuelve a ser válida
+    Then la sesión sigue en curso
 
   Scenario Outline: Cualquier lectura no OK cuenta como sin dato válido
     When en la muestra 50 siete canales tienen estado "<estado>"
@@ -884,17 +975,18 @@ Feature: Pérdida de sensores sobre el umbral
 
   Scenario: Las muestras perdidas por un hueco de comunicación están afectadas
     When se pierden las muestras 64 a 66 por un hueco de comunicación
-    Then las muestras 64, 65 y 66 quedan afectadas
-    And la alerta del hueco es "CommunicationLost", no "SensorLoss"
+    Then las muestras 64, 65 y 66 quedan afectadas y cuentan para el conteo consecutivo
+    And la alerta crítica del hueco es "CommunicationLost", no "SensorLoss" ni "SensorLossPersistent"
 
-  Scenario: La pérdida de sensores puede dejar la sesión incompleta
-    Given una sesión de 5 canales que dura 1 h 10 min (36 muestras)
+  Scenario: La pérdida de sensores puede dejar incompleta una sesión base
+    Given una sesión base de 1 h con 5 canales (31 muestras)
     When en las muestras 5 a 14 fallan 4 de los 5 canales (80 %)
-    Then 10 muestras quedan afectadas y 26 son válidas
-    And al cerrarla la sesión queda "Incomplete"
+    Then 10 muestras quedan afectadas y 21 son válidas
+    And al cumplirse la hora la sesión queda "Incomplete"
+    And el sistema sugiere extender la sesión para completar las 31 muestras válidas
 
   Scenario: Monitoreo en pantalla
-    Then la pantalla de la sesión muestra en todo momento: muestras programadas, muestras válidas, muestras afectadas y las que faltan para llegar a 31 válidas
+    Then la pantalla de la sesión muestra en todo momento: muestras programadas, válidas y afectadas, las que faltan para llegar a 31 válidas, y el conteo de muestras afectadas consecutivas con los minutos que faltan para la falla
 ```
 
 ---
@@ -928,15 +1020,21 @@ Feature: Sesión simulada con datos de prueba
     And las alertas por tipo coinciden con "expected.alertsByType" del escenario
 
     Examples:
-      | escenario | estado     | motivo         | programadas | validas | afectadas |
-      | TD-01     | Completed  | Manual         | 61          | 61      | 0         |
-      | TD-03     | Completed  | Manual         | 61          | 61      | 0         |
-      | TD-04     | Completed  | Manual         | 61          | 51      | 10        |
-      | TD-05     | Incomplete | Manual         | 36          | 26      | 10        |
-      | TD-06     | Completed  | Manual         | 61          | 56      | 5         |
-      | TD-07     | Invalid    | DeviceMismatch | 54          | 49      | 5         |
-      | TD-08     | Invalid    | DeviceMismatch | 32          | 29      | 3         |
-      | TD-12     | Completed  | MaxDuration    | 721         | 721     | 0         |
+      | escenario | estado     | motivo          | programadas | validas | afectadas |
+      | TD-01     | Completed  | PlannedDuration | 61          | 61      | 0         |
+      | TD-04     | Completed  | PlannedDuration | 61          | 51      | 10        |
+      | TD-05     | Incomplete | PlannedDuration | 31          | 21      | 10        |
+      | TD-06     | Completed  | PlannedDuration | 61          | 56      | 5         |
+      | TD-07     | Invalid    | DeviceMismatch  | 54          | 49      | 5         |
+      | TD-10     | Completed  | PlannedDuration | 31          | 31      | 0         |
+      | TD-13     | Incomplete | Manual          | 23          | 23      | 0         |
+      | TD-16     | Invalid    | DataLoss        | 35          | 19      | 16        |
+      | TD-17     | Completed  | PlannedDuration | 2161        | 2161    | 0         |
+      | TD-18     | Completed  | PlannedDuration | 91          | 71      | 20        |
+      | TD-19     | Incomplete | Manual          | 46          | 46      | 0         |
+      | TD-20     | Completed  | PlannedDuration | 61          | 61      | 0         |
+      | TD-21     | Completed  | PlannedDuration | 61          | 61      | 0         |
+      | TD-22     | Completed  | PlannedDuration | 31          | 31      | 0         |
 
   Scenario: Validación automática al terminar
     When termina una sesión simulada
@@ -955,6 +1053,180 @@ Feature: Sesión simulada con datos de prueba
 
 ---
 
+## HU-15 · Priorizar alertas: críticas y advertencias
+
+**Como** técnico de calibración **quiero** que el sistema solo me interrumpa con las alertas críticas y registre las demás sin avisos **para** no tener que atender cada variación de temperatura, que es esperable por distintas causas, y actuar rápido cuando algo compromete la sesión.
+
+Reglas: RN-18, clasificación en [01 §6.3](01-vision-document.md#63-clasificación-de-alertas). La severidad se asigna al crear la alerta y no cambia. Una situación que empeora genera **otra** alerta de mayor severidad (p. ej. `SensorLoss` → `SensorLossPersistent`).
+
+```gherkin
+Feature: Presentación de alertas según su severidad
+
+  Background:
+    Given una sesión en curso que estoy monitoreando
+
+  Scenario Outline: Las advertencias se registran sin interrumpir
+    When se genera una alerta "<tipo>"
+    Then aumenta el contador de advertencias de la sesión
+    And la alerta aparece en la lista de alertas
+    But no se muestra un aviso emergente ni suena ninguna alarma
+
+    Examples:
+      | tipo                   |
+      | AboveLimit             |
+      | SensorFault            |
+      | TypeMismatch           |
+      | SensorLoss             |
+
+  Scenario Outline: Las alertas críticas se notifican y exigen reconocimiento
+    When se genera una alerta "<tipo>"
+    Then se muestra un aviso destacado en rojo con el mensaje de la alerta
+    And se envía la notificación en tiempo real a todas las pantallas que monitorean la sesión
+    And el aviso permanece visible hasta que un usuario lo reconoce
+    And el reconocimiento registra el usuario y la fecha y hora
+
+    Examples:
+      | tipo                 |
+      | AboveLimitSustained  |
+      | SensorLossPersistent |
+      | SessionFailed        |
+      | DeviceMismatch       |
+      | CommunicationLost    |
+
+  Scenario: Filtrar la lista de alertas por severidad
+    When filtro la lista de alertas por "Críticas"
+    Then veo solo las alertas con severidad "Critical"
+    And cada una indica si está reconocida y por quién
+
+  Scenario: Críticas pendientes al cerrar
+    Given la sesión tiene 1 alerta crítica sin reconocer
+    When la sesión se cierra
+    Then el resumen de cierre muestra "1 alerta crítica sin reconocer"
+    And el Excel la muestra como "Pendiente" en la columna de confirmación
+```
+
+---
+
+## HU-16 · Planificar la duración y respetar el descanso del adquisidor
+
+**Como** técnico de calibración **quiero** que la sesión se planifique con la duración base de 1 h, o con la que exija el tipo de equipo o pida el cliente, y que el adquisidor descanse entre sesiones, **para** medir cada equipo el tiempo necesario y no saturar el equipo de medición mientras paso a calibrar el siguiente.
+
+Reglas: RN-04, RN-17. Parámetros en `AppSetting`: `BaseSessionMinutes` (60), `MaxSessionMinutes` (10 080 = 7 días), `RestPeriodMinutes` (15, confirmado: descanso del kit de medición). Columnas: `MeasurementSession.PlannedDurationMinutes`, `DurationSource`, `ClientRequestReference`, `RestOverrideById` y `RestOverrideReason`.
+
+```gherkin
+Feature: Duración planificada y descanso del adquisidor
+
+  Background:
+    Given que he iniciado sesión con el rol "Technician"
+
+  Scenario: Sesión base de 1 hora
+    Given el tipo "Congeladora" exige 60 minutos
+    When configuro una sesión para una congeladora sin pedido especial del cliente
+    Then la duración planificada es 60 minutos con origen "Base"
+
+  Scenario: Duración exigida por el tipo de equipo
+    Given el tipo "Incubadora" exige 120 minutos
+    When configuro una sesión para una incubadora
+    Then la duración planificada es 120 minutos con origen "EquipmentType"
+    And no puedo planificar menos de 120 minutos
+
+  Scenario: Duración solicitada por el cliente
+    When planifico 72 horas indicando la referencia "OS-2026-0142" del pedido del cliente
+    Then la duración planificada es 4320 minutos con origen "ClientRequest"
+    And el Resumen del Excel mostrará la referencia "OS-2026-0142"
+
+  Scenario: El pedido del cliente exige referencia
+    When planifico 24 horas sin indicar la referencia del pedido
+    Then el sistema pide "Indique la referencia del pedido del cliente (p. ej. orden de servicio)"
+
+  Scenario: Superar el máximo planificable
+    When intento planificar 10 días
+    Then el sistema rechaza el valor con "La duración máxima que se puede planificar es 7 días"
+
+  Scenario: Extender una sesión en curso
+    Given una sesión base en curso
+    When la extiendo a 90 minutos con la referencia "Pedido verbal del cliente, J. Pérez"
+    Then la duración planificada pasa a 90 minutos con origen "ClientRequest"
+    And el cierre automático se reprograma
+
+  Scenario: El adquisidor está en descanso
+    Given el adquisidor "ADQ-ARD-0001" terminó una sesión a las 10:00:00
+    And el descanso configurado es de 15 minutos
+    When a las 10:06:00 intento iniciar una sesión nueva con ese adquisidor
+    Then el sistema muestra "El adquisidor descansa hasta las 10:15:00 (faltan 9 min)"
+    And el botón "Iniciar captura" permanece deshabilitado
+    But puedo seguir configurando la sesión
+
+  Scenario: Autorizar un inicio anticipado
+    Given el adquisidor está en descanso
+    And que he iniciado sesión con el rol "Supervisor"
+    When autorizo el inicio anticipado con el motivo "Cliente en espera, equipo de reemplazo no disponible"
+    Then la sesión puede iniciarse
+    And la sesión registra quién autorizó y el motivo
+
+  Scenario: Un técnico no puede saltarse el descanso
+    Given el adquisidor está en descanso
+    When intento autorizar un inicio anticipado con el rol "Technician"
+    Then el sistema me deniega la acción por falta de permisos
+```
+
+---
+
+## HU-17 · Advertir menos de 9 puntos de medición
+
+**Como** técnico de calibración **quiero** que el sistema me advierta si configuro menos de 9 puntos de medición **para** saber que la sesión no cumple el mínimo de IEC 60068-3-5 y DKD-R 5-7 (8 esquinas y el centro), y dejar constancia si aun así debo iniciarla.
+
+Reglas: RN-20. Parámetro `MinMeasurementPoints` (9), copiado en la sesión. `MeasurementSession.IsBelowMinimumPoints` = 1. Alerta `BelowMinimumPoints` con severidad `Warning`. La confirmación rellena `BelowMinimumAcknowledgedAt`. La base impide pasar a `Running` sin confirmación (`CK_MeasurementSession_BelowMinAck`). Mismo patrón que la mezcla T/K (HU-04).
+
+```gherkin
+Feature: Advertencia por menos puntos de medición que el mínimo normativo
+
+  Background:
+    Given que he iniciado sesión con el rol "Technician"
+    And el mínimo de puntos de medición es 9
+
+  Scenario: Sesión con 9 puntos no muestra advertencia
+    Given asigné 9 canales en las 8 esquinas y el centro
+    When pulso "Iniciar captura"
+    Then la sesión pasa a "Esperando datos" sin advertencia de puntos
+
+  Scenario: Sugerir las posiciones normalizadas
+    When asigno la ubicación de un canal
+    Then la lista de sugerencias muestra primero las 8 esquinas y el centro
+    And indica cuáles de esas 9 posiciones todavía no están asignadas
+
+  Scenario: Menos de 9 puntos exige confirmación
+    Given asigné 5 canales
+    When pulso "Iniciar captura"
+    Then el sistema muestra la advertencia:
+      """
+      La sesión tiene 5 puntos de medición. IEC 60068-3-5 y DKD-R 5-7 exigen al menos 9
+      (las 8 esquinas y el centro) para calibrar el volumen útil de equipos menores de 2000 L.
+      Si continúa, la sesión quedará marcada como por debajo del mínimo normativo.
+      """
+    And registra una alerta "BelowMinimumPoints" con severidad "Warning"
+    And la captura no inicia hasta que yo confirme
+
+  Scenario: Confirmar e iniciar
+    Given se mostró la advertencia de puntos
+    When marco "Entiendo que no cumple el mínimo normativo" y pulso "Confirmar e iniciar"
+    Then la alerta queda reconocida por mí con fecha y hora
+    And la sesión registra la fecha y hora de la confirmación y queda marcada como por debajo del mínimo
+
+  Scenario: Advertencias combinadas al iniciar
+    Given la sesión tiene 5 canales, mezcla tipos T y K, y el tipo de equipo no tiene límite
+    When pulso "Iniciar captura"
+    Then el sistema muestra las tres advertencias en un mismo diálogo
+    And exige confirmar por separado los puntos y la mezcla
+
+  Scenario: La base impide iniciar sin confirmación
+    Given una sesión marcada por debajo del mínimo y sin fecha de confirmación
+    When cualquier proceso intenta cambiar su estado a "Running"
+    Then la base de datos rechaza el cambio
+```
+
+---
+
 ## Formato del Excel exportado
 
 ### Reglas generales
@@ -962,7 +1234,7 @@ Feature: Sesión simulada con datos de prueba
 | Aspecto | Especificación |
 |---|---|
 | Formato | Office Open XML (.xlsx), compatible con Excel 2016 o posterior y con LibreOffice. |
-| Nombre del archivo | `{RUC}_{Serie}_{yyyyMMdd-HHmm de inicio}_S{MeasurementSessionId}.xlsx`. Si la sesión es `Invalid` se añade `_NO-VALIDA`. Si es una simulación se antepone `SIM_`. Los caracteres no válidos en Windows (`\/:*?"<>\|`) se reemplazan por `-`. |
+| Nombre del archivo | `{RUC}_{Serie}_{yyyyMMdd-HHmm de inicio}_S{MeasurementSessionId}.xlsx`. Si la sesión es `Invalid` (fallida) se añade `_FALLIDA`. Si es una simulación se antepone `SIM_`. Los caracteres no válidos en Windows (`\/:*?"<>\|`) se reemplazan por `-`. |
 | Orden de hojas | Resumen, Lecturas, Alertas, Comunicación. |
 | Fechas y horas | Celdas de tipo fecha con el formato `dd/mm/yyyy hh:mm:ss`, en hora local del laboratorio. La zona horaria (p. ej. `UTC-05:00`) se indica en el Resumen. |
 | Temperaturas | Celdas **numéricas** (no texto) con formato `0.00`, en °C. El separador decimal lo pone la configuración regional de Excel. |
@@ -980,8 +1252,10 @@ Formato ficha (etiqueta en la columna A, valor en la columna B), seguido de la t
 
 | Aviso | Fondo |
 |---|---|
-| `SESIÓN NO VÁLIDA: al reconectar respondió otro adquisidor u otro grupo de sensores ({DeviceId} / {SensorGroupId}). Los datos se conservan solo como evidencia.` | Rojo `#FF0000`, texto blanco |
-| `SESIÓN INCOMPLETA: {n} muestras válidas de las 31 necesarias` o `duración menor a 1 hora` | Rojo claro `#FFC7CE` |
+| `SESIÓN FALLIDA: al reconectar respondió otro adquisidor u otro grupo de sensores ({DeviceId} / {SensorGroupId}). Los datos se conservan solo como evidencia.` | Rojo `#FF0000`, texto blanco |
+| `SESIÓN FALLIDA: {n} min consecutivos sin datos suficientes (muestras {desde} a {hasta}). Los datos se conservan solo como evidencia.` | Rojo `#FF0000`, texto blanco |
+| `SESIÓN INCOMPLETA: {n} muestras válidas de las 31 necesarias` o `cerrada a los {m} min de los {p} planificados` | Rojo claro `#FFC7CE` |
+| `PUNTOS DE MEDICIÓN: {n} de los 9 que exigen IEC 60068-3-5 y DKD-R 5-7 (8 esquinas y centro). Advertencia confirmada por {técnico} el {fecha hora}.` | Ámbar `#FFEB9C` |
 | `ATENCIÓN: esta sesión mezcla termopares tipo T y tipo K. No es una buena práctica. Advertencia confirmada por {técnico} el {fecha hora}.` | Ámbar `#FFEB9C` |
 | `PÉRDIDA DE SENSORES: {n} muestras afectadas (más del {umbral} % de los canales sin datos válidos).` | Ámbar `#FFEB9C` |
 | `Límite máximo no definido para el tipo de equipo: las lecturas no se evaluaron contra un límite.` | Ámbar `#FFEB9C` |
@@ -1005,17 +1279,21 @@ Formato ficha (etiqueta en la columna A, valor en la columna B), seguido de la t
 | Grupo de sensores | `MeasurementSession.SensorGroupId` o "No informado" | GRP-A |
 | Puerto COM | `MeasurementSession.ComPort` | COM3 |
 | Intervalo de muestreo | `SamplingIntervalSeconds` / 60 | 2 min |
+| Duración planificada | `PlannedDurationMinutes` y `DurationSource` traducido: Base / Tipo de equipo / Pedido del cliente | 1440 min (Pedido del cliente) |
+| Referencia del pedido | `ClientRequestReference` o "—" | OS-2026-0142 |
+| Política de pérdida de sensores | `SensorLossCriticalAfterSamples`, `SensorLossFailMinutes` | Crítica en la 3.ª muestra consecutiva; falla a los 30 min |
+| Inicio anticipado autorizado | `RestOverrideById` y `RestOverrideReason`, o "No" | No |
 | Inicio (primera muestra recibida) | `StartedAt` | 01/10/2026 08:00:00 |
 | Fin | `EndedAt` | 02/10/2026 08:00:00 |
 | Zona horaria | Desfase de `StartedAt` | UTC-05:00 |
 | Duración | `EndedAt − StartedAt` en formato `hh:mm` | 24:00 |
-| Estado | `Status` traducido: Completa / Incompleta / No válida | Completa |
-| Motivo de cierre | `CloseReason` traducido: Manual / Duración máxima / Pérdida de comunicación / Adquisidor o grupo distinto | Duración máxima |
+| Estado | `Status` traducido: Completa / Incompleta / Fallida | Completa |
+| Motivo de cierre | `CloseReason` traducido: Manual / Duración planificada cumplida / Pérdida de comunicación / Adquisidor o grupo distinto / Pérdida sostenida de datos | Duración planificada cumplida |
 | Mezcla de termopares T/K | `HasMixedThermocoupleTypes` | No |
 | Muestras programadas / válidas / afectadas / perdidas | `vSessionSampleCoverage` y `CommunicationGap` | 721 / 711 / 10 / 3 |
 | Lecturas fuera de límite | Conteo de `IsAboveLimit` = 1 | 12 |
 | Lecturas inválidas | Conteo de `SensorStatus` ≠ `OK` | 4 |
-| Alertas | Conteo total | 18 |
+| Alertas críticas / advertencias | Conteo por severidad | 2 / 16 |
 | Simulación | `IsSimulation`, `TestScenarioCode` | No |
 | Notas | `MeasurementSession.Notes` | — |
 | Exportado por / el | Usuario y fecha de la exportación | Juan Pérez, 02/10/2026 09:10:00 |
@@ -1039,7 +1317,7 @@ Una fila por **muestra programada**, de 1 hasta la última muestra de la sesión
 
 | Columna | Encabezado | Contenido |
 |---|---|---|
-| A | `Muestra` | Número de muestra (1…721) |
+| A | `Muestra` | Número de muestra (1, 2, 3… hasta la última de la duración planificada) |
 | B | `Fecha y hora` | `ReadAt` de la muestra. Si es una muestra perdida, la hora programada (`StartedAt + (n − 1) × 2 min`) en cursiva. |
 | C | `Estado de la muestra` | `Válida`, `Afectada` (pérdida de sensores sobre el umbral, fondo ámbar `#FFEB9C`) o `Perdida` (hueco de comunicación, fondo amarillo claro `#FFF2CC`) |
 | D… | `S1 (T) Superior`, `S2 (T) Centro`, … | Una columna por canal activo: `S{canal} ({tipo}) {ubicación}`. Solo aparecen los canales usados en la sesión. |
@@ -1061,7 +1339,7 @@ Notas:
 
 - Las celdas con texto no afectan las fórmulas numéricas que el usuario agregue después: Excel las ignora en `PROMEDIO`, `MIN` y `MAX`.
 - La base es la vista `dbo.vSessionReadingPivot` para los valores y `dbo.vSessionSampleCoverage` para las filas (incluidas las perdidas) y el estado de la muestra. Para el formato, el generador también consulta `SensorStatus` e `IsAboveLimit` por celda.
-- Una sesión de 24 h con 10 canales produce 721 filas × 13 columnas.
+- Una sesión base de 1 h produce 31 filas. Una de 24 h con 10 canales, 721 filas × 13 columnas. Una de 7 días, 5 041 filas.
 
 ### Hoja "Alertas"
 
@@ -1070,17 +1348,18 @@ Una fila por alerta de la sesión, ordenadas por `OccurredAt` y después por `Al
 | Columna | Encabezado | Origen |
 |---|---|---|
 | A | `Fecha y hora` | `Alert.OccurredAt` |
-| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Mezcla de termopares, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
+| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Fuera de límite sostenido, Mezcla de termopares, Menos puntos que el mínimo, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de sensores persistente, Sesión fallida, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
 | C | `Severidad` | `Severity`: Info, Advertencia, Crítica |
 | D | `Sensor` | `S{ChannelNumber} ({ubicación})` o vacío si la alerta es de toda la sesión |
 | E | `Muestra` | `Reading.SampleNumber` o la muestra de inicio del episodio, o vacío |
 | F | `Valor (°C)` | `ValueC` (numérico) o vacío |
 | G | `Límite (°C)` | `LimitC` (numérico) o vacío |
 | H | `Mensaje` | `Message` |
-| I | `Confirmada por` | `AppUser.FullName` de `AcknowledgedById` o "Pendiente" |
-| J | `Fecha de confirmación` | `AcknowledgedAt` |
+| I | `Causa probable` | `SuspectedCause` traducido: Sensor / Equipo, solo en "Fuera de límite sostenido" |
+| J | `Confirmada por` | `AppUser.FullName` de `AcknowledgedById` o "Pendiente" |
+| K | `Fecha de confirmación` | `AcknowledgedAt` |
 
-Las filas `AboveLimit` llevan el mismo resaltado rojo que en "Lecturas", las `DeviceMismatch` el rojo intenso y las `MixedThermocoupleTypes` y `SensorLoss` el ámbar. Si no hay alertas, la hoja muestra "Sin alertas registradas".
+Las filas de severidad `Critical` van en rojo intenso, y la hoja se puede filtrar por severidad. Las `AboveLimit` llevan el mismo resaltado rojo claro que en "Lecturas", y las `MixedThermocoupleTypes` y `SensorLoss` el ámbar. Si no hay alertas, la hoja muestra "Sin alertas registradas".
 
 ### Hoja "Comunicación"
 

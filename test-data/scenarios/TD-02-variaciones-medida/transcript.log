@@ -644,7 +644,7 @@
 10800.240	ADQ	$RD,91,2,T,-18.1,OK*6B
 10800.360	ADQ	$RD,91,3,T,-17.95,OK*58
 10800.480	ADQ	$RD,91,4,T,-15.87,OK*5E
-10800.500	#	Cierre manual del técnico
+10800.500	#	Cierre automático al cumplir la duración planificada
 10800.500	PC	$STOP*18
 10800.550	ADQ	$ACK,STOP*7D
 10800.600	ADQ	$RD,91,5,T,-18.00,OK*5D

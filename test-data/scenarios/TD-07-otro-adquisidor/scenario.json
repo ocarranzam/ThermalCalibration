@@ -1,16 +1,24 @@
 {
   "code": "TD-07",
-  "title": "Reconexión con otro adquisidor (sesión no válida)",
+  "title": "Reconexión con otro adquisidor (sesión fallida)",
   "category": "Comunicación",
-  "description": "Pérdida en la muestra 50; al reconectar responde ADQ-SIM-0002. La sesión se declara no válida.",
+  "description": "Pérdida en la muestra 50; al reconectar responde ADQ-SIM-0002. La sesión se declara fallida (no válida).",
   "protocolVersion": "1.0",
   "seed": 107,
   "config": {
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
+    "equipmentTypeMinSessionMinutes": 60,
+    "plannedDurationMinutes": 120,
+    "durationSource": "ClientRequest",
+    "clientRequestReference": "OS-TD-07",
     "samplingIntervalSeconds": 120,
     "sensorLossThresholdPct": 60,
+    "sensorLossCriticalAfterSamples": 3,
+    "sensorLossFailMinutes": 30,
+    "aboveLimitCriticalMinutes": 30,
+    "minMeasurementPoints": 9,
     "acquisitionMode": "Poll",
     "device": {
       "deviceIdentifier": "ADQ-SIM-0001",
@@ -47,8 +55,7 @@
       }
     ],
     "close": {
-      "type": "Manual",
-      "atOffsetSeconds": 7200
+      "type": "PlannedDuration"
     }
   },
   "events": [
@@ -69,6 +76,7 @@
     "startedAtOffsetSeconds": 0,
     "endedAtOffsetSeconds": 6463,
     "hasMixedThermocoupleTypes": false,
+    "isBelowMinimumPoints": true,
     "programmedSamples": 54,
     "samplesWithData": 49,
     "affectedSamples": [
@@ -85,10 +93,19 @@
     },
     "aboveLimitReadings": 0,
     "alertsByType": {
+      "BelowMinimumPoints": 1,
       "CommunicationLost": 1,
       "DeviceMismatch": 1
     },
     "alerts": [
+      {
+        "alertType": "BelowMinimumPoints",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null,
+        "activeChannels": 5,
+        "minimumPoints": 9
+      },
       {
         "alertType": "CommunicationLost",
         "severity": "Critical",
