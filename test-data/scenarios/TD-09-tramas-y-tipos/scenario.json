@@ -1,0 +1,137 @@
+{
+  "code": "TD-09",
+  "title": "Tramas corruptas, tipo no coincidente y fallas del sensor",
+  "category": "Tramas y tipos",
+  "description": "Checksum recuperado en reintento (m8 S2), checksum persistente (m12 S2), trama truncada (m15 S4), trama ausente (m18 S5), tipo K informado en S3 declarado T (m20-25), valor imposible para tipo T (m40 S1), OR del adquisidor (m45 S4), cortocircuito (m50 S5) y reinicio del adquisidor antes de la muestra 30.",
+  "protocolVersion": "1.0",
+  "seed": 109,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [
+    {
+      "type": "DEVICE_REBOOT",
+      "sample": 30
+    }
+  ],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 305,
+    "readingsByStatus": {
+      "OK": 293,
+      "InvalidFrame": 3,
+      "TypeMismatch": 6,
+      "OutOfRange": 2,
+      "ShortCircuit": 1
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "SensorFault": 6,
+      "TypeMismatch": 1
+    },
+    "alerts": [
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 12,
+        "channel": 2,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 15,
+        "channel": 4,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 18,
+        "channel": 5,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "TypeMismatch",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 3,
+        "reportedType": "K"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 40,
+        "channel": 1,
+        "sensorStatus": "OutOfRange"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 45,
+        "channel": 4,
+        "sensorStatus": "OutOfRange"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 5,
+        "sensorStatus": "ShortCircuit"
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

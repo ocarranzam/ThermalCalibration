@@ -1,0 +1,127 @@
+{
+  "code": "TD-05",
+  "title": "Caída sobre el umbral que deja la sesión incompleta",
+  "category": "Caída de sensores",
+  "description": "Sesión de 1 h 10 min. Muestras 5 a 14: 4 de 5 canales abiertos (80 %). Quedan 26 muestras válidas (< 31): la sesión se cierra como incompleta aunque dure más de 1 h.",
+  "protocolVersion": "1.0",
+  "seed": 105,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 4200
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 4200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 36,
+    "samplesWithData": 36,
+    "affectedSamples": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "validSamples": 26,
+    "readingRows": 180,
+    "readingsByStatus": {
+      "OK": 140,
+      "OpenCircuit": 40
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "SensorFault": 4,
+      "SensorLoss": 1
+    },
+    "alerts": [
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 5,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 5,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 5,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 5,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Critical",
+        "sampleNumber": 5,
+        "channel": null,
+        "channelsWithoutData": 4,
+        "activeChannels": 5
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

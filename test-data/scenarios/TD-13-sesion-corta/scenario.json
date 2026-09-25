@@ -1,0 +1,75 @@
+{
+  "code": "TD-13",
+  "title": "Sesión corta de 45 min (incompleta)",
+  "category": "Duración",
+  "description": "Cierre manual antes de 1 h.",
+  "protocolVersion": "1.0",
+  "seed": 113,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 2700
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 2700,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 23,
+    "samplesWithData": 23,
+    "affectedSamples": [],
+    "validSamples": 23,
+    "readingRows": 115,
+    "readingsByStatus": {
+      "OK": 115
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {},
+    "alerts": [],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

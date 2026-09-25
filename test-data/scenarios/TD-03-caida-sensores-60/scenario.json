@@ -1,0 +1,146 @@
+{
+  "code": "TD-03",
+  "title": "Caída de sensores en el umbral (60 %, no afecta)",
+  "category": "Caída de sensores",
+  "description": "Muestras 20 a 25: 6 de 10 canales con termopar abierto (60 %). No supera el umbral: las muestras siguen siendo válidas.",
+  "protocolVersion": "1.0",
+  "seed": 103,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      },
+      {
+        "channelNumber": 6,
+        "thermocoupleType": "T",
+        "position": "Lateral izq."
+      },
+      {
+        "channelNumber": 7,
+        "thermocoupleType": "T",
+        "position": "Lateral der."
+      },
+      {
+        "channelNumber": 8,
+        "thermocoupleType": "T",
+        "position": "Esquina sup. izq."
+      },
+      {
+        "channelNumber": 9,
+        "thermocoupleType": "T",
+        "position": "Esquina inf. der."
+      },
+      {
+        "channelNumber": 10,
+        "thermocoupleType": "T",
+        "position": "Bandeja media"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 610,
+    "readingsByStatus": {
+      "OK": 574,
+      "OpenCircuit": 36
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "SensorFault": 6
+    },
+    "alerts": [
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 5,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 20,
+        "channel": 6,
+        "sensorStatus": "OpenCircuit"
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "code": "TD-01",
+  "title": "Funcionamiento óptimo, 10 canales T, 2 h",
+  "category": "Funcionamiento óptimo",
+  "description": "Congeladora estable alrededor de -18 °C con variación normal entre zonas. Sin fallas ni alertas.",
+  "protocolVersion": "1.0",
+  "seed": 101,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      },
+      {
+        "channelNumber": 6,
+        "thermocoupleType": "T",
+        "position": "Lateral izq."
+      },
+      {
+        "channelNumber": 7,
+        "thermocoupleType": "T",
+        "position": "Lateral der."
+      },
+      {
+        "channelNumber": 8,
+        "thermocoupleType": "T",
+        "position": "Esquina sup. izq."
+      },
+      {
+        "channelNumber": 9,
+        "thermocoupleType": "T",
+        "position": "Esquina inf. der."
+      },
+      {
+        "channelNumber": 10,
+        "thermocoupleType": "T",
+        "position": "Bandeja media"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 610,
+    "readingsByStatus": {
+      "OK": 610
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {},
+    "alerts": [],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

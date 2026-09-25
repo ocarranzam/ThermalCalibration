@@ -1,0 +1,110 @@
+{
+  "code": "TD-06",
+  "title": "Pérdida de comunicación y recuperación con el mismo adquisidor",
+  "category": "Comunicación",
+  "description": "Sin respuesta desde la muestra 40; reconecta el mismo adquisidor y grupo antes de la muestra 45. Hueco de 5 muestras.",
+  "protocolVersion": "1.0",
+  "seed": 106,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [
+    {
+      "type": "COMM_LOST",
+      "sample": 40
+    },
+    {
+      "type": "COMM_RESTORED",
+      "sample": 45,
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "sensorGroupId": "GRP-A"
+    }
+  ],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 61,
+    "samplesWithData": 56,
+    "affectedSamples": [
+      40,
+      41,
+      42,
+      43,
+      44
+    ],
+    "validSamples": 56,
+    "readingRows": 280,
+    "readingsByStatus": {
+      "OK": 280
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "CommunicationLost": 1
+    },
+    "alerts": [
+      {
+        "alertType": "CommunicationLost",
+        "severity": "Critical",
+        "sampleNumber": 40,
+        "channel": null
+      }
+    ],
+    "communicationGaps": [
+      {
+        "lostAtOffsetSeconds": 4680,
+        "recoveredAtOffsetSeconds": 5263,
+        "firstMissedSample": 40,
+        "lastMissedSample": 44,
+        "missedSamples": 5,
+        "notes": null
+      }
+    ],
+    "discardedPreStartBlocks": 0
+  }
+}

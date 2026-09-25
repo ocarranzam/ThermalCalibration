@@ -1,0 +1,84 @@
+{
+  "code": "TD-14",
+  "title": "Refrigeradora sin límite definido",
+  "category": "Configuración",
+  "description": "Límite pendiente (NULL). Valores de +2 a +10 °C sin alertas de límite; solo la alerta LimitNotDefined.",
+  "protocolVersion": "1.0",
+  "seed": 114,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Refrigeradora",
+    "maxTemperatureC": null,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 7200,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 61,
+    "samplesWithData": 61,
+    "affectedSamples": [],
+    "validSamples": 61,
+    "readingRows": 305,
+    "readingsByStatus": {
+      "OK": 305
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "LimitNotDefined": 1
+    },
+    "alerts": [
+      {
+        "alertType": "LimitNotDefined",
+        "severity": "Info",
+        "sampleNumber": null,
+        "channel": null
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "code": "TD-02",
+  "title": "Aperturas de puerta y valores en el límite",
+  "category": "Variaciones de medida",
+  "description": "S4 (Puerta) registra excursiones: -5,00 (cumple), -4,99 y -4,90 (fuera de límite), +2,10 y -3,50 (fuera de límite). S2 reporta con 1 decimal. S1 tiene un pico de ruido dentro del límite.",
+  "protocolVersion": "1.0",
+  "seed": 102,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 10800
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 10800,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 91,
+    "samplesWithData": 91,
+    "affectedSamples": [],
+    "validSamples": 91,
+    "readingRows": 455,
+    "readingsByStatus": {
+      "OK": 455
+    },
+    "aboveLimitReadings": 4,
+    "alertsByType": {
+      "AboveLimit": 4
+    },
+    "alerts": [
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 21,
+        "channel": 4,
+        "valueC": -4.99,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 22,
+        "channel": 4,
+        "valueC": -4.9,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 50,
+        "channel": 4,
+        "valueC": 2.1,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 51,
+        "channel": 4,
+        "valueC": -3.5,
+        "limitC": -5
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

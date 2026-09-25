@@ -1,0 +1,352 @@
+{
+  "code": "TD-15",
+  "title": "Estrés aleatorio combinado, 8 canales, 6 h",
+  "category": "Aleatorio combinado",
+  "description": "Combinación pseudoaleatoria (semilla 20260925) de aperturas de puerta, episodios de termopar abierto, tramas corruptas, un episodio de tipo no coincidente, una caída de 6 de 8 sensores (75 %) y un hueco de comunicación.",
+  "protocolVersion": "1.0",
+  "seed": 115,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      },
+      {
+        "channelNumber": 6,
+        "thermocoupleType": "T",
+        "position": "Lateral izq."
+      },
+      {
+        "channelNumber": 7,
+        "thermocoupleType": "T",
+        "position": "Lateral der."
+      },
+      {
+        "channelNumber": 8,
+        "thermocoupleType": "T",
+        "position": "Esquina sup. izq."
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 21600
+    }
+  },
+  "events": [
+    {
+      "type": "COMM_LOST",
+      "sample": 150
+    },
+    {
+      "type": "COMM_RESTORED",
+      "sample": 153,
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "sensorGroupId": "GRP-A"
+    }
+  ],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 21600,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 181,
+    "samplesWithData": 178,
+    "affectedSamples": [
+      65,
+      66,
+      67,
+      68,
+      150,
+      151,
+      152
+    ],
+    "validSamples": 174,
+    "readingRows": 1424,
+    "readingsByStatus": {
+      "OK": 1376,
+      "InvalidFrame": 11,
+      "OpenCircuit": 34,
+      "TypeMismatch": 3
+    },
+    "aboveLimitReadings": 7,
+    "alertsByType": {
+      "SensorFault": 21,
+      "AboveLimit": 7,
+      "SensorLoss": 1,
+      "TypeMismatch": 1,
+      "CommunicationLost": 1
+    },
+    "alerts": [
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 2,
+        "channel": 4,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 15,
+        "channel": 2,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 26,
+        "channel": 4,
+        "valueC": -2.56,
+        "limitC": -5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 38,
+        "channel": 3,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 41,
+        "channel": 2,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 61,
+        "channel": 4,
+        "valueC": -4.74,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 62,
+        "channel": 4,
+        "valueC": -1.79,
+        "limitC": -5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 1,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 2,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 3,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 5,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 65,
+        "channel": 6,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorLoss",
+        "severity": "Critical",
+        "sampleNumber": 65,
+        "channel": null,
+        "channelsWithoutData": 6,
+        "activeChannels": 8
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 80,
+        "channel": 8,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 84,
+        "channel": 4,
+        "valueC": -1.93,
+        "limitC": -5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 97,
+        "channel": 6,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 101,
+        "channel": 6,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 116,
+        "channel": 4,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 127,
+        "channel": 8,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 130,
+        "channel": 4,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "TypeMismatch",
+        "severity": "Warning",
+        "sampleNumber": 133,
+        "channel": 2,
+        "reportedType": "K"
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 134,
+        "channel": 4,
+        "valueC": -2.58,
+        "limitC": -5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 142,
+        "channel": 2,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 147,
+        "channel": 6,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "CommunicationLost",
+        "severity": "Critical",
+        "sampleNumber": 150,
+        "channel": null
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 154,
+        "channel": 4,
+        "valueC": -2.45,
+        "limitC": -5
+      },
+      {
+        "alertType": "AboveLimit",
+        "severity": "Warning",
+        "sampleNumber": 161,
+        "channel": 4,
+        "valueC": -1.53,
+        "limitC": -5
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 163,
+        "channel": 2,
+        "sensorStatus": "InvalidFrame"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 165,
+        "channel": 6,
+        "sensorStatus": "OpenCircuit"
+      },
+      {
+        "alertType": "SensorFault",
+        "severity": "Warning",
+        "sampleNumber": 175,
+        "channel": 3,
+        "sensorStatus": "InvalidFrame"
+      }
+    ],
+    "communicationGaps": [
+      {
+        "lostAtOffsetSeconds": 17880,
+        "recoveredAtOffsetSeconds": 18223,
+        "firstMissedSample": 150,
+        "lastMissedSample": 152,
+        "missedSamples": 3,
+        "notes": null
+      }
+    ],
+    "discardedPreStartBlocks": 0
+  }
+}

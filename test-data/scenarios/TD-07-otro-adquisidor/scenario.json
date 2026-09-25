@@ -1,0 +1,119 @@
+{
+  "code": "TD-07",
+  "title": "Reconexión con otro adquisidor (sesión no válida)",
+  "category": "Comunicación",
+  "description": "Pérdida en la muestra 50; al reconectar responde ADQ-SIM-0002. La sesión se declara no válida.",
+  "protocolVersion": "1.0",
+  "seed": 107,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [
+    {
+      "type": "COMM_LOST",
+      "sample": 50
+    },
+    {
+      "type": "COMM_RESTORED",
+      "sample": 55,
+      "deviceIdentifier": "ADQ-SIM-0002",
+      "sensorGroupId": "GRP-A"
+    }
+  ],
+  "expected": {
+    "status": "Invalid",
+    "closeReason": "DeviceMismatch",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 6463,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 54,
+    "samplesWithData": 49,
+    "affectedSamples": [
+      50,
+      51,
+      52,
+      53,
+      54
+    ],
+    "validSamples": 49,
+    "readingRows": 245,
+    "readingsByStatus": {
+      "OK": 245
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "CommunicationLost": 1,
+      "DeviceMismatch": 1
+    },
+    "alerts": [
+      {
+        "alertType": "CommunicationLost",
+        "severity": "Critical",
+        "sampleNumber": 50,
+        "channel": null
+      },
+      {
+        "alertType": "DeviceMismatch",
+        "severity": "Critical",
+        "sampleNumber": null,
+        "channel": null,
+        "deviceIdentifier": "ADQ-SIM-0002",
+        "sensorGroupId": "GRP-A"
+      }
+    ],
+    "communicationGaps": [
+      {
+        "lostAtOffsetSeconds": 5880,
+        "recoveredAtOffsetSeconds": null,
+        "firstMissedSample": 50,
+        "lastMissedSample": 54,
+        "missedSamples": 5,
+        "notes": "Reconectó un adquisidor distinto (ADQ-SIM-0002 / GRP-A)"
+      }
+    ],
+    "discardedPreStartBlocks": 0
+  }
+}

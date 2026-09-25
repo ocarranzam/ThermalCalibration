@@ -1,0 +1,258 @@
+[
+  {
+    "code": "TD-01",
+    "folder": "TD-01-optimo-2h",
+    "category": "Funcionamiento óptimo",
+    "title": "Funcionamiento óptimo, 10 canales T, 2 h",
+    "channels": 10,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {}
+  },
+  {
+    "code": "TD-02",
+    "folder": "TD-02-variaciones-medida",
+    "category": "Variaciones de medida",
+    "title": "Aperturas de puerta y valores en el límite",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 10800,
+    "programmedSamples": 91,
+    "validSamples": 91,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "AboveLimit": 4
+    }
+  },
+  {
+    "code": "TD-03",
+    "folder": "TD-03-caida-sensores-60",
+    "category": "Caída de sensores",
+    "title": "Caída de sensores en el umbral (60 %, no afecta)",
+    "channels": 10,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "SensorFault": 6
+    }
+  },
+  {
+    "code": "TD-04",
+    "folder": "TD-04-caida-sensores-70",
+    "category": "Caída de sensores",
+    "title": "Caída de sensores sobre el umbral (70 %)",
+    "channels": 10,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 51,
+    "affectedSamples": 10,
+    "alertsByType": {
+      "SensorFault": 7,
+      "SensorLoss": 1
+    }
+  },
+  {
+    "code": "TD-05",
+    "folder": "TD-05-caida-sensores-incompleta",
+    "category": "Caída de sensores",
+    "title": "Caída sobre el umbral que deja la sesión incompleta",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "durationSeconds": 4200,
+    "programmedSamples": 36,
+    "validSamples": 26,
+    "affectedSamples": 10,
+    "alertsByType": {
+      "SensorFault": 4,
+      "SensorLoss": 1
+    }
+  },
+  {
+    "code": "TD-06",
+    "folder": "TD-06-perdida-comunicacion",
+    "category": "Comunicación",
+    "title": "Pérdida de comunicación y recuperación con el mismo adquisidor",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 56,
+    "affectedSamples": 5,
+    "alertsByType": {
+      "CommunicationLost": 1
+    }
+  },
+  {
+    "code": "TD-07",
+    "folder": "TD-07-otro-adquisidor",
+    "category": "Comunicación",
+    "title": "Reconexión con otro adquisidor (sesión no válida)",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Invalid",
+    "closeReason": "DeviceMismatch",
+    "durationSeconds": 6463,
+    "programmedSamples": 54,
+    "validSamples": 49,
+    "affectedSamples": 5,
+    "alertsByType": {
+      "CommunicationLost": 1,
+      "DeviceMismatch": 1
+    }
+  },
+  {
+    "code": "TD-08",
+    "folder": "TD-08-otro-grupo-sensores",
+    "category": "Comunicación",
+    "title": "Reconexión con otro grupo de sensores (sesión no válida)",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Invalid",
+    "closeReason": "DeviceMismatch",
+    "durationSeconds": 3823,
+    "programmedSamples": 32,
+    "validSamples": 29,
+    "affectedSamples": 3,
+    "alertsByType": {
+      "CommunicationLost": 1,
+      "DeviceMismatch": 1
+    }
+  },
+  {
+    "code": "TD-09",
+    "folder": "TD-09-tramas-y-tipos",
+    "category": "Tramas y tipos",
+    "title": "Tramas corruptas, tipo no coincidente y fallas del sensor",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "SensorFault": 6,
+      "TypeMismatch": 1
+    }
+  },
+  {
+    "code": "TD-10",
+    "folder": "TD-10-mezcla-tk-1h",
+    "category": "Configuración",
+    "title": "Mezcla T/K con duración exacta de 1 h",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 3600,
+    "programmedSamples": 31,
+    "validSamples": 31,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "MixedThermocoupleTypes": 1
+    }
+  },
+  {
+    "code": "TD-11",
+    "folder": "TD-11-stream-datos-previos",
+    "category": "Inicio por llegada de datos",
+    "title": "Adquisidor que transmite antes de conectar (modo STREAM)",
+    "channels": 5,
+    "mode": "Stream",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 3900,
+    "programmedSamples": 33,
+    "validSamples": 33,
+    "affectedSamples": 0,
+    "alertsByType": {}
+  },
+  {
+    "code": "TD-12",
+    "folder": "TD-12-optimo-24h",
+    "category": "Funcionamiento óptimo",
+    "title": "Sesión de 24 h con cierre automático",
+    "channels": 10,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "MaxDuration",
+    "durationSeconds": 86400,
+    "programmedSamples": 721,
+    "validSamples": 721,
+    "affectedSamples": 0,
+    "alertsByType": {}
+  },
+  {
+    "code": "TD-13",
+    "folder": "TD-13-sesion-corta",
+    "category": "Duración",
+    "title": "Sesión corta de 45 min (incompleta)",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Incomplete",
+    "closeReason": "Manual",
+    "durationSeconds": 2700,
+    "programmedSamples": 23,
+    "validSamples": 23,
+    "affectedSamples": 0,
+    "alertsByType": {}
+  },
+  {
+    "code": "TD-14",
+    "folder": "TD-14-sin-limite",
+    "category": "Configuración",
+    "title": "Refrigeradora sin límite definido",
+    "channels": 5,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 7200,
+    "programmedSamples": 61,
+    "validSamples": 61,
+    "affectedSamples": 0,
+    "alertsByType": {
+      "LimitNotDefined": 1
+    }
+  },
+  {
+    "code": "TD-15",
+    "folder": "TD-15-aleatorio-combinado",
+    "category": "Aleatorio combinado",
+    "title": "Estrés aleatorio combinado, 8 canales, 6 h",
+    "channels": 8,
+    "mode": "Poll",
+    "status": "Completed",
+    "closeReason": "Manual",
+    "durationSeconds": 21600,
+    "programmedSamples": 181,
+    "validSamples": 174,
+    "affectedSamples": 7,
+    "alertsByType": {
+      "SensorFault": 21,
+      "AboveLimit": 7,
+      "SensorLoss": 1,
+      "TypeMismatch": 1,
+      "CommunicationLost": 1
+    }
+  }
+]

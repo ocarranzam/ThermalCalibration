@@ -1,0 +1,84 @@
+{
+  "code": "TD-10",
+  "title": "Mezcla T/K con duración exacta de 1 h",
+  "category": "Configuración",
+  "description": "S1-S4 tipo T y S5 tipo K. Se cierra exactamente a los 3600 s con 31 muestras válidas: caso límite de sesión completa.",
+  "protocolVersion": "1.0",
+  "seed": 110,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "K",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 3600
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 3600,
+    "hasMixedThermocoupleTypes": true,
+    "programmedSamples": 31,
+    "samplesWithData": 31,
+    "affectedSamples": [],
+    "validSamples": 31,
+    "readingRows": 155,
+    "readingsByStatus": {
+      "OK": 155
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "MixedThermocoupleTypes": 1
+    },
+    "alerts": [
+      {
+        "alertType": "MixedThermocoupleTypes",
+        "severity": "Warning",
+        "sampleNumber": null,
+        "channel": null
+      }
+    ],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 0
+  }
+}

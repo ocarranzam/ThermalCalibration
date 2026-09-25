@@ -1,0 +1,117 @@
+{
+  "code": "TD-08",
+  "title": "Reconexión con otro grupo de sensores (sesión no válida)",
+  "category": "Comunicación",
+  "description": "Pérdida en la muestra 30; reconecta el mismo adquisidor pero con el grupo de sensores GRP-B. La sesión se declara no válida.",
+  "protocolVersion": "1.0",
+  "seed": 108,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Poll",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 7200
+    }
+  },
+  "events": [
+    {
+      "type": "COMM_LOST",
+      "sample": 30
+    },
+    {
+      "type": "COMM_RESTORED",
+      "sample": 33,
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "sensorGroupId": "GRP-B"
+    }
+  ],
+  "expected": {
+    "status": "Invalid",
+    "closeReason": "DeviceMismatch",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 3823,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 32,
+    "samplesWithData": 29,
+    "affectedSamples": [
+      30,
+      31,
+      32
+    ],
+    "validSamples": 29,
+    "readingRows": 145,
+    "readingsByStatus": {
+      "OK": 145
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {
+      "CommunicationLost": 1,
+      "DeviceMismatch": 1
+    },
+    "alerts": [
+      {
+        "alertType": "CommunicationLost",
+        "severity": "Critical",
+        "sampleNumber": 30,
+        "channel": null
+      },
+      {
+        "alertType": "DeviceMismatch",
+        "severity": "Critical",
+        "sampleNumber": null,
+        "channel": null,
+        "deviceIdentifier": "ADQ-SIM-0001",
+        "sensorGroupId": "GRP-B"
+      }
+    ],
+    "communicationGaps": [
+      {
+        "lostAtOffsetSeconds": 3480,
+        "recoveredAtOffsetSeconds": null,
+        "firstMissedSample": 30,
+        "lastMissedSample": 32,
+        "missedSamples": 3,
+        "notes": "Reconectó un adquisidor distinto (ADQ-SIM-0001 / GRP-B)"
+      }
+    ],
+    "discardedPreStartBlocks": 0
+  }
+}

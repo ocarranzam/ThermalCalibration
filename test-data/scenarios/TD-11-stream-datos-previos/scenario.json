@@ -1,0 +1,75 @@
+{
+  "code": "TD-11",
+  "title": "Adquisidor que transmite antes de conectar (modo STREAM)",
+  "category": "Inicio por llegada de datos",
+  "description": "El adquisidor ya emitía bloques antes de abrir el puerto: se descarta una línea parcial y dos bloques de vista previa. La sesión inicia con el primer bloque recibido después de pulsar Iniciar.",
+  "protocolVersion": "1.0",
+  "seed": 111,
+  "config": {
+    "isSimulation": true,
+    "equipmentType": "Congeladora",
+    "maxTemperatureC": -5,
+    "samplingIntervalSeconds": 120,
+    "sensorLossThresholdPct": 60,
+    "acquisitionMode": "Stream",
+    "device": {
+      "deviceIdentifier": "ADQ-SIM-0001",
+      "platform": "Simulator",
+      "firmwareVersion": "1.0.0",
+      "channelCount": 10,
+      "sensorGroupId": "GRP-A"
+    },
+    "channels": [
+      {
+        "channelNumber": 1,
+        "thermocoupleType": "T",
+        "position": "Superior"
+      },
+      {
+        "channelNumber": 2,
+        "thermocoupleType": "T",
+        "position": "Centro"
+      },
+      {
+        "channelNumber": 3,
+        "thermocoupleType": "T",
+        "position": "Inferior"
+      },
+      {
+        "channelNumber": 4,
+        "thermocoupleType": "T",
+        "position": "Puerta"
+      },
+      {
+        "channelNumber": 5,
+        "thermocoupleType": "T",
+        "position": "Fondo"
+      }
+    ],
+    "close": {
+      "type": "Manual",
+      "atOffsetSeconds": 3900
+    }
+  },
+  "events": [],
+  "expected": {
+    "status": "Completed",
+    "closeReason": "Manual",
+    "startedAtOffsetSeconds": 0,
+    "endedAtOffsetSeconds": 3900,
+    "hasMixedThermocoupleTypes": false,
+    "programmedSamples": 33,
+    "samplesWithData": 33,
+    "affectedSamples": [],
+    "validSamples": 33,
+    "readingRows": 165,
+    "readingsByStatus": {
+      "OK": 165
+    },
+    "aboveLimitReadings": 0,
+    "alertsByType": {},
+    "alerts": [],
+    "communicationGaps": [],
+    "discardedPreStartBlocks": 2
+  }
+}
