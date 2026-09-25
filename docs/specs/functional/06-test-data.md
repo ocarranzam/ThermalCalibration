@@ -68,7 +68,7 @@ Regenerar: `node test-data/generate-test-data.mjs`. Si cambia el intervalo de mu
 | `config.equipmentType` | texto | `Congeladora`, `Refrigeradora`… |
 | `config.maxTemperatureC` | número o `null` | Límite aplicado. `null` = límite pendiente. |
 | `config.samplingIntervalSeconds` | entero | 120. |
-| `config.equipmentTypeMinSessionMinutes` | entero | Duración mínima que exige el tipo de equipo (60 salvo TD-19). |
+| `config.equipmentTypeMinSessionDurationMinutes` | entero | Duración mínima que exige el tipo de equipo (60 salvo TD-19). |
 | `config.plannedDurationMinutes`, `config.durationSource`, `config.clientRequestReference` | entero, texto, texto | Duración planificada, su origen (`Base`, `EquipmentType`, `ClientRequest`) y la referencia del pedido. |
 | `config.sensorLossThresholdPct` | número | 60. |
 | `config.sensorLossCriticalAfterSamples`, `config.sensorLossFailMinutes`, `config.aboveLimitCriticalMinutes`, `config.minMeasurementPoints` | entero | 3, 30, 30 y 9. |

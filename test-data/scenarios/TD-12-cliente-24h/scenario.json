@@ -9,7 +9,7 @@
     "isSimulation": true,
     "equipmentType": "Congeladora",
     "maxTemperatureC": -5,
-    "equipmentTypeMinSessionMinutes": 60,
+    "equipmentTypeMinSessionDurationMinutes": 60,
     "plannedDurationMinutes": 1440,
     "durationSource": "ClientRequest",
     "clientRequestReference": "OS-TD-12",

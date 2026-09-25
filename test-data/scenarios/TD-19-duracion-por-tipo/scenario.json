@@ -9,7 +9,7 @@
     "isSimulation": true,
     "equipmentType": "Incubadora",
     "maxTemperatureC": null,
-    "equipmentTypeMinSessionMinutes": 120,
+    "equipmentTypeMinSessionDurationMinutes": 120,
     "plannedDurationMinutes": 120,
     "durationSource": "EquipmentType",
     "clientRequestReference": null,

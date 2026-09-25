@@ -9,7 +9,7 @@
     "isSimulation": true,
     "equipmentType": "Refrigeradora",
     "maxTemperatureC": null,
-    "equipmentTypeMinSessionMinutes": 60,
+    "equipmentTypeMinSessionDurationMinutes": 60,
     "plannedDurationMinutes": 120,
     "durationSource": "ClientRequest",
     "clientRequestReference": "OS-TD-14",
