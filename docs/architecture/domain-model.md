@@ -5,6 +5,7 @@
 | Versión | 0.3 (borrador para revisión) |
 | Cambios en 0.2 | Duración planificada, política de pérdida de sensores (escalamiento y falla), descanso del adquisidor y severidad de las alertas (críticas y advertencias). |
 | Cambios en 0.3 | Fuera de límite sostenido con causa probable (`AboveLimitSustained`, `SuspectedCause`). Mínimo de 9 puntos de medición con confirmación. |
+| Cambios en 0.4 | `EquipmentType` alineado con [01-schema.sql](../db/01-schema.sql) y el contrato [thermal-v1.yaml](../api/thermal-v1.yaml): `MinSessionDurationMinutes` (antes `MinSessionMinutes`), `Description`, `IsActive`, `RowVersion` y sus métodos de edición y desactivación. |
 | Fecha | 2026-09-25 |
 | Enfoque | DDD táctico: agregados con comportamiento (dominio enriquecido). Ver [ADR-001](adr/ADR-001-clean-architecture-cqrs-ddd.md). |
 | Fuentes | [03-user-stories.md](../specs/functional/03-user-stories.md), [05-data-model.md](../specs/functional/05-data-model.md), [02-serial-protocol.md](../specs/functional/02-serial-protocol.md) |
@@ -53,8 +54,16 @@ classDiagram
             +EquipmentTypeId Id
             +string Name
             +TemperatureLimit MaxTemperature
-            +int MinSessionMinutes
+            +int MinSessionDurationMinutes
+            +string Description
+            +bool IsActive
+            +byte[] RowVersion
+            +Rename(string)
             +ChangeLimit(TemperatureLimit)
+            +ChangeMinSessionDuration(int)
+            +Describe(string)
+            +Activate()
+            +Deactivate()
         }
         class Equipment {
             <<AggregateRoot>>
@@ -191,7 +200,8 @@ Notas de diseño:
 - `Reading` pertenece al agregado, pero `MeasurementSession` **no carga** sus lecturas en memoria (pueden ser decenas de miles en una sesión de varios días). Mantiene un estado resumido (`LastSample`, `ValidSamples`, `ConsecutiveAffected` y el episodio abierto de cada canal: `InFault`, `InTypeMismatch`) y solo **agrega** las lecturas nuevas de la muestra en curso. La unicidad de canal y muestra la refuerza la base (`UQ_Reading_Channel_Sample`).
 - `DeviceIdentity` aparece en dos agregados como **valor copiado**. La sesión guarda la identidad con la que empezó, para compararla al reconectar (RN-15), sin depender del agregado `AcquisitionDevice`.
 - `TemperatureLimit` y `SensorLossPolicy` son **copias** tomadas al iniciar (RN-08): cambiar `EquipmentType` o `AppSetting` no afecta a las sesiones existentes.
-- `PlannedDuration` se calcula al configurar: máx(base 60 min, `EquipmentType.MinSessionMinutes`, pedido del cliente), hasta el máximo del parámetro. `ExtendDuration` solo la alarga. La última muestra (`LastSample`) decide el cierre automático.
+- `EquipmentType` no se borra si tiene equipos: `Deactivate` lo retira del registro de equipos nuevos. El `PUT /api/v1/equipment-types/{id}` del [contrato](../api/thermal-v1.yaml) invoca `Rename`, `ChangeLimit`, `ChangeMinSessionDuration`, `Describe` y `Activate` o `Deactivate` en una sola transacción. `RowVersion` lo gestiona la base y se expone como `ETag` para la concurrencia optimista (412 si cambió).
+- `PlannedDuration` se calcula al configurar: máx(base 60 min, `EquipmentType.MinSessionDurationMinutes`, pedido del cliente), hasta el máximo del parámetro. `ExtendDuration` solo la alarga. La última muestra (`LastSample`) decide el cierre automático.
 - `RestWindow` (descanso del adquisidor, RN-17) es un valor que calcula el handler con la última sesión cerrada del adquisidor, más la autorización del supervisor si la hay. `RequestStart` lo rechaza si el descanso no terminó y no hay autorización. Así el agregado `AcquisitionDevice` no necesita conocer las sesiones.
 - `Alert.RequiresAcknowledgement` es verdadero para la severidad `Critical`: la UI notifica visualmente solo esas alertas (RN-18).
 
@@ -199,7 +209,10 @@ Notas de diseño:
 
 | Agregado | Invariante | Dónde se protege | Regla |
 |---|---|---|---|
-| `EquipmentType` | Límite con 2 decimales como máximo, o pendiente (null). Duración mínima ≥ 60 min. | `TemperatureLimit`, constructor | RN-04, RN-06 |
+| `EquipmentType` | Nombre de 1 a 100 caracteres, sin espacios en los extremos y único. | Constructor y `Rename` + `CK_EquipmentType_Name`, `UQ_EquipmentType_Name` | HU-02 |
+| | Límite con 2 decimales como máximo, entre -9999,99 y 9999,99 °C, o pendiente (null). La base redondearía un tercer decimal, así que solo el dominio lo rechaza. | `TemperatureLimit` | RN-06 |
+| | Duración mínima entre 60 y 43 200 min. Al planificar se comprueba además que no supere `MaxSessionMinutes`. | `ChangeMinSessionDuration` + `CK_EquipmentType_MinDuration`; `PlanDuration` | RN-04 |
+| | No se borra si tiene equipos: se desactiva. | `Deactivate` | HU-02 |
 | `Equipment` | Serie única dentro de la empresa. | Comprobación en la aplicación + `UQ_Equipment_Company_Serial` | HU-01 |
 | `AcquisitionDevice` | Entre 1 y 10 canales. `DeviceId` único. | Constructor + `UQ_AcquisitionDevice_Identifier` | RN-01 |
 | `MeasurementSession` | De 1 a 10 canales, sin repetir número y sin superar `ChannelCount`. | `AssignChannel`, `RequestStart` | RN-01 |

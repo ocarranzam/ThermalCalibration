@@ -71,6 +71,7 @@ Detalle completo en [01-vision-document.md §12](docs/specs/functional/01-vision
 | [docs/diagrams/gherkin/](docs/diagrams/gherkin/) | Criterios de aceptación en Gherkin: un `.feature` por historia, generado desde 03 con `node docs/diagrams/generate-features.mjs` |
 | [docs/diagrams/sequence/](docs/diagrams/sequence/) | Diagramas de secuencia en Mermaid (en VS Code: vista previa de Markdown con la extensión recomendada `bierner.markdown-mermaid`) |
 | [docs/validation.md](docs/validation.md) | Validación y trazabilidad HU ↔ RN ↔ TD, oráculo de los escenarios y hallazgos pendientes |
+| [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml) | Contrato OpenAPI 3.0 de la Web API (tipos de equipo). Validar con `npx @redocly/cli lint docs/api/thermal-v1.yaml` |
 | [docs/architecture/](docs/architecture/) | Modelo de dominio, C4 de contenedores y ADR-001 |
 | [docs/standards/](docs/standards/README.md) | Fichas de OMS TRS 961, IEC 60068-3-5, EURAMET cg-20 y DKD-R 5-7, y matriz norma → especificación |
 

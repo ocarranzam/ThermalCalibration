@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: ThermalCalibration API
+  version: 1.0.0
+  description: |
+    API REST del Sistema de Monitoreo Térmico para Calibración de Equipos de Refrigeración.
+
+    Contrato de la Web API (.NET 10, Minimal APIs) de la fase 1 de ThermalCalibration.
+
+    Esta versión cubre el recurso **tipos de equipo** (agregado `EquipmentType`, HU-02):
+    catálogo con el límite máximo de temperatura, que puede quedar pendiente, y la duración
+    mínima de sesión que exige cada tipo.
+
+    Convenciones:
+    - Rutas en plural, minúsculas y kebab-case, versionadas con el prefijo `/api/v1`.
+    - Propiedades JSON en camelCase, con los nombres del modelo de dominio y de la base.
+    - Temperaturas en °C con punto decimal y como máximo 2 decimales. Fechas en ISO 8601 con desfase horario.
+    - Errores en formato Problem Details (RFC 7807), con el tipo de contenido `application/problem+json`.
+    - Control de concurrencia optimista: `GET` y `PUT` devuelven `ETag`, y `PUT` acepta `If-Match`.
+
+    Fuentes: `docs/architecture/domain-model.md`, `docs/specs/functional/03-user-stories.md` (HU-02),
+    `docs/specs/functional/05-data-model.md` y `docs/db/01-schema.sql`.
+  license:
+    name: Propietaria, uso interno del laboratorio
+    url: https://github.com/ocarranzam/ThermalCalibration
+servers:
+  - url: https://{labHost}:{port}
+    description: Servicio de Windows (Kestrel) en la PC del laboratorio a la que se conecta el adquisidor.
+    variables:
+      labHost:
+        default: thermal-lab-pc
+        description: Nombre de red de la PC del laboratorio.
+      port:
+        default: '5001'
+        description: Puerto HTTPS de Kestrel.
+tags:
+  - name: EquipmentTypes
+    description: |
+      Catálogo de tipos de equipo con su límite máximo y su duración mínima de sesión (HU-02, RN-04, RN-06 a RN-08).
+      Solo el rol `Admin` crea o edita tipos. Cambiar un tipo no altera las sesiones ya iniciadas, que conservan
+      una copia del límite tomada al iniciar (RN-08).
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/equipment-types:
+    post:
+      tags:
+        - EquipmentTypes
+      operationId: createEquipmentType
+      summary: Registrar un tipo de equipo
+      description: |
+        Crea un tipo de equipo activo. Sin `maxTemperatureC` (o con `null`), el límite queda **pendiente**
+        y las sesiones de ese tipo se capturarán sin evaluar el límite (RN-09).
+        Si no se indica `minSessionDurationMinutes`, se usa la duración base de 60 minutos.
+        Requiere el rol `Admin`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTipoEquipoRequest'
+            examples:
+              limiteDefinido:
+                summary: Tipo con límite definido
+                value:
+                  name: Ultracongeladora
+                  maxTemperatureC: -60
+                  minSessionDurationMinutes: 60
+                  description: Equipos de -80 °C para vacunas y reactivos
+              limitePendiente:
+                summary: Tipo con límite pendiente
+                value:
+                  name: Cámara de vacunas
+                  maxTemperatureC: null
+      responses:
+        '201':
+          description: Tipo de equipo creado.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTipoEquipoResponse'
+              example:
+                id: 5
+                name: Ultracongeladora
+                maxTemperatureC: -60
+                isLimitDefined: true
+                minSessionDurationMinutes: 60
+                description: Equipos de -80 °C para vacunas y reactivos
+                isActive: true
+                createdAt: '2026-09-25T10:15:00-05:00'
+                updatedAt: null
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/DuplicateName'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /api/v1/equipment-types/{id}:
+    parameters:
+      - $ref: '#/components/parameters/EquipmentTypeId'
+    get:
+      tags:
+        - EquipmentTypes
+      operationId: getEquipmentType
+      summary: Obtener un tipo de equipo
+      description: Devuelve el tipo de equipo, activo o desactivado. Disponible para todos los roles.
+      responses:
+        '200':
+          description: Tipo de equipo encontrado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoEquipoResponse'
+              example:
+                id: 2
+                name: Refrigeradora
+                maxTemperatureC: null
+                isLimitDefined: false
+                minSessionDurationMinutes: 60
+                description: Refrigeradoras de laboratorio de 2 a 8 °C
+                isActive: true
+                createdAt: '2026-09-01T08:00:00-05:00'
+                updatedAt: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - EquipmentTypes
+      operationId: updateEquipmentType
+      summary: Reemplazar un tipo de equipo
+      description: |
+        Reemplaza todos los datos editables del tipo de equipo. Las propiedades que no se envían toman su valor
+        por defecto: `maxTemperatureC` pasa a pendiente, `description` se vacía y `minSessionDurationMinutes` vuelve a 60.
+
+        - Cambiar el límite o la duración mínima solo afecta a las sesiones que se inicien después (RN-08).
+          Las sesiones en curso y las registradas conservan su límite aplicado y su duración planificada.
+        - Un tipo con equipos asociados no se borra: se desactiva con `isActive: false`. Un tipo desactivado
+          no se ofrece al registrar equipos nuevos.
+        - Con `If-Match`, el cambio solo se aplica si el recurso no cambió desde que se leyó.
+
+        Requiere el rol `Admin`.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTipoEquipoRequest'
+            example:
+              name: Congeladora
+              maxTemperatureC: -8
+              minSessionDurationMinutes: 60
+              description: Congeladoras horizontales y verticales
+              isActive: true
+      responses:
+        '200':
+          description: Tipo de equipo actualizado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TipoEquipoResponse'
+              example:
+                id: 1
+                name: Congeladora
+                maxTemperatureC: -8
+                isLimitDefined: true
+                minSessionDurationMinutes: 60
+                description: Congeladoras horizontales y verticales
+                isActive: true
+                createdAt: '2026-09-01T08:00:00-05:00'
+                updatedAt: '2026-09-25T11:30:00-05:00'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/DuplicateName'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token con el rol del usuario (`Admin`, `Technician` o `Supervisor`). El mecanismo definitivo
+        (cuentas locales con JWT o Windows/AD) está pendiente de decisión (c4-containers §3.1).
+  parameters:
+    EquipmentTypeId:
+      name: id
+      in: path
+      required: true
+      description: Identificador del tipo de equipo (`EquipmentTypeId`).
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: '`ETag` obtenido en la última lectura. Si no coincide con el actual, se responde 412.'
+      schema:
+        type: string
+      example: '"AAAAAAAAB9E="'
+  headers:
+    Location:
+      description: URL del recurso creado.
+      schema:
+        type: string
+        format: uri-reference
+      example: /api/v1/equipment-types/5
+    ETag:
+      description: Versión del recurso, para el control de concurrencia optimista con `If-Match`.
+      schema:
+        type: string
+      example: '"AAAAAAAAB9E="'
+  schemas:
+    CreateTipoEquipoRequest:
+      type: object
+      description: Datos para registrar un tipo de equipo. El tipo nace activo.
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          $ref: '#/components/schemas/EquipmentTypeName'
+        maxTemperatureC:
+          $ref: '#/components/schemas/MaxTemperatureC'
+        minSessionDurationMinutes:
+          $ref: '#/components/schemas/MinSessionDurationMinutes'
+        description:
+          $ref: '#/components/schemas/EquipmentTypeDescription'
+    UpdateTipoEquipoRequest:
+      type: object
+      description: Representación completa de los datos editables del tipo de equipo (semántica de reemplazo de `PUT`).
+      additionalProperties: false
+      required:
+        - name
+        - isActive
+      properties:
+        name:
+          $ref: '#/components/schemas/EquipmentTypeName'
+        maxTemperatureC:
+          $ref: '#/components/schemas/MaxTemperatureC'
+        minSessionDurationMinutes:
+          $ref: '#/components/schemas/MinSessionDurationMinutes'
+        description:
+          $ref: '#/components/schemas/EquipmentTypeDescription'
+        isActive:
+          type: boolean
+          description: '`false` desactiva el tipo: deja de ofrecerse al registrar equipos nuevos.'
+          example: true
+    TipoEquipoResponse:
+      type: object
+      description: Representación del recurso tipo de equipo.
+      required:
+        - id
+        - name
+        - maxTemperatureC
+        - isLimitDefined
+        - minSessionDurationMinutes
+        - description
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          description: Identificador del tipo de equipo (`EquipmentTypeId`).
+          example: 1
+        name:
+          $ref: '#/components/schemas/EquipmentTypeName'
+        maxTemperatureC:
+          $ref: '#/components/schemas/MaxTemperatureC'
+        isLimitDefined:
+          type: boolean
+          readOnly: true
+          description: '`false` si el límite está pendiente de definir (`maxTemperatureC` es `null`).'
+          example: true
+        minSessionDurationMinutes:
+          $ref: '#/components/schemas/MinSessionDurationMinutes'
+        description:
+          $ref: '#/components/schemas/EquipmentTypeDescription'
+        isActive:
+          type: boolean
+          description: Indica si el tipo se ofrece al registrar equipos nuevos.
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Fecha y hora de creación, con desfase horario.
+          example: '2026-09-01T08:00:00-05:00'
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: Fecha y hora de la última edición, o `null` si nunca se editó.
+          example: '2026-09-25T11:30:00-05:00'
+    CreateTipoEquipoResponse:
+      description: Tipo de equipo recién creado. Igual que `TipoEquipoResponse`.
+      allOf:
+        - $ref: '#/components/schemas/TipoEquipoResponse'
+    EquipmentTypeName:
+      type: string
+      description: Nombre único del tipo de equipo, sin espacios al inicio ni al final (`UQ_EquipmentType_Name`).
+      minLength: 1
+      maxLength: 100
+      pattern: ^\S(.*\S)?$
+      example: Congeladora
+    MaxTemperatureC:
+      type: number
+      format: double
+      nullable: true
+      description: |
+        Temperatura máxima admisible en °C, con 2 decimales como máximo (`DECIMAL(6,2)`).
+        `null` o ausente = límite **pendiente**: las sesiones se capturan sin evaluar el límite.
+        Una lectura está fuera de límite si es estrictamente mayor que este valor (RN-07).
+      minimum: -9999.99
+      maximum: 9999.99
+      multipleOf: 0.01
+      default: null
+      example: -5
+    MinSessionDurationMinutes:
+      type: integer
+      format: int32
+      description: |
+        Duración mínima de sesión que exige el tipo de equipo, en minutos (`CK_EquipmentType_MinDuration`).
+        No puede ser menor que la duración base de 60 minutos (RN-04). Para poder planificar sesiones,
+        tampoco debería superar la duración máxima planificable (`AppSetting.MaxSessionMinutes`, 10 080 por defecto).
+      minimum: 60
+      maximum: 43200
+      default: 60
+      example: 120
+    EquipmentTypeDescription:
+      type: string
+      nullable: true
+      description: Descripción libre del tipo de equipo.
+      maxLength: 500
+      default: null
+      example: Incubadoras de CO2 a 37 °C
+    ErrorResponse:
+      type: object
+      description: |
+        Detalle del error según RFC 7807 (Problem Details for HTTP APIs), con las extensiones de ASP.NET Core
+        `traceId` y `errors` (errores de validación por propiedad).
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: URI que identifica el tipo de problema. `about:blank` si no hay un tipo específico.
+          default: about:blank
+          example: https://tools.ietf.org/html/rfc9110#section-15.5.10
+        title:
+          type: string
+          description: Resumen legible del tipo de problema. No cambia entre ocurrencias.
+          example: Conflicto con el estado del recurso
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 599
+          description: Código de estado HTTP de esta respuesta.
+          example: 409
+        detail:
+          type: string
+          description: Explicación de esta ocurrencia concreta del problema.
+          example: Ya existe el tipo de equipo Congeladora
+        instance:
+          type: string
+          format: uri-reference
+          description: URI de la solicitud que originó el problema.
+          example: /api/v1/equipment-types
+        traceId:
+          type: string
+          description: Identificador de la traza para correlacionar con los registros del servidor.
+          example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+        errors:
+          type: object
+          description: Mensajes de validación por propiedad (solo en errores 400).
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            maxTemperatureC:
+              - El límite admite como máximo 2 decimales
+  responses:
+    ValidationError:
+      description: Cuerpo con formato o valores no válidos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            limiteConTresDecimales:
+              summary: Límite con más de 2 decimales
+              value:
+                type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                title: Uno o más datos no son válidos
+                status: 400
+                detail: Revise los campos indicados en errors.
+                instance: /api/v1/equipment-types
+                traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+                errors:
+                  maxTemperatureC:
+                    - El límite admite como máximo 2 decimales
+            duracionMenorQueLaBase:
+              summary: Duración mínima menor que 60 minutos
+              value:
+                type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                title: Uno o más datos no son válidos
+                status: 400
+                detail: Revise los campos indicados en errors.
+                instance: /api/v1/equipment-types/1
+                errors:
+                  minSessionDurationMinutes:
+                    - La duración mínima no puede ser menor que 60 minutos
+    Unauthorized:
+      description: Falta el token o no es válido.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.2
+            title: No autenticado
+            status: 401
+    Forbidden:
+      description: El usuario no tiene el rol `Admin`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.4
+            title: Acción no permitida
+            status: 403
+            detail: Solo el rol Admin puede crear o editar tipos de equipo.
+    NotFound:
+      description: No existe un tipo de equipo con ese identificador.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.5
+            title: Recurso no encontrado
+            status: 404
+            detail: No existe el tipo de equipo 99.
+            instance: /api/v1/equipment-types/99
+    DuplicateName:
+      description: Ya existe otro tipo de equipo con ese nombre.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.10
+            title: Conflicto con el estado del recurso
+            status: 409
+            detail: Ya existe el tipo de equipo Congeladora
+            instance: /api/v1/equipment-types
+    PreconditionFailed:
+      description: El `If-Match` no coincide con la versión actual; otro usuario modificó el tipo.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.13
+            title: El recurso cambió
+            status: 412
+            detail: El tipo de equipo fue modificado por otro usuario. Vuelva a leerlo antes de guardar.
+            instance: /api/v1/equipment-types/1
+    UnsupportedMediaType:
+      description: El cuerpo no es `application/json`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.16
+            title: Tipo de contenido no admitido
+            status: 415

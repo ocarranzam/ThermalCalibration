@@ -2,7 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.5 (borrador para revisión) |
+| Versión | 0.6 (borrador para revisión) |
+| Cambios en 0.6 | `EquipmentType.RowVersion` (concurrencia optimista, `ETag` de la API) y `CK_EquipmentType_Name` (nombre no vacío y sin espacios en los extremos), alineados con el contrato [thermal-v1.yaml](../../api/thermal-v1.yaml). |
 | Cambios en 0.5 | Mínimo de puntos de medición: `MinMeasurementPoints`, `IsBelowMinimumPoints`, `BelowMinimumAcknowledgedAt`, alerta `BelowMinimumPoints` y `CK_MeasurementSession_BelowMinAck`. |
 | Cambios en 0.4 | `MeasurementSession.AboveLimitCriticalMinutes`, alerta `AboveLimitSustained` y columna `Alert.SuspectedCause` (`Sensor` / `Equipment`). |
 | Cambios en 0.3 | Duración planificada (`PlannedDurationMinutes`, `DurationSource`, `ClientRequestReference`) y mínimo por tipo de equipo. Política de pérdida de sensores copiada en la sesión (escalamiento y falla). Motivos de cierre `PlannedDuration` (reemplaza a `MaxDuration`) y `DataLoss`. Alertas `SensorLossPersistent` y `SessionFailed`. Autorización de inicio durante el descanso. Tablas `AppSetting` y `Tally`. Sin tope fijo de 721 muestras. |
@@ -51,6 +52,7 @@ erDiagram
         bit IsActive
         datetimeoffset CreatedAt
         datetimeoffset UpdatedAt
+        rowversion RowVersion "ETag de la API"
     }
     AppUser {
         int AppUserId PK
@@ -212,7 +214,7 @@ stateDiagram-v2
 
 **`ThermocoupleType`**: tipos de termopar admitidos y su rango físico. Datos iniciales: `T` (-200 a 350 °C) y `K` (-200 a 1260 °C). Se usa para validar el tipo declarado de cada canal (FK) y para marcar como `OutOfRange` los valores imposibles para el tipo declarado. Solo lo modifica el administrador. En la fase 1 es de solo lectura.
 
-**`EquipmentType`**: catálogo ampliable de tipos de equipo (Refrigeradora, Congeladora, Conservadora, Incubadora…) con su **límite máximo** `MaxTemperatureC` y la **duración mínima de sesión** que exige por su forma de funcionar (`MinSessionDurationMinutes`, 60 min por defecto). NULL en el límite significa *límite pendiente*. Nombre único. Solo el administrador lo crea o edita, y registra `UpdatedAt` al editar. Se desactiva en lugar de borrarse cuando tiene equipos.
+**`EquipmentType`**: catálogo ampliable de tipos de equipo (Refrigeradora, Congeladora, Conservadora, Incubadora…) con su **límite máximo** `MaxTemperatureC` y la **duración mínima de sesión** que exige por su forma de funcionar (`MinSessionDurationMinutes`, 60 min por defecto). NULL en el límite significa *límite pendiente*. Nombre único. Solo el administrador lo crea o edita, y registra `UpdatedAt` al editar. Se desactiva en lugar de borrarse cuando tiene equipos. `RowVersion` cambia en cada edición y la API lo usa como `ETag` para rechazar ediciones simultáneas (412). La base redondea un límite con más de 2 decimales, así que el rechazo de "-5,123" lo hace el dominio (`TemperatureLimit`).
 
 **`AppSetting`**: parámetros del sistema que mantiene el administrador (clave y valor). Incluye el intervalo de muestreo, la duración base (60 min), la duración máxima planificable (7 días), el descanso del adquisidor (15 min, propuesta) y la política de pérdida de sensores (umbral del 60 %, escalamiento en la 3.ª muestra y falla a los 30 min). Los que afectan la evaluación de una sesión se **copian** en `MeasurementSession` al iniciarla.
 
@@ -306,7 +308,8 @@ Las alertas `Critical` se notifican visualmente y exigen reconocimiento. Las `Wa
 | Restricción | Regla | Ref. |
 |---|---|---|
 | `CK_ThermocoupleType_Range` | `MinRangeC < MaxRangeC`. | — |
-| `UQ_EquipmentType_Name` | Nombre de tipo de equipo único. | HU-02 |
+| `UQ_EquipmentType_Name` | Nombre de tipo de equipo único (sin distinguir mayúsculas, según la intercalación por defecto). | HU-02 |
+| `CK_EquipmentType_Name` | Nombre no vacío y sin espacios al inicio ni al final. | HU-02 |
 | `CK_EquipmentType_MinDuration` | Duración mínima de sesión entre 60 y 43 200 min. | RN-04 |
 | `CK_AppUser_Role` | Rol ∈ {`Admin`, `Technician`, `Supervisor`}. | Visión §4 |
 | `UQ_AppUser_Email` | Correo único. | — |

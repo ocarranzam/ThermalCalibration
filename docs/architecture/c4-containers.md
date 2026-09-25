@@ -79,12 +79,12 @@ C4Container
 | `ExcelExporter` | Infrastructure | Genera el .xlsx con el formato de la HU-11 (con una librería OpenXML, p. ej. ClosedXML). |
 | `IClock` | Infrastructure | Reloj del sistema, o reloj virtual en simulación (SIM-06). |
 
-**Interfaz pública (resumen):**
+**Interfaz pública (resumen):** todas las rutas llevan el prefijo de versión `/api/v1`. El contrato OpenAPI está en [docs/api/thermal-v1.yaml](../api/thermal-v1.yaml) (por ahora cubre los tipos de equipo) y se valida con `npx @redocly/cli lint docs/api/thermal-v1.yaml`.
 
 | Método y ruta | Tipo | HU |
 |---|---|---|
 | `POST /companies`, `POST /companies/{id}/equipment` | Comando | HU-01 |
-| `PUT /equipment-types/{id}/limit` | Comando (Admin) | HU-02 |
+| `POST /equipment-types`, `PUT /equipment-types/{id}` (Admin), `GET /equipment-types/{id}` | Comando / Consulta | HU-02 |
 | `GET /ports`, `POST /ports/{port}/detect` | Consulta / Comando | HU-03 |
 | `POST /sessions`, `PUT /sessions/{id}/channels` | Comando | HU-03 |
 | `POST /sessions/{id}/start`, `POST /sessions/{id}/acknowledge-mixed-types` | Comando | HU-04, HU-05, HU-06 |

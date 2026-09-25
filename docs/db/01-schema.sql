@@ -59,17 +59,20 @@ GO
 -- Regla: una lectura está fuera de límite si TemperatureC > MaxTemperatureC.
 -- MaxTemperatureC admite NULL mientras el límite no esté definido.
 -- MinSessionDurationMinutes: duración mínima que exige el tipo por su forma de funcionar (base: 60 min).
+-- RowVersion: versión para la concurrencia optimista; la API la expone como ETag / If-Match (docs/api/thermal-v1.yaml).
 CREATE TABLE dbo.EquipmentType (
     EquipmentTypeId            INT IDENTITY(1, 1) NOT NULL,
     Name                       NVARCHAR(100)      NOT NULL,
     MaxTemperatureC            DECIMAL(6, 2)      NULL,
     MinSessionDurationMinutes  INT                NOT NULL CONSTRAINT DF_EquipmentType_MinDuration DEFAULT (60),
-    Description       NVARCHAR(500)      NULL,
-    IsActive          BIT                NOT NULL CONSTRAINT DF_EquipmentType_IsActive DEFAULT (1),
-    CreatedAt         DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_EquipmentType_CreatedAt DEFAULT (SYSDATETIMEOFFSET()),
-    UpdatedAt         DATETIMEOFFSET(0)  NULL,
+    Description                NVARCHAR(500)      NULL,
+    IsActive                   BIT                NOT NULL CONSTRAINT DF_EquipmentType_IsActive DEFAULT (1),
+    CreatedAt                  DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_EquipmentType_CreatedAt DEFAULT (SYSDATETIMEOFFSET()),
+    UpdatedAt                  DATETIMEOFFSET(0)  NULL,
+    RowVersion                 ROWVERSION         NOT NULL,
     CONSTRAINT PK_EquipmentType PRIMARY KEY (EquipmentTypeId),
     CONSTRAINT UQ_EquipmentType_Name UNIQUE (Name),
+    CONSTRAINT CK_EquipmentType_Name CHECK (LEN(Name) > 0 AND Name NOT LIKE N' %' AND DATALENGTH(Name) = DATALENGTH(RTRIM(Name))),
     CONSTRAINT CK_EquipmentType_MinDuration CHECK (MinSessionDurationMinutes BETWEEN 60 AND 43200)
 );
 GO
