@@ -58,6 +58,59 @@ Detalle completo en [01-vision-document.md §12](docs/specs/functional/01-vision
 - **SQL Server 2022**: las restricciones `CHECK` son la segunda línea de defensa detrás del dominio. Ver [docs/db/01-schema.sql](docs/db/01-schema.sql).
 - Protocolo serial propio v1.0: texto ASCII con checksum, modos `POLL` y `STREAM`, independiente del hardware.
 
+## Convención de nombres: inglés en todo lo técnico
+
+**Decisión (2026-09-25):** todo lo que es código o contrato va en **inglés**, con los mismos nombres en todas las capas. El **español** queda para la documentación, los mensajes al usuario y los textos del Excel.
+
+| Capa | Nombre del tipo de equipo | Ejemplos |
+|---|---|---|
+| Base de datos ([01-schema.sql](docs/db/01-schema.sql)) | `dbo.EquipmentType` | `MaxTemperatureC`, `MinSessionDurationMinutes`, `RowVersion` |
+| Dominio ([domain-model.md](docs/architecture/domain-model.md)) | `EquipmentType` | `TemperatureLimit`, `ChangeLimit`, `Deactivate` |
+| Aplicación (CQRS) | `CreateEquipmentTypeCommand` | `UpdateEquipmentTypeCommand`, `GetEquipmentTypeByIdQuery`, `EquipmentTypeDto` |
+| API ([thermal-v1.yaml](docs/api/thermal-v1.yaml)) | `EquipmentTypesController` | Rutas `/api/v1/equipment-types`, schemas `CreateEquipmentTypeRequest`, `CreateEquipmentTypeResponse`, `UpdateEquipmentTypeRequest`, `EquipmentTypeResponse`, `ErrorResponse` |
+| JSON | camelCase | `maxTemperatureC`, `minSessionDurationMinutes`, `isActive` |
+| Datos de prueba | camelCase | `config.equipmentTypeMinSessionDurationMinutes` |
+
+Reglas para lo nuevo:
+
+- **No** usar nombres en español en clases, propiedades, rutas ni schemas (`TipoEquipo`, `CreateTipoEquipamientoCommand`… no existen).
+- Rutas REST en plural, minúsculas y kebab-case: `/api/v1/equipment-types`, `/api/v1/sessions/{id}/alerts`.
+- Comandos y consultas: `<Verbo><Entidad>Command` / `Get<Entidad>…Query`, con su handler `…Handler` al lado.
+- Mensajes de error y de validación en español, iguales a los de las historias (p. ej. "El límite admite como máximo 2 decimales").
+
+## Backend (.NET 10)
+
+```text
+Thermal.slnx
+src/
+  Thermal.Domain/          # Entidades y value objects, sin dependencias externas
+  Thermal.Application/     # Comandos, consultas, handlers y puertos (CQRS con interfaces propias)
+  Thermal.Infrastructure/  # EF Core 10 sobre SQL Server (esquema de docs/db/01-schema.sql)
+  Thermal.Api/             # Controladores, Problem Details (RFC 7807), JWT y composición
+```
+
+| Tema | Decisión |
+|---|---|
+| Endpoints | Controladores `[ApiController]` según [thermal-v1.yaml](docs/api/thermal-v1.yaml) |
+| CQRS | `ICommandHandler` / `IQueryHandler` propios, **sin MediatR** (licencia comercial desde 2025; [ADR-001 §2.2](docs/architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md#22-cqrs-lógico)) |
+| Paquetes NuGet | Versiones centralizadas en [Directory.Packages.props](Directory.Packages.props): `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `Microsoft.AspNetCore.OpenApi` y `Microsoft.Extensions.DependencyInjection.Abstractions` (10.0.12) |
+| Compilación | C# 14, nulabilidad activa y advertencias tratadas como errores ([Directory.Build.props](Directory.Build.props)) |
+| Base de datos | Base primero: se crea con [01-schema.sql](docs/db/01-schema.sql), sin migraciones de EF |
+| Autenticación | JWT provisional hasta decidir el mecanismo definitivo |
+
+Compilar, preparar la base y ejecutar en desarrollo (SQL Server LocalDB):
+
+```bash
+dotnet build Thermal.slnx
+sqlcmd -S "(localdb)\MSSQLLocalDB" -f 65001 -i docs/db/01-schema.sql
+dotnet user-jwts create --project src/Thermal.Api --role Admin --output token
+dotnet run --project src/Thermal.Api
+```
+
+La API queda en `https://localhost:5001`. Hay solicitudes de ejemplo en [Thermal.Api.http](src/Thermal.Api/Thermal.Api.http); se pega el token del paso anterior.
+
+Implementado: `POST`, `GET` y `PUT` de `/api/v1/equipment-types` (HU-02).
+
 ## Documentación
 
 | Documento | Contenido |
@@ -87,7 +140,7 @@ node test-data/generate-test-data.mjs
 
 | | |
 |---|---|
-| Fase | Especificación y arquitectura (sin código de aplicación todavía) |
+| Fase | Especificación y arquitectura completas. Backend iniciado: tipos de equipo (HU-02) |
 | Decisiones tomadas | P-01, P-02, P-05, P-11, P-13, P-15, P-16, P-17 y D-01 a D-04 ([01 §10](docs/specs/functional/01-vision-document.md#10-decisiones-tomadas)) |
 | Preguntas abiertas | P-03, P-04, P-06 a P-10, P-12 y P-14, con propuesta provisional ([01 §11](docs/specs/functional/01-vision-document.md#11-preguntas-abiertas)) |
 | Pendiente | Autenticación (cuentas propias o Windows/AD); edición 2025-01 de DKD-R 5-7 |

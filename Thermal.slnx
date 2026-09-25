@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Thermal.Api/Thermal.Api.csproj" />
+    <Project Path="src/Thermal.Application/Thermal.Application.csproj" />
+    <Project Path="src/Thermal.Domain/Thermal.Domain.csproj" />
+    <Project Path="src/Thermal.Infrastructure/Thermal.Infrastructure.csproj" />
+  </Folder>
+</Solution>

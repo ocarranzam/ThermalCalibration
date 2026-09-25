@@ -1,0 +1,44 @@
+# Pruebas manuales de la API (extensión REST Client o el editor .http de Visual Studio).
+# Token de desarrollo con rol Admin:
+#   dotnet user-jwts create --project src/Thermal.Api --role Admin --output token
+@host = https://localhost:5001
+@token = <pegar aquí el token>
+
+### Crear un tipo de equipo (201)
+POST {{host}}/api/v1/equipment-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Ultracongeladora",
+  "maxTemperatureC": -60,
+  "minSessionDurationMinutes": 60,
+  "description": "Equipos de -80 °C para vacunas y reactivos"
+}
+
+### Obtener un tipo de equipo (200 con ETag)
+GET {{host}}/api/v1/equipment-types/2
+Authorization: Bearer {{token}}
+
+### Reemplazar un tipo de equipo (200; con If-Match responde 412 si cambió)
+PUT {{host}}/api/v1/equipment-types/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Congeladora",
+  "maxTemperatureC": -8,
+  "minSessionDurationMinutes": 60,
+  "description": "Congeladoras horizontales y verticales",
+  "isActive": true
+}
+
+### Límite con 3 decimales (400)
+POST {{host}}/api/v1/equipment-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Congeladora vertical",
+  "maxTemperatureC": -5.123
+}

@@ -56,7 +56,7 @@ C4Container
 
 | Aspecto | Definición |
 |---|---|
-| Tecnología | .NET 10 (LTS), ASP.NET Core con Minimal APIs, SignalR para el tiempo real, `System.IO.Ports` para el puerto serial. |
+| Tecnología | .NET 10 (LTS), ASP.NET Core con controladores (`[ApiController]`), SignalR para el tiempo real, `System.IO.Ports` para el puerto serial. |
 | Estilo interno | Clean Architecture con CQRS y dominio enriquecido ([ADR-001](adr/ADR-001-clean-architecture-cqrs-ddd.md)). |
 | Despliegue | Servicio de Windows (Kestrel) **en la PC del laboratorio** a la que se conecta el adquisidor. Una instancia por PC. |
 | Responsabilidades | Exponer los casos de uso de las HU-01 a HU-14. Ejecutar la captura serial en segundo plano (`BackgroundService`), con una tarea por sesión en curso. Aplicar las reglas del dominio. Generar el Excel. Notificar en vivo al cliente. Recuperar las sesiones `Running` al reiniciar (HU-10). |
@@ -77,7 +77,7 @@ C4Container
 | `SerialTransport` / `SimulatedTransport` | Infrastructure | Acceso al puerto COM real, o reproducción de los escenarios `TD-xx`. |
 | `ThermalDbContext` y repositorios | Infrastructure | EF Core 10 contra SQL Server, con una unidad de trabajo por comando. |
 | `ExcelExporter` | Infrastructure | Genera el .xlsx con el formato de la HU-11 (con una librería OpenXML, p. ej. ClosedXML). |
-| `IClock` | Infrastructure | Reloj del sistema, o reloj virtual en simulación (SIM-06). |
+| `IClock` (`TimeProvider`) | Infrastructure | Reloj del sistema (`TimeProvider.System`), o reloj virtual en simulación (SIM-06). |
 
 **Interfaz pública (resumen):** todas las rutas llevan el prefijo de versión `/api/v1`. El contrato OpenAPI está en [docs/api/thermal-v1.yaml](../api/thermal-v1.yaml) (por ahora cubre los tipos de equipo) y se valida con `npx @redocly/cli lint docs/api/thermal-v1.yaml`.
 

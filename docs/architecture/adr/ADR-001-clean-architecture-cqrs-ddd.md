@@ -4,6 +4,7 @@
 |---|---|
 | Estado | **Propuesto** |
 | Fecha | 2026-09-25 |
+| Revisión 2026-09-25 | Al implementar el primer caso de uso (tipos de equipo): los endpoints usan **controladores** (`[ApiController]`) en lugar de Minimal APIs, se **confirma** el despacho CQRS con interfaces propias (sin MediatR) y el reloj inyectable (`IClock`) es el `TimeProvider` de .NET. |
 | Decisores | Arquitectura de software, líder técnico del laboratorio |
 | Relacionado | [domain-model.md](../domain-model.md), [c4-containers.md](../c4-containers.md), [03-user-stories.md](../../specs/functional/03-user-stories.md), [06-test-data.md](../../specs/functional/06-test-data.md) |
 
@@ -26,7 +27,7 @@ Adoptar **Clean Architecture** con **CQRS lógico** y un **dominio enriquecido**
 
 ```mermaid
 flowchart TB
-    API["Thermal.Api<br/>Minimal APIs, SignalR, composición"]
+    API["Thermal.Api<br/>Controladores, SignalR, composición"]
     INF["Thermal.Infrastructure<br/>EF Core, SerialTransport, SimulatedTransport,<br/>ExcelExporter, IClock, consultas SQL"]
     APP["Thermal.Application<br/>Comandos, consultas, handlers,<br/>CaptureWorker, puertos (interfaces)"]
     DOM["Thermal.Domain<br/>Agregados, value objects,<br/>eventos de dominio"]
@@ -49,7 +50,7 @@ flowchart TB
 | **Comandos** | Un handler por caso de uso (`RequestStartCommand`, `RecordSampleCommand`, `CloseSessionCommand`…). Cada handler carga el agregado desde su repositorio, invoca **un** método de dominio, despacha los eventos de dominio (p. ej. crear las `Alert`) y guarda todo en **una** transacción. |
 | **Consultas** | Handlers de solo lectura que devuelven DTO, construidos directamente con SQL o proyecciones sobre las tablas y las vistas (`vSessionSampleCoverage`, `vSessionReadingPivot`). **No** pasan por los agregados ni por los repositorios de escritura. |
 | **Almacenamiento** | Una sola base de SQL Server para ambos lados. No hay sincronización ni consistencia eventual entre modelos. |
-| **Despacho** | Interfaces propias y mínimas (`ICommandHandler<T>`, `IQueryHandler<T,R>`) registradas en el contenedor de dependencias, y decoradores para validación, logging y transacción. Se evita depender de MediatR, que adoptó una licencia comercial en 2025. |
+| **Despacho** | Interfaces propias y mínimas (`ICommandHandler<TCommand,TResult>`, `IQueryHandler<TQuery,TResult>`, en `Thermal.Application/Abstractions`) registradas en el contenedor de dependencias; los controladores reciben el handler por inyección. Los decoradores para logging y transacción se añadirán cuando haya casos de uso que los necesiten. Se evita depender de MediatR, que adoptó una licencia comercial en 2025. |
 
 ### 2.3 Dominio enriquecido
 

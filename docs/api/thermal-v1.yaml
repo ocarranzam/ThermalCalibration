@@ -58,7 +58,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTipoEquipoRequest'
+              $ref: '#/components/schemas/CreateEquipmentTypeRequest'
             examples:
               limiteDefinido:
                 summary: Tipo con límite definido
@@ -83,7 +83,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateTipoEquipoResponse'
+                $ref: '#/components/schemas/CreateEquipmentTypeResponse'
               example:
                 id: 5
                 name: Ultracongeladora
@@ -122,7 +122,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TipoEquipoResponse'
+                $ref: '#/components/schemas/EquipmentTypeResponse'
               example:
                 id: 2
                 name: Refrigeradora
@@ -160,7 +160,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTipoEquipoRequest'
+              $ref: '#/components/schemas/UpdateEquipmentTypeRequest'
             example:
               name: Congeladora
               maxTemperatureC: -8
@@ -176,7 +176,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TipoEquipoResponse'
+                $ref: '#/components/schemas/EquipmentTypeResponse'
               example:
                 id: 1
                 name: Congeladora
@@ -242,7 +242,7 @@ components:
         type: string
       example: '"AAAAAAAAB9E="'
   schemas:
-    CreateTipoEquipoRequest:
+    CreateEquipmentTypeRequest:
       type: object
       description: Datos para registrar un tipo de equipo. El tipo nace activo.
       additionalProperties: false
@@ -257,7 +257,7 @@ components:
           $ref: '#/components/schemas/MinSessionDurationMinutes'
         description:
           $ref: '#/components/schemas/EquipmentTypeDescription'
-    UpdateTipoEquipoRequest:
+    UpdateEquipmentTypeRequest:
       type: object
       description: Representación completa de los datos editables del tipo de equipo (semántica de reemplazo de `PUT`).
       additionalProperties: false
@@ -277,7 +277,7 @@ components:
           type: boolean
           description: '`false` desactiva el tipo: deja de ofrecerse al registrar equipos nuevos.'
           example: true
-    TipoEquipoResponse:
+    EquipmentTypeResponse:
       type: object
       description: Representación del recurso tipo de equipo.
       required:
@@ -328,10 +328,10 @@ components:
           readOnly: true
           description: Fecha y hora de la última edición, o `null` si nunca se editó.
           example: '2026-09-25T11:30:00-05:00'
-    CreateTipoEquipoResponse:
-      description: Tipo de equipo recién creado. Igual que `TipoEquipoResponse`.
+    CreateEquipmentTypeResponse:
+      description: Tipo de equipo recién creado. Igual que `EquipmentTypeResponse`.
       allOf:
-        - $ref: '#/components/schemas/TipoEquipoResponse'
+        - $ref: '#/components/schemas/EquipmentTypeResponse'
     EquipmentTypeName:
       type: string
       description: Nombre único del tipo de equipo, sin espacios al inicio ni al final (`UQ_EquipmentType_Name`).
