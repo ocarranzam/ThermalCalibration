@@ -12,6 +12,7 @@
   <ItemGroup>
     <!-- Repositorios y unidad de trabajo son internos; las pruebas de integración los usan directamente. -->
     <InternalsVisibleTo Include="Thermal.IntegrationTests" />
+    <InternalsVisibleTo Include="Thermal.UnitTests" />
   </ItemGroup>
 
 </Project>

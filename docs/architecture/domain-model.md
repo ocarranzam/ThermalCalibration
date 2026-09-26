@@ -51,7 +51,7 @@ classDiagram
     namespace CatalogoYEquipos {
         class EquipmentType {
             <<AggregateRoot>>
-            +EquipmentTypeId Id
+            +int Id
             +string Name
             +TemperatureLimit MaxTemperature
             +int MinSessionDurationMinutes
@@ -200,6 +200,7 @@ Notas de diseño:
 - `Reading` pertenece al agregado, pero `MeasurementSession` **no carga** sus lecturas en memoria (pueden ser decenas de miles en una sesión de varios días). Mantiene un estado resumido (`LastSample`, `ValidSamples`, `ConsecutiveAffected` y el episodio abierto de cada canal: `InFault`, `InTypeMismatch`) y solo **agrega** las lecturas nuevas de la muestra en curso. La unicidad de canal y muestra la refuerza la base (`UQ_Reading_Channel_Sample`).
 - `DeviceIdentity` aparece en dos agregados como **valor copiado**. La sesión guarda la identidad con la que empezó, para compararla al reconectar (RN-15), sin depender del agregado `AcquisitionDevice`.
 - `TemperatureLimit` y `SensorLossPolicy` son **copias** tomadas al iniciar (RN-08): cambiar `EquipmentType` o `AppSetting` no afecta a las sesiones existentes.
+- **Implementado** (2026-09-25): `EquipmentType` y `TemperatureLimit` en `src/Thermal.Domain/EquipmentTypes`. El identificador es un `int` (`EquipmentTypeId` de la base); los tipos de identificador propios (`SessionId`, `AlertId`…) de los demás agregados son de diseño y se decidirán al implementarlos. Las violaciones de invariantes lanzan `DomainValidationException` con el nombre de la propiedad del dominio (`nameof`), que la API traduce a camelCase.
 - `EquipmentType` no se borra si tiene equipos: `Deactivate` lo retira del registro de equipos nuevos. El `PUT /api/v1/equipment-types/{id}` del [contrato](../api/thermal-v1.yaml) invoca `Rename`, `ChangeLimit`, `ChangeMinSessionDuration`, `Describe` y `Activate` o `Deactivate` en una sola transacción. `RowVersion` lo gestiona la base y se expone como `ETag` para la concurrencia optimista (412 si cambió).
 - `PlannedDuration` se calcula al configurar: máx(base 60 min, `EquipmentType.MinSessionDurationMinutes`, pedido del cliente), hasta el máximo del parámetro. `ExtendDuration` solo la alarga. La última muestra (`LastSample`) decide el cierre automático.
 - `RestWindow` (descanso del adquisidor, RN-17) es un valor que calcula el handler con la última sesión cerrada del adquisidor, más la autorización del supervisor si la hay. `RequestStart` lo rechaza si el descanso no terminó y no hay autorización. Así el agregado `AcquisitionDevice` no necesita conocer las sesiones.

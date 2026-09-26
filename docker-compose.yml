@@ -1,0 +1,76 @@
+# Entorno local de desarrollo: SQL Server 2022 + esquema + Web API en http://localhost:8080.
+# Uso: docker compose up -d --build    (o docker-compose up -d --build)
+# Solo para desarrollo y demostración: la captura serial (puerto COM) no funciona dentro de un contenedor;
+# producción es un servicio de Windows en la PC del laboratorio (docs/architecture/c4-containers.md).
+
+name: thermal
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      TZ: America/Lima   # SYSDATETIMEOFFSET() con -05:00, como el laboratorio (supuesto S-04)
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Thermal_Dev_2026!}
+    ports:
+      - "${SQL_PORT:-14333}:1433"
+    mem_limit: 2g   # mínimo que exige SQL Server
+    # SQL Server no atiende SIGTERM en esta imagen: `docker compose stop` lo mata a los 10 s (código 137)
+    # y al arrancar recupera la base sola. Cierre ordenado: SHUTDOWN por sqlcmd (ver README §1).
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  # Crea la base ThermalCalibration con docs/db/01-schema.sql la primera vez; si ya existe, no hace nada.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Thermal_Dev_2026!}
+    volumes:
+      - ./docs/db:/schema:ro
+    mem_limit: 256m
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        SQLCMD="/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P $$MSSQL_SA_PASSWORD -C -b"
+        EXISTS=$$($$SQLCMD -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name = 'ThermalCalibration'")
+        if [ "$$EXISTS" = "0" ]; then
+          echo "Creando ThermalCalibration con 01-schema.sql..."
+          $$SQLCMD -f 65001 -i /schema/01-schema.sql > /dev/null && echo "Base creada."
+        else
+          echo "ThermalCalibration ya existe; no se modifica."
+        fi
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Thermal.Api/Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      TZ: America/Lima   # UpdatedAt con -05:00, igual que la base
+      ConnectionStrings__Thermal: "Server=sqlserver;Database=ThermalCalibration;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Thermal_Dev_2026!};TrustServerCertificate=True"
+      # JWT de desarrollo: emisor y audiencias vienen de appsettings.Development.json; la clave de firma es la
+      # que `dotnet user-jwts` guarda en los user secrets del proyecto, que no existen dentro del contenedor.
+      # Obtenerla con: dotnet user-jwts key --project src/Thermal.Api   (ver README, "Inicio rápido").
+      Authentication__Schemes__Bearer__SigningKeys__0__Issuer: dotnet-user-jwts
+      Authentication__Schemes__Bearer__SigningKeys__0__Value: ${JWT_SIGNING_KEY:-}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    mem_limit: 256m
+
+volumes:
+  sqlserver-data:

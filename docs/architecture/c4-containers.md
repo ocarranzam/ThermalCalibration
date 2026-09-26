@@ -58,7 +58,7 @@ C4Container
 |---|---|
 | Tecnología | .NET 10 (LTS), ASP.NET Core con controladores (`[ApiController]`), SignalR para el tiempo real, `System.IO.Ports` para el puerto serial. |
 | Estilo interno | Clean Architecture con CQRS y dominio enriquecido ([ADR-001](adr/ADR-001-clean-architecture-cqrs-ddd.md)). |
-| Despliegue | Servicio de Windows (Kestrel) **en la PC del laboratorio** a la que se conecta el adquisidor. Una instancia por PC. |
+| Despliegue | Servicio de Windows (Kestrel) **en la PC del laboratorio** a la que se conecta el adquisidor. Una instancia por PC. Para **desarrollo y demostración** hay un [docker-compose.yml](../../docker-compose.yml) (SQL Server + API en `http://localhost:8080`); no sirve para la captura, porque un contenedor no accede al puerto COM de Windows. |
 | Responsabilidades | Exponer los casos de uso de las HU-01 a HU-14. Ejecutar la captura serial en segundo plano (`BackgroundService`), con una tarea por sesión en curso. Aplicar las reglas del dominio. Generar el Excel. Notificar en vivo al cliente. Recuperar las sesiones `Running` al reiniciar (HU-10). |
 | Seguridad | Usuarios de `AppUser`, con políticas por rol (`Admin`, `Technician`, `Supervisor`). El mecanismo de autenticación (cuentas locales con cookie/JWT, o Windows/AD) está **por decidir**. |
 | Modo simulación | El transporte `SIM` (en memoria) y el reloj acelerable solo se registran si el entorno no es `Production` ([06-test-data.md §3](../specs/functional/06-test-data.md#3-adquisidor-simulado)). |

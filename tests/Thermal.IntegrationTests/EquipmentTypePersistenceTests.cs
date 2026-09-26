@@ -79,6 +79,19 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         equipmentType.RowVersion.Should().NotEqual(previousVersion);
     }
 
+    [Fact] // HU-02 · Regla: una edición inmediata no queda con UpdatedAt anterior a CreatedAt (ambos redondeados)
+    public async Task Update_RightAfterCreate_UpdatedAtIsNotBeforeCreatedAt()
+    {
+        var id = await InsertAsync(UniqueName("Congeladora"));
+        await using var context = database.CreateDbContext();
+        var equipmentType = (await new EquipmentTypeRepository(context).GetByIdAsync(id, Token))!;
+
+        equipmentType.Describe("Editado en el mismo segundo");
+        await new UnitOfWork(context).SaveChangesAsync(Token);
+
+        equipmentType.UpdatedAt.Should().BeOnOrAfter(equipmentType.CreatedAt);
+    }
+
     [Fact] // HU-02 · Regla: dos administradores editan a la vez; el segundo recibe 412 (RowVersion)
     public async Task ConcurrentUpdate_WithTheSameReadVersion_SecondSaveThrowsConcurrencyConflict()
     {

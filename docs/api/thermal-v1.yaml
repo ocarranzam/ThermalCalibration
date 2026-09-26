@@ -1,11 +1,13 @@
 openapi: 3.0.3
 info:
   title: ThermalCalibration API
-  version: 1.0.0
+  version: 1.0.1
   description: |
     API REST del Sistema de Monitoreo Térmico para Calibración de Equipos de Refrigeración.
 
-    Contrato de la Web API (.NET 10, Minimal APIs) de la fase 1 de ThermalCalibration.
+    Contrato de la Web API (.NET 10, ASP.NET Core con controladores) de la fase 1 de ThermalCalibration.
+    Implementación: `src/Thermal.Api/EquipmentTypes/EquipmentTypesController.cs`. Verificado contra la API
+    en ejecución el 2026-09-25 (24 casos, todos conformes; ver `docs/validation.md` §5.2).
 
     Esta versión cubre el recurso **tipos de equipo** (agregado `EquipmentType`, HU-02):
     catálogo con el límite máximo de temperatura, que puede quedar pendiente, y la duración
@@ -16,7 +18,10 @@ info:
     - Propiedades JSON en camelCase, con los nombres del modelo de dominio y de la base.
     - Temperaturas en °C con punto decimal y como máximo 2 decimales. Fechas en ISO 8601 con desfase horario.
     - Errores en formato Problem Details (RFC 7807), con el tipo de contenido `application/problem+json`.
-    - Control de concurrencia optimista: `GET` y `PUT` devuelven `ETag`, y `PUT` acepta `If-Match`.
+    - Control de concurrencia optimista: `POST`, `GET` y `PUT` devuelven `ETag`, y `PUT` acepta `If-Match`.
+    - Fechas en la zona del laboratorio (America/Lima, `-05:00`), redondeadas al segundo.
+    - No hay `DELETE`: un tipo de equipo no se borra, se desactiva con `PUT` e `isActive: false` (HU-02).
+      Un método no admitido responde 405.
 
     Fuentes: `docs/architecture/domain-model.md`, `docs/specs/functional/03-user-stories.md` (HU-02),
     `docs/specs/functional/05-data-model.md` y `docs/db/01-schema.sql`.
@@ -24,6 +29,18 @@ info:
     name: Propietaria, uso interno del laboratorio
     url: https://github.com/ocarranzam/ThermalCalibration
 servers:
+  - url: http://{devHost}:8080
+    description: Desarrollo con `docker compose up` (docker-compose.yml).
+    variables:
+      devHost:
+        default: localhost
+        description: Máquina donde corre Docker.
+  - url: https://{devHost}:5001
+    description: Desarrollo con `dotnet run --project src/Thermal.Api` (launchSettings.json).
+    variables:
+      devHost:
+        default: localhost
+        description: Máquina del desarrollador.
   - url: https://{labHost}:{port}
     description: Servicio de Windows (Kestrel) en la PC del laboratorio a la que se conecta el adquisidor.
     variables:
@@ -151,6 +168,7 @@ paths:
         - Un tipo con equipos asociados no se borra: se desactiva con `isActive: false`. Un tipo desactivado
           no se ofrece al registrar equipos nuevos.
         - Con `If-Match`, el cambio solo se aplica si el recurso no cambió desde que se leyó.
+        - Si los datos enviados son iguales a los guardados, no se escribe nada: `updatedAt` y el `ETag` no cambian.
 
         Requiere el rol `Admin`.
       parameters:
@@ -225,7 +243,9 @@ components:
       name: If-Match
       in: header
       required: false
-      description: '`ETag` obtenido en la última lectura. Si no coincide con el actual, se responde 412.'
+      description: |
+        `ETag` obtenido en la última lectura (se acepta con o sin el prefijo `W/`). Si no coincide con el
+        actual, o no corresponde a ninguna versión, se responde 412. `*` o la cabecera ausente omiten la comprobación.
       schema:
         type: string
       example: '"AAAAAAAAB9E="'
@@ -412,7 +432,13 @@ components:
           example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
         errors:
           type: object
-          description: Mensajes de validación por propiedad (solo en errores 400).
+          description: |
+            Mensajes de validación por propiedad (solo en errores 400). Hay dos orígenes:
+            - Reglas del negocio (dominio): clave = propiedad en camelCase y mensaje en español de HU-02;
+              la respuesta incluye además `detail` e `instance`.
+            - Formato del cuerpo (ASP.NET Core): campo obligatorio ausente (clave = propiedad), propiedad
+              desconocida (clave = ruta JSON, p. ej. `$.color`) o cuerpo vacío (clave vacía `""`).
+              Estos mensajes los genera el framework en inglés y la respuesta no incluye `detail` ni `instance`.
           additionalProperties:
             type: array
             items:
@@ -451,6 +477,26 @@ components:
                 errors:
                   minSessionDurationMinutes:
                     - La duración mínima no puede ser menor que 60 minutos
+            campoObligatorioAusente:
+              summary: Falta un campo obligatorio (validación de formato de ASP.NET Core)
+              value:
+                type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                title: Uno o más datos no son válidos
+                status: 400
+                traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+                errors:
+                  name:
+                    - The Name field is required.
+            propiedadDesconocida:
+              summary: Propiedad no definida en el schema (additionalProperties false)
+              value:
+                type: https://tools.ietf.org/html/rfc9110#section-15.5.1
+                title: Uno o más datos no son válidos
+                status: 400
+                traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+                errors:
+                  $.color:
+                    - The JSON property 'color' could not be mapped to any .NET member contained in type 'Thermal.Api.EquipmentTypes.CreateEquipmentTypeRequest'.
     Unauthorized:
       description: Falta el token o no es válido.
       content:
@@ -471,7 +517,7 @@ components:
             type: https://tools.ietf.org/html/rfc9110#section-15.5.4
             title: Acción no permitida
             status: 403
-            detail: Solo el rol Admin puede crear o editar tipos de equipo.
+            traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
     NotFound:
       description: No existe un tipo de equipo con ese identificador.
       content:

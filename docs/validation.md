@@ -146,7 +146,7 @@ Resumen de [06 §7](specs/functional/06-test-data.md#7-uso-en-las-pruebas), con 
 
 ### 5.1 Cobertura automatizada de HU-02 (2026-09-25)
 
-Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **55/55 correctas** (48 unitarias, 7 de integración con SQL Server 2022 en Docker).
+Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **59/59 correctas** (51 unitarias, 8 de integración con SQL Server 2022 en Docker).
 
 | Escenario Gherkin de HU-02 | Pruebas | Estado |
 |---|---|---|
@@ -162,9 +162,29 @@ Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resu
 | Cambiar el umbral de pérdida de sensores | — | ⏳ Pendiente de `AppSetting` |
 | Rechazar un umbral fuera de rango | — | ⏳ Pendiente de `AppSetting` |
 | Un técnico no puede editar límites | `EquipmentTypesControllerAuthorizationTests.WriteActions_RequireAdminRole` | ✅ (verificado además con la API en ejecución: 403) |
-| Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…` | ⚠️ Parcial: impedir el borrado con equipos requiere `Equipment` (HU-01) |
+| Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…` | ⚠️ Parcial: la API no tiene `DELETE` (responde 405) y se desactiva con `PUT` e `isActive: false`; ofrecer la desactivación al intentar borrar es de la interfaz, y comprobar los equipos asociados requiere `Equipment` (HU-01) |
 
-Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00) y lecturas sin límite de HU-05, en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración.
+Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00) y lecturas sin límite de HU-05, en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración; `UpdatedAt` nunca anterior a `CreatedAt` (`ThermalDbContextTests`, `Update_RightAfterCreate_…`).
+
+### 5.2 Auditoría código ↔ contrato ↔ Gherkin (2026-09-25)
+
+Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias.
+
+| Id | Desviación encontrada | Corrección |
+|---|---|---|
+| A-01 | El contrato decía "Minimal APIs"; el código usa controladores. | Contrato actualizado (v1.0.1). |
+| A-02 | El ejemplo 403 del contrato tenía un `detail` que la API no envía. | Ejemplo alineado con la respuesta real. |
+| A-03 | Los 400 de formato (campo obligatorio ausente, propiedad desconocida, cuerpo vacío) los genera ASP.NET Core: mensajes en inglés, claves `name`, `$.color` o `""`, sin `detail` ni `instance`. No estaba documentado. | Descripción de `errors` y dos ejemplos nuevos en el contrato. |
+| A-04 | En Docker las fechas salían en UTC (`+00:00`), contra el supuesto S-04 (America/Lima, `-05:00`). | `TZ: America/Lima` en SQL Server y en la API ([docker-compose.yml](../docker-compose.yml)). |
+| A-05 | **Defecto:** `updatedAt` podía quedar un segundo **antes** que `createdAt`, porque SQL Server redondea `DATETIMEOFFSET(0)` y la API truncaba. | La API redondea igual que SQL Server (`ThermalDbContext.RoundToSecond`) + 2 pruebas nuevas. |
+| A-06 | `If-Match: *`, el prefijo `W/` y un `If-Match` ilegible (→ 412) no estaban documentados. | Descripción del parámetro `If-Match`. |
+| A-07 | No hay `DELETE` (405 con `Allow: GET, PUT`) y un `PUT` sin cambios no modifica `updatedAt` ni el `ETag`: sin documentar. | Convenciones y descripción del `PUT` en el contrato; fila de HU-02 en la §5.1. |
+| A-08 | Los `servers` del contrato no incluían los entornos de desarrollo. | Servidores de `docker compose` (8080) y `dotnet run` (5001). |
+| A-09 | `dotnet user-jwts create --audience X` **reescribe** `appsettings.Development.json` con solo esa audiencia y rompe los tokens del otro entorno. | Las tres audiencias quedan en `appsettings.Development.json`, y el README indica un único comando con las tres. |
+| A-10 | El modelo de dominio mostraba `EquipmentTypeId Id`; el código usa `int`. | [domain-model.md](architecture/domain-model.md) actualizado. |
+| A-11 | El README describía `docker-compose up`, pero no existía ningún archivo de Compose ni Dockerfile. | [docker-compose.yml](../docker-compose.yml), [Dockerfile](../src/Thermal.Api/Dockerfile) y `.dockerignore`. |
+
+Los criterios Gherkin de HU-02 **no** se modificaron: siguen siendo la especificación. Las diferencias con el código son funcionalidad aún no implementada (sesiones, `AppSetting`, equipos, interfaz), no contradicciones; están en la §5.1.
 
 ## 6. Verificación de la especificación (2026-09-25)
 

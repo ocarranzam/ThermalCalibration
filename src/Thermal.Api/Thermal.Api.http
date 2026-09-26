@@ -1,6 +1,7 @@
 # Pruebas manuales de la API (extensión REST Client o el editor .http de Visual Studio).
-# Token de desarrollo con rol Admin:
-#   dotnet user-jwts create --project src/Thermal.Api --role Admin --output token
+# Token de desarrollo con rol Admin (válido para dotnet run y docker compose; ver README §1):
+#   dotnet user-jwts create --project src/Thermal.Api --role Admin --audience https://localhost:5001 --audience http://localhost:5000 --audience http://localhost:8080 --output token
+# Con docker compose, cambiar @host a http://localhost:8080.
 @host = https://localhost:5001
 @token = <pegar aquí el token>
 
