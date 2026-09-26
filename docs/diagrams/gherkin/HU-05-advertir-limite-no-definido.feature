@@ -1,5 +1,5 @@
 # HU-05 · Advertir límite no definido
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero saber que el tipo de equipo no tiene límite máximo definido para entender que la sesión se capturará sin evaluar ese límite.
 # Perfil: Técnico · Escenarios de prueba: TD-14

@@ -27,12 +27,12 @@ public sealed class EquipmentTypeHandlersTests
     private static UpdateEquipmentTypeCommand UpdateCommand(
         int id = 2, string name = "Congeladora", decimal? maxTemperatureC = -8.00m, bool isActive = true,
         byte[]? expectedVersion = null) =>
-        new(id, name, LimitMode: null, maxTemperatureC, ToleranceK: null, MinMeasurementPoints: null,
+        new(id, name, LimitMode: null, MinTemperatureC: null, maxTemperatureC, ToleranceK: null, MinMeasurementPoints: null,
             MinSessionDurationMinutes: null, Description: null, isActive, expectedVersion);
 
     private EquipmentType GivenStoredEquipmentType(int id = 2)
     {
-        var equipmentType = new EquipmentType("Congeladora", LimitMode.Maximum, -5.00m, null, 9, 60, null);
+        var equipmentType = new EquipmentType("Congeladora", LimitMode.Range, null, -5.00m, null, 9, 60, null);
         _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(equipmentType);
         return equipmentType;
     }
@@ -41,7 +41,7 @@ public sealed class EquipmentTypeHandlersTests
     public async Task Create_ValidCommand_AddsAndSavesWithBaseDuration()
     {
         var result = await CreateHandler.HandleAsync(
-            new CreateEquipmentTypeCommand("Ultracongeladora", LimitMode: null, -60.0m, ToleranceK: null,
+            new CreateEquipmentTypeCommand("Ultracongeladora", LimitMode: null, MinTemperatureC: null, -60.0m, ToleranceK: null,
                 MinMeasurementPoints: null, MinSessionDurationMinutes: null, Description: null),
             Token);
 
@@ -50,7 +50,7 @@ public sealed class EquipmentTypeHandlersTests
         result.IsLimitDefined.Should().BeTrue();
         result.IsActive.Should().BeTrue();
         result.MinSessionDurationMinutes.Should().Be(60);
-        result.LimitMode.Should().Be(LimitMode.Maximum);
+        result.LimitMode.Should().Be(LimitMode.Range);
         result.MinMeasurementPoints.Should().Be(9);
         _repository.Received(1).Add(Arg.Is<EquipmentType>(e => e.Name == "Ultracongeladora"));
         await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -62,7 +62,7 @@ public sealed class EquipmentTypeHandlersTests
         _repository.NameExistsAsync("Congeladora", null, Arg.Any<CancellationToken>()).Returns(true);
 
         var create = () => CreateHandler.HandleAsync(
-            new CreateEquipmentTypeCommand("Congeladora", null, null, null, null, null, null), Token);
+            new CreateEquipmentTypeCommand("Congeladora", null, null, null, null, null, null, null), Token);
 
         await create.Should().ThrowAsync<ConflictException>()
             .WithMessage("Ya existe el tipo de equipo Congeladora");
@@ -74,7 +74,7 @@ public sealed class EquipmentTypeHandlersTests
     public async Task Create_InvalidLimit_ThrowsBeforeQueryingTheDatabase()
     {
         var create = () => CreateHandler.HandleAsync(
-            new CreateEquipmentTypeCommand("Congeladora", null, -5.123m, null, null, null, null), Token);
+            new CreateEquipmentTypeCommand("Congeladora", null, null, -5.123m, null, null, null, null), Token);
 
         await create.Should().ThrowAsync<DomainValidationException>();
         await _repository.DidNotReceive()
@@ -107,7 +107,7 @@ public sealed class EquipmentTypeHandlersTests
     public async Task Create_BandWith27Points_KeepsTheCriterion()
     {
         var result = await CreateHandler.HandleAsync(
-            new CreateEquipmentTypeCommand("Incubadora grande", LimitMode.Band, null, 0.5m, 27, null, null), Token);
+            new CreateEquipmentTypeCommand("Incubadora grande", LimitMode.Band, null, null, 0.5m, 27, null, null), Token);
 
         result.LimitMode.Should().Be(LimitMode.Band);
         result.ToleranceK.Should().Be(0.5m);
@@ -121,11 +121,24 @@ public sealed class EquipmentTypeHandlersTests
         var type = GivenStoredEquipmentType();
 
         await UpdateHandler.HandleAsync(
-            new UpdateEquipmentTypeCommand(2, "Congeladora", LimitMode.Band, null, 1.0m, 9, null, null, true, null), Token);
+            new UpdateEquipmentTypeCommand(2, "Congeladora", LimitMode.Band, null, null, 1.0m, 9, null, null, true, null), Token);
 
         type.LimitMode.Should().Be(LimitMode.Band);
         type.MaxTemperatureC.Should().BeNull();
         type.ToleranceK.Should().Be(1.0m);
+    }
+
+    [Fact] // HU-02 · Regla D-07: PUT con rango +2 … +8 °C
+    public async Task Update_ToRange_StoresMinimumAndMaximum()
+    {
+        var type = GivenStoredEquipmentType();
+
+        var result = await UpdateHandler.HandleAsync(
+            new UpdateEquipmentTypeCommand(2, "Refrigeradora", LimitMode.Range, 2.0m, 8.0m, null, 9, null, null, true, null), Token);
+
+        type.MinTemperatureC.Should().Be(2.0m);
+        type.MaxTemperatureC.Should().Be(8.0m);
+        result.IsLimitSuggested.Should().BeFalse();
     }
 
     [Fact] // HU-02 · Regla: PUT sobre un tipo inexistente responde 404

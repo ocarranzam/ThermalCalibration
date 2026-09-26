@@ -1,5 +1,5 @@
 # HU-08 · Alertar lecturas fuera de límite
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como supervisor quiero que cada lectura mayor que el límite aplicado genere una alerta asociada al sensor y a la marca de tiempo para revisar si fue una variación mínima o una falla del sensor.
 # Perfil: Sistema · Escenarios de prueba: TD-02, TD-15, TD-20, TD-21
@@ -22,6 +22,18 @@ Feature: Alerta por lectura mayor que el límite máximo
       | -4,99  | Sí    | se genera una alerta "AboveLimit"          |
       | -4,90  | Sí    | se genera una alerta "AboveLimit"          |
       | 2,00   | Sí    | se genera una alerta "AboveLimit"          |
+
+  Scenario Outline: Evaluación estricta del rango de una refrigeradora
+    Given la sesión es de una "Refrigeradora" con rango de +2,00 a +8,00 °C, en lugar del límite -5,00 °C
+    When el canal 2 reporta <valor> °C con estado "OK"
+    Then la lectura queda <resultado>
+
+    Examples:
+      | valor | resultado                                                  |
+      | 8,01  | fuera de límite por arriba, con una alerta "AboveLimit"    |
+      | 8,00  | dentro del rango, sin alerta                               |
+      | 2,00  | dentro del rango, sin alerta                               |
+      | 1,99  | fuera de límite por abajo, con una alerta "BelowLimit"     |
 
   Scenario Outline: Evaluación estricta de la banda de tolerancia
     Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo

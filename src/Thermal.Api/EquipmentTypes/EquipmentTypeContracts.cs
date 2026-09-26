@@ -15,6 +15,8 @@ public sealed record CreateEquipmentTypeRequest
 
     public LimitMode? LimitMode { get; init; }
 
+    public decimal? MinTemperatureC { get; init; }
+
     public decimal? MaxTemperatureC { get; init; }
 
     public decimal? ToleranceK { get; init; }
@@ -33,6 +35,8 @@ public sealed record UpdateEquipmentTypeRequest
     public string? Name { get; init; }
 
     public LimitMode? LimitMode { get; init; }
+
+    public decimal? MinTemperatureC { get; init; }
 
     public decimal? MaxTemperatureC { get; init; }
 
@@ -53,9 +57,11 @@ public sealed record EquipmentTypeResponse(
     int Id,
     string Name,
     LimitMode LimitMode,
+    decimal? MinTemperatureC,
     decimal? MaxTemperatureC,
     decimal? ToleranceK,
     bool IsLimitDefined,
+    bool IsLimitSuggested,
     int MinMeasurementPoints,
     int MinSessionDurationMinutes,
     string? Description,
@@ -67,9 +73,11 @@ public sealed record EquipmentTypeResponse(
         dto.Id,
         dto.Name,
         dto.LimitMode,
+        dto.MinTemperatureC,
         dto.MaxTemperatureC,
         dto.ToleranceK,
         dto.IsLimitDefined,
+        dto.IsLimitSuggested,
         dto.MinMeasurementPoints,
         dto.MinSessionDurationMinutes,
         dto.Description,

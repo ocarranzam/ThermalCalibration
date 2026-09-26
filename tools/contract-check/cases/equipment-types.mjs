@@ -19,7 +19,11 @@ export async function cases(check) {
   if (band.json && (band.json.limitMode !== 'Band' || band.json.minMeasurementPoints !== 27 || band.json.maxTemperatureC !== null)) {
     band.problems.push('la respuesta no refleja la banda de 27 puntos');
   }
-  await post('POST máximo con tolerancia', { name: 'X', limitMode: 'Maximum', toleranceK: 1 }, 400);
+  await post('POST rango +2 … +8 °C (D-07)', { name: `${name} R`, limitMode: 'Range', minTemperatureC: 2, maxTemperatureC: 8 }, 201);
+  await post('POST rango con mínimo ≥ máximo', { name: 'X', limitMode: 'Range', minTemperatureC: 8, maxTemperatureC: 2 }, 400);
+  await post('POST rango con tolerancia', { name: 'X', limitMode: 'Range', toleranceK: 1 }, 400);
+  await post('POST banda con mínimo', { name: 'X', limitMode: 'Band', minTemperatureC: 2 }, 400);
+  await post('POST modo Maximum (retirado en D-07)', { name: 'X', limitMode: 'Maximum' }, 400);
   await post('POST banda con máximo', { name: 'X', limitMode: 'Band', maxTemperatureC: 5 }, 400);
   await post('POST modo inválido', { name: 'X', limitMode: 'Rango' }, 400);
   await post('POST 28 puntos', { name: 'X', minMeasurementPoints: 28 }, 400);

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Thermal.Application.Exceptions;
 using Thermal.Domain.EquipmentTypes;
 using Thermal.Infrastructure.Persistence;
@@ -19,7 +20,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
     private async Task<int> InsertAsync(string name, decimal? maxTemperatureC = -5.00m)
     {
         await using var context = database.CreateDbContext();
-        var equipmentType = new EquipmentType(name, LimitMode.Maximum, maxTemperatureC, null, 9, 60, null);
+        var equipmentType = new EquipmentType(name, LimitMode.Range, null, maxTemperatureC, null, 9, 60, null);
         new EquipmentTypeRepository(context).Add(equipmentType);
         await new UnitOfWork(context).SaveChangesAsync(Token);
         return equipmentType.Id;
@@ -29,7 +30,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
     public async Task Add_AssignsIdCreatedAtAndRowVersionFromTheDatabase()
     {
         await using var context = database.CreateDbContext();
-        var equipmentType = new EquipmentType(UniqueName("Ultracongeladora"), LimitMode.Maximum, -60.00m, null, 9, 60, null);
+        var equipmentType = new EquipmentType(UniqueName("Ultracongeladora"), LimitMode.Range, null, -60.00m, null, 9, 60, null);
 
         new EquipmentTypeRepository(context).Add(equipmentType);
         await new UnitOfWork(context).SaveChangesAsync(Token);
@@ -71,7 +72,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         var equipmentType = (await new EquipmentTypeRepository(context).GetByIdAsync(id, Token))!;
         var previousVersion = equipmentType.RowVersion;
 
-        equipmentType.ChangeLimit(TemperatureLimit.Create(-8.00m));
+        equipmentType.ChangeLimit(TemperatureLimit.Range(null, -8.00m));
         await new UnitOfWork(context).SaveChangesAsync(Token);
 
         equipmentType.UpdatedAt.Should().NotBeNull();
@@ -102,11 +103,11 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         var second = (await new EquipmentTypeRepository(secondContext).GetByIdAsync(id, Token))!;
         var versionReadBySecond = second.RowVersion;
 
-        first.ChangeLimit(TemperatureLimit.Create(8.00m));
+        first.ChangeLimit(TemperatureLimit.Range(null, 8.00m));
         await new UnitOfWork(firstContext).SaveChangesAsync(Token);
 
         new EquipmentTypeRepository(secondContext).EnsureVersion(second, versionReadBySecond);
-        second.ChangeLimit(TemperatureLimit.Create(6.00m));
+        second.ChangeLimit(TemperatureLimit.Range(null, 6.00m));
         var saveSecond = () => new UnitOfWork(secondContext).SaveChangesAsync(Token);
 
         await saveSecond.Should().ThrowAsync<ConcurrencyConflictException>();
@@ -131,7 +132,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         int id;
         await using (var context = database.CreateDbContext())
         {
-            var incubator = new EquipmentType(UniqueName("Incubadora"), LimitMode.Band, null, 0.5m, 27, 60, null);
+            var incubator = new EquipmentType(UniqueName("Incubadora"), LimitMode.Band, null, null, 0.5m, 27, 60, null);
             new EquipmentTypeRepository(context).Add(incubator);
             await new UnitOfWork(context).SaveChangesAsync(Token);
             id = incubator.Id;
@@ -147,6 +148,34 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         dto.MinMeasurementPoints.Should().Be(27);
     }
 
+    [Fact] // HU-02 · Regla D-07: al editar el límite sugerido, queda confirmado
+    public async Task ChangeLimit_OnSuggestedSeed_ConfirmsTheLimit()
+    {
+        var name = UniqueName("Conservadora");
+        int id;
+        await using (var context = database.CreateDbContext())
+        {
+            var seededLike = new EquipmentType(name, LimitMode.Range, 2.00m, 8.00m, null, 9, 60, null);
+            new EquipmentTypeRepository(context).Add(seededLike);
+            await new UnitOfWork(context).SaveChangesAsync(Token);
+            id = seededLike.Id;
+            await context.Database.ExecuteSqlAsync(
+                $"UPDATE dbo.EquipmentType SET IsLimitSuggested = 1 WHERE EquipmentTypeId = {id}", Token);
+        }
+
+        await using var editContext = database.CreateDbContext();
+        var type = (await new EquipmentTypeRepository(editContext).GetByIdAsync(id, Token))!;
+        type.IsLimitSuggested.Should().BeTrue();
+
+        type.ChangeLimit(TemperatureLimit.Range(2.00m, 6.00m));
+        await new UnitOfWork(editContext).SaveChangesAsync(Token);
+
+        await using var readContext = database.CreateDbContext();
+        var dto = await new EquipmentTypeReadStore(readContext).GetByIdAsync(id, Token);
+        dto!.IsLimitSuggested.Should().BeFalse();
+        dto.MaxTemperatureC.Should().Be(6.00m);
+    }
+
     [Fact] // HU-02 · Scenario: Registrar un tipo de equipo con límite pendiente (lectura del catálogo inicial)
     public async Task ReadStore_ReturnsSeededTypesWithDefinedAndPendingLimits()
     {
@@ -158,7 +187,11 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
 
         fridge.Should().NotBeNull();
         fridge!.Name.Should().Be("Refrigeradora");
-        fridge.IsLimitDefined.Should().BeFalse();
+        fridge.MinTemperatureC.Should().Be(2.00m);
+        fridge.MaxTemperatureC.Should().Be(8.00m);
+        fridge.IsLimitDefined.Should().BeTrue();
+        fridge.IsLimitSuggested.Should().BeTrue("el +2 … +8 °C es sugerido por la OMS y falta confirmarlo");
+        freezer!.IsLimitSuggested.Should().BeFalse();
         freezer!.MaxTemperatureC.Should().Be(-5.00m);
         freezer.IsLimitDefined.Should().BeTrue();
         freezer.Version.Should().NotBeNullOrEmpty();

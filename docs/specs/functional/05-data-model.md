@@ -2,7 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.8 (borrador para revisión) |
+| Versión | 0.9 (borrador para revisión) |
+| Cambios en 0.9 | D-07: `LimitMode` = `Range` (reemplaza a `Maximum`) con `MinTemperatureC` y/o `MaxTemperatureC`; `EquipmentType.IsLimitSuggested`; `MeasurementSession.MinTemperatureC` copiado; `IsBelowLimit` también para el mínimo del rango. Límites sugeridos en los datos iniciales. |
 | Cambios en 0.8 | D-05: `EquipmentType.LimitMode` (`Maximum`/`Band`) y `ToleranceK`; `MeasurementSession.LimitMode`, `SetpointC` y `ToleranceK` copiados; `Reading.IsBelowLimit`; alertas `BelowLimit` y `BelowLimitSustained`. D-06: hasta 27 canales (`ChannelCount`, `ChannelNumber`, vista pivote con S1…S27) y `EquipmentType.MinMeasurementPoints` (el parámetro global `AppSetting.MinMeasurementPoints` desaparece). |
 | Cambios en 0.7 | `Equipment.Brand` y `Equipment.Model` **obligatorios** (`CK_Equipment_BrandModel`) y `Equipment.IsModelConfirmed`, para los perfiles de eficacia por modelo. Tipo de equipo "Cámara ambiental" en los datos iniciales. Origen: primer registro real ([DATA-1](../../data/DATA-1-analisis.md)). |
 | Cambios en 0.6 | `EquipmentType.RowVersion` (concurrencia optimista, `ETag` de la API) y `CK_EquipmentType_Name` (nombre no vacío y sin espacios en los extremos), alineados con el contrato [thermal-v1.yaml](../../api/thermal-v1.yaml). |
@@ -48,9 +49,11 @@ erDiagram
     EquipmentType {
         int EquipmentTypeId PK
         nvarchar Name UK
-        varchar LimitMode "Maximum o Band"
-        decimal MaxTemperatureC "Maximum; NULL = pendiente"
+        varchar LimitMode "Range o Band"
+        decimal MinTemperatureC "Range; NULL = sin mínimo"
+        decimal MaxTemperatureC "Range; NULL = sin máximo"
         decimal ToleranceK "Band; NULL = pendiente"
+        bit IsLimitSuggested "sugerido por la norma"
         tinyint MinMeasurementPoints "1 a 27, 9 por defecto"
         int MinSessionDurationMinutes "60 por defecto"
         nvarchar Description
@@ -114,7 +117,8 @@ erDiagram
         varchar DurationSource "Base, EquipmentType, ClientRequest"
         nvarchar ClientRequestReference
         varchar LimitMode "copia"
-        decimal MaxTemperatureC "copia del límite al iniciar"
+        decimal MinTemperatureC "copia (Range)"
+        decimal MaxTemperatureC "copia (Range)"
         decimal SetpointC "consigna (Band)"
         decimal ToleranceK "copia (Band)"
         decimal SensorLossThresholdPct "copia del umbral, 60"
@@ -224,7 +228,7 @@ stateDiagram-v2
 
 **`ThermocoupleType`**: tipos de termopar admitidos y su rango físico. Datos iniciales: `T` (-200 a 350 °C) y `K` (-200 a 1260 °C). Se usa para validar el tipo declarado de cada canal (FK) y para marcar como `OutOfRange` los valores imposibles para el tipo declarado. Solo lo modifica el administrador. En la fase 1 es de solo lectura.
 
-**`EquipmentType`**: catálogo ampliable de tipos de equipo (Refrigeradora, Congeladora, Conservadora, Incubadora, Cámara ambiental…) con su **criterio de límite** (D-05): `LimitMode` = `Maximum` con `MaxTemperatureC`, o `Band` con `ToleranceK` (± K alrededor de la consigna de cada sesión); NULL significa *límite pendiente*. Tiene también los **puntos de medición mínimos** que exige su norma (`MinMeasurementPoints`, 1 a 27; 9 por defecto y 27 en incubadoras de más de 50 L, D-06) y la **duración mínima de sesión** (`MinSessionDurationMinutes`, 60 min por defecto). Nombre único. Solo el administrador lo crea o edita, y registra `UpdatedAt` al editar. Se desactiva en lugar de borrarse cuando tiene equipos. `RowVersion` cambia en cada edición y la API lo usa como `ETag` para rechazar ediciones simultáneas (412). La base redondea un límite con más de 2 decimales, así que el rechazo de "-5,123" lo hace el dominio (`TemperatureLimit`).
+**`EquipmentType`**: catálogo ampliable de tipos de equipo (Refrigeradora, Congeladora, Conservadora, Incubadora, Cámara ambiental…) con su **criterio de límite** (D-05, D-07): `LimitMode` = `Range` con `MinTemperatureC` y/o `MaxTemperatureC` (límites absolutos), o `Band` con `ToleranceK` (± K alrededor de la consigna de cada sesión); sin valores, el límite está *pendiente*. `IsLimitSuggested` = 1 marca los valores sugeridos por la norma en los datos iniciales (refrigeradora y conservadora +2 … +8 °C, incubadora ±1,0 K, cámara ambiental ±2,0 K), hasta que el administrador edita el límite. Tiene también los **puntos de medición mínimos** que exige su norma (`MinMeasurementPoints`, 1 a 27; 9 por defecto y 27 en incubadoras de más de 50 L, D-06) y la **duración mínima de sesión** (`MinSessionDurationMinutes`, 60 min por defecto). Nombre único. Solo el administrador lo crea o edita, y registra `UpdatedAt` al editar. Se desactiva en lugar de borrarse cuando tiene equipos. `RowVersion` cambia en cada edición y la API lo usa como `ETag` para rechazar ediciones simultáneas (412). La base redondea un límite con más de 2 decimales, así que el rechazo de "-5,123" lo hace el dominio (`TemperatureLimit`).
 
 **`AppSetting`**: parámetros del sistema que mantiene el administrador (clave y valor). Incluye el intervalo de muestreo, la duración base (60 min), la duración máxima planificable (7 días), el descanso del adquisidor (15 min, propuesta) y la política de pérdida de sensores (umbral del 60 %, escalamiento en la 3.ª muestra y falla a los 30 min). Los que afectan la evaluación de una sesión se **copian** en `MeasurementSession` al iniciarla.
 
@@ -284,8 +288,8 @@ Volumen por sesión: 10 × 31 = 310 filas en la sesión base; 7 210 en 24 h; 50 
 
 | `AlertType` | Severidad | Canal | Lectura | `ValueC` / `LimitC` | Cuándo se genera |
 |---|---|---|---|---|---|
-| `AboveLimit` | `Warning` | Sí | Sí | Sí / Sí | En **cada** lectura `OK` fuera de límite por arriba: `TemperatureC > MaxTemperatureC` (máximo) o `> SetpointC + ToleranceK` (banda) |
-| `BelowLimit` | `Warning` | Sí | Sí | Sí / Sí | En **cada** lectura `OK` por debajo de la banda: `TemperatureC < SetpointC − ToleranceK` (solo con `LimitMode` = `Band`, D-05) |
+| `AboveLimit` | `Warning` | Sí | Sí | Sí / Sí | En **cada** lectura `OK` fuera de límite por arriba: `TemperatureC > MaxTemperatureC` (rango) o `> SetpointC + ToleranceK` (banda) |
+| `BelowLimit` | `Warning` | Sí | Sí | Sí / Sí | En **cada** lectura `OK` fuera de límite por abajo: `TemperatureC < MinTemperatureC` (rango) o `< SetpointC − ToleranceK` (banda) |
 | `AboveLimitSustained` | `Critical` | Sí | Sí | Sí / Sí | Cuando un canal acumula `AboveLimitCriticalMinutes` (30) seguidos de lecturas fuera de límite. Una vez por racha. Lleva `SuspectedCause`: `Sensor` si menos de la mitad de los canales `OK` están fuera de límite, y `Equipment` si lo está la mitad o más. |
 | `BelowLimitSustained` | `Critical` | Sí | No | No / Sí | Igual que `AboveLimitSustained`, con las lecturas por debajo de la banda. Lleva `SuspectedCause`. |
 | `MixedThermocoupleTypes` | `Warning` | No | No | No / No | Al solicitar el inicio de una sesión con canales T y K |
@@ -347,12 +351,12 @@ Las alertas `Critical` se notifican visualmente y exigen reconocimiento. Las `Wa
 | `CK_MeasurementSession_MaxDuration` | Duración ≤ `PlannedDurationMinutes` × 60. | RN-04 |
 | `CK_MeasurementSession_MinDuration` | `Completed` exige una duración ≥ `PlannedDurationMinutes` × 60. | RN-03 |
 | `CK_MeasurementSession_MinPoints` | Mínimo de puntos entre 1 y 27. | RN-20 |
-| `CK_MeasurementSession_LimitMode` | `Maximum`: sin consigna ni tolerancia. `Band`: sin máximo, tolerancia positiva o pendiente, y consigna obligatoria para pasar de `Configured`. | RN-06, D-05 |
+| `CK_MeasurementSession_LimitMode` | `Range`: sin consigna ni tolerancia, y mínimo menor que máximo. `Band`: sin mínimo ni máximo, tolerancia positiva o pendiente, y consigna obligatoria para pasar de `Configured`. | RN-06, D-05, D-07 |
 | `CK_MeasurementSession_BelowMinAck` | Con menos puntos que el mínimo, la sesión solo puede salir de `Configured`/`Cancelled` si tiene `BelowMinimumAcknowledgedAt`. | RN-20 |
 | `CK_MeasurementSession_MixedAck` | Con mezcla, la sesión solo puede salir de `Configured`/`Cancelled` si tiene `MixedTypesAcknowledgedAt`. | RN-05 |
 | `UQ_SessionChannel_Session_Channel` | Un número de canal por sesión. | RN-01 |
 | `CK_SessionChannel_ChannelNumber` | Canal de 1 a 27 (D-06). | RN-01 |
-| `CK_EquipmentType_LimitMode` | Cada modo usa solo su valor: `Maximum` sin tolerancia; `Band` sin máximo y con tolerancia positiva o pendiente. | RN-06, D-05 |
+| `CK_EquipmentType_LimitMode` | Cada modo usa solo sus valores: `Range` sin tolerancia y con mínimo menor que máximo; `Band` sin mínimo ni máximo y con tolerancia positiva o pendiente. | RN-06, D-05, D-07 |
 | `CK_EquipmentType_MinPoints` | Puntos mínimos del tipo entre 1 y 27. | RN-20, D-06 |
 | `CK_Reading_LimitSide` | Una lectura no puede estar a la vez por encima y por debajo del límite. | RN-07 |
 | `FK_SessionChannel_ThermocoupleType` | El tipo declarado debe existir (T o K). | RN-01 |
@@ -377,8 +381,8 @@ Las alertas `Critical` se notifican visualmente y exigen reconocimiento. Las `Wa
 | RA-04 | Para solicitar el inicio hacen falta: al menos 1 canal activo, un adquisidor detectado (`AcquisitionDeviceId` no NULL), todos los canales ≤ `ChannelCount` y el puerto COM sin otra sesión `Running`. | Reglas entre tablas y de estado. |
 | RA-23 | `IsBelowMinimumPoints` = canales activos < `MinMeasurementPoints` (copiado del tipo de equipo al solicitar el inicio). Si es verdadero, se crea la alerta `BelowMinimumPoints` y se exige la confirmación. | Regla entre tablas y parámetros. |
 | RA-05 | `HasMixedThermocoupleTypes` se calcula con los canales activos (`vSessionThermocoupleMix`) al solicitar el inicio. Si hay mezcla, se crea la alerta `MixedThermocoupleTypes`. | Regla entre tablas. |
-| RA-06 | Si el límite del tipo está pendiente al iniciar (`MaxTemperatureC` NULL con `Maximum`, o `ToleranceK` NULL con `Band`), se crea la alerta `LimitNotDefined` y no se evalúa el límite. | Evento de negocio. |
-| RA-07 | Solo se evalúan lecturas `SensorStatus = 'OK'`. `Maximum`: `IsAboveLimit = 1` si `TemperatureC > MaxTemperatureC`. `Band`: `IsAboveLimit = 1` si `TemperatureC > SetpointC + ToleranceK` e `IsBelowLimit = 1` si `TemperatureC < SetpointC − ToleranceK`. Cada caso genera una alerta `AboveLimit` o `BelowLimit`. | Requiere los valores copiados en la sesión. |
+| RA-06 | Si el límite del tipo está pendiente al iniciar (sin mínimo ni máximo con `Range`, o `ToleranceK` NULL con `Band`), se crea la alerta `LimitNotDefined` y no se evalúa el límite. | Evento de negocio. |
+| RA-07 | Solo se evalúan lecturas `SensorStatus = 'OK'`. `Range`: `IsAboveLimit = 1` si `TemperatureC > MaxTemperatureC` e `IsBelowLimit = 1` si `TemperatureC < MinTemperatureC`. `Band`: `IsAboveLimit = 1` si `TemperatureC > SetpointC + ToleranceK` e `IsBelowLimit = 1` si `TemperatureC < SetpointC − ToleranceK`. Cada caso genera una alerta `AboveLimit` o `BelowLimit`. | Requiere los valores copiados en la sesión. |
 | RA-08 | `TemperatureC` es NULL para `OpenCircuit`, `ShortCircuit`, `OutOfRange` e `InvalidFrame`. En `TypeMismatch` guarda el valor informado. | Parcialmente expresable (ver §5). |
 | RA-09 | Validación de tramas V1–V10, reintentos y verificación de tipo según [02-serial-protocol.md](02-serial-protocol.md). | Lógica de protocolo. |
 | RA-10 | Alertas `SensorFault`, `TypeMismatch`, `SensorLoss` y `SensorLossPersistent` por episodio. `AboveLimit` por lectura. | Requiere el estado previo. |

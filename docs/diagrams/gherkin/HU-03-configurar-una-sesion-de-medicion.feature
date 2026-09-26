@@ -1,5 +1,5 @@
 # HU-03 · Configurar una sesión de medición
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero configurar la sesión eligiendo el equipo, el puerto COM, el adquisidor detectado y de 1 a 27 canales con su tipo de termopar y su ubicación para iniciar una captura trazable.
 # Perfil: Técnico · Escenarios de prueba: TD-01, TD-11

@@ -1,5 +1,5 @@
 # HU-15 · Priorizar alertas: críticas y advertencias
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero que el sistema solo me interrumpa con las alertas críticas y registre las demás sin avisos para no tener que atender cada variación de temperatura, que es esperable por distintas causas, y actuar rápido cuando algo compromete la sesión.
 # Perfil: Técnico, Supervisor · Escenarios de prueba: TD-02, TD-04, TD-16, TD-20, TD-21

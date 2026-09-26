@@ -8,7 +8,7 @@ Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de re
 |---|---|
 | Especificación y arquitectura | Completas ([docs/](docs/)) |
 | Backend implementado | Catálogo de **tipos de equipo** (HU-02): `POST`, `GET` y `PUT` de `/api/v1/equipment-types` |
-| Pruebas | 82 automatizadas (73 unitarias y 9 de integración), todas correctas |
+| Pruebas | 94 automatizadas (84 unitarias y 10 de integración), todas correctas |
 | Contrato | [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml), verificado contra la API en ejecución ([validation.md §5.2](docs/validation.md#52-auditoría-código--contrato--gherkin-2026-09-25)) |
 
 > Ante cualquier diferencia entre este README y la especificación, prevalece [docs/specs/functional/](docs/specs/functional/).
@@ -238,8 +238,8 @@ Todo lo que es código o contrato va en **inglés**, con los mismos nombres en t
 
 | Proyecto | Qué prueba | Requiere |
 |---|---|---|
-| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (73) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
-| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (9) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia y fechas | Docker en ejecución |
+| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (84) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
+| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (10) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia y fechas | Docker en ejecución |
 
 ```bash
 dotnet test --solution Thermal.slnx                                             # todas
@@ -263,7 +263,7 @@ dotnet test --project tests/Thermal.UnitTests -- --filter-trait "Story=HU-02"   
 | Duración de la sesión | Base de **1 h**. Mayor si lo exige el tipo de equipo o lo pide el cliente (con referencia), hasta varios días (máximo 7 por defecto). Se cierra sola al cumplirse | RN-04 |
 | Sesión completa | Cumplió la duración planificada **y** tiene 1 h de datos válidos (31 muestras con 120 s) | RN-03 |
 | Descanso del kit de medición | **15 min** entre sesiones con el mismo adquisidor. Un supervisor puede autorizar un inicio anticipado | RN-17 |
-| Límite | **Por tipo de equipo** (D-05): **máximo** (refrigeración; fuera si la lectura es **estrictamente mayor**: con -5,0 °C, -5,0 cumple y -4,9 no) o **banda** consigna ± tolerancia (incubadoras, cámaras ambientales; fuera por arriba o por abajo). Se copia en la sesión al iniciar | RN-06 a RN-08, D-05 |
+| Límite | **Por tipo de equipo** (D-05, D-07): **rango** con mínimo y/o máximo (refrigeradora +2 … +8 °C; congeladora solo máximo: con -5,0 °C, -5,0 cumple y -4,9 no) o **banda** consigna ± tolerancia (incubadoras, cámaras ambientales). Comparación estricta, por arriba y por abajo. Catálogo inicial con límites **sugeridos** por la norma, a confirmar. Se copia en la sesión al iniciar | RN-06 a RN-08, D-05, D-07 |
 | Mezcla de termopares T y K | Se permite, con advertencia y confirmación | RN-05 |
 | Muestra afectada | **Más del 60 %** de los canales sin lectura válida (6 de 10 no la afecta, 7 de 10 sí) | RN-14 |
 | Pérdida de sensores | Advertencia en la 1.ª muestra afectada, **crítica en la 3.ª** seguida y **sesión fallida a los 30 min** seguidos. Un corte de comunicación de 30 min también hace fallar la sesión | RN-14, RN-15 |

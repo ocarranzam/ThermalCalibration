@@ -4,7 +4,8 @@ Módulos: **Sesión de Medición** (SM), **Adquisición Serial** (AS) y **Export
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.8 (borrador para revisión) |
+| Versión | 0.9 (borrador para revisión) |
+| Cambios en 0.9 | D-07: criterio `Range` (mínimo y/o máximo) en lugar de `Maximum`, y límites sugeridos en el catálogo inicial (HU-02, HU-08, Excel). |
 | Cambios en 0.8 | D-05: criterio de límite por tipo (máximo o banda alrededor de la consigna) en HU-02, HU-03, HU-05, HU-08 y el Excel. D-06: hasta 27 canales (HU-03) y puntos mínimos por tipo de equipo (HU-02, HU-17; 27 en incubadoras de más de 50 L). |
 | Cambios en 0.7 | HU-01: marca y modelo obligatorios y registro de un modelo inferido (a partir del primer registro real, [DATA-1](../../data/DATA-1-analisis.md)). |
 | Cambios en 0.6 | Trazabilidad: TD-19 en HU-02, RN-13 citada en HU-08 y HU-09, enlace del índice a HU-10 corregido. Cada historia tiene su `.feature` en [docs/diagrams/gherkin/](../../diagrams/gherkin/) (ver [validation.md](../../validation.md)). |
@@ -128,7 +129,7 @@ Feature: Registro de empresas cliente y equipos
 
 **Como** administrador **quiero** mantener el catálogo de tipos de equipo con su temperatura máxima admisible, o dejarla pendiente, **para** que las sesiones evalúen el límite correcto sin alterar las mediciones ya registradas.
 
-Reglas: RN-04, RN-06, RN-07, RN-08, RN-20, D-05 y D-06. Cada tipo tiene un **criterio de límite** (`Maximum` o `Band`, con su máximo o su tolerancia, que pueden quedar pendientes) y sus **puntos de medición mínimos** (1 a 27; 9 por defecto). Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). Cada tipo tiene una **duración mínima de sesión** (60 min por defecto), por si su forma de funcionar exige más de 1 h de datos. El administrador también mantiene los parámetros de `AppSetting`: el umbral de pérdida de sensores (60 %), las muestras para escalar (3), los minutos para fallar (30), el descanso del adquisidor (15 min) y la duración máxima planificable (7 días).
+Reglas: RN-04, RN-06, RN-07, RN-08, RN-20, D-05, D-06 y D-07. Cada tipo tiene un **criterio de límite** (`Range`, con mínimo y/o máximo, o `Band`, con una tolerancia; pueden quedar pendientes o venir **sugeridos** por la norma en el catálogo inicial, D-07) y sus **puntos de medición mínimos** (1 a 27; 9 por defecto). Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). Cada tipo tiene una **duración mínima de sesión** (60 min por defecto), por si su forma de funcionar exige más de 1 h de datos. El administrador también mantiene los parámetros de `AppSetting`: el umbral de pérdida de sensores (60 %), las muestras para escalar (3), los minutos para fallar (30), el descanso del adquisidor (15 min) y la duración máxima planificable (7 días).
 
 ```gherkin
 Feature: Catálogo de tipos de equipo con límite máximo
@@ -140,6 +141,17 @@ Feature: Catálogo de tipos de equipo con límite máximo
     When registro el tipo de equipo "Ultracongeladora" con límite máximo "-60,0" °C
     Then el tipo queda activo con límite máximo -60,00 °C
     And su duración mínima de sesión es 60 minutos
+
+  Scenario: Registrar un tipo de equipo con rango de temperatura
+    When registro el tipo de equipo "Refrigeradora de vacunas" con criterio "Range", mínimo "2,0" °C y máximo "8,0" °C
+    Then el tipo queda activo con rango de +2,00 a +8,00 °C y el límite confirmado
+
+  Scenario: Confirmar los límites sugeridos del catálogo inicial
+    Given el tipo "Refrigeradora" tiene el rango sugerido de +2,00 a +8,00 °C (OMS PQS E003)
+    And el catálogo lo muestra con la etiqueta "Límite sugerido, pendiente de confirmar"
+    When el administrador guarda el tipo con el rango de +1,00 a +6,00 °C para un banco de sangre
+    Then el límite queda confirmado con +1,00 a +6,00 °C
+    And el catálogo deja de mostrarlo como sugerido
 
   Scenario: Registrar un tipo de equipo con banda de tolerancia
     When registro el tipo de equipo "Cámara ambiental" con criterio "Band" y tolerancia "2,0" K
@@ -153,14 +165,15 @@ Feature: Catálogo de tipos de equipo con límite máximo
     And las sesiones ya registradas conservan su mínimo copiado
 
   Scenario Outline: Rechazar un valor que no corresponde al criterio de límite
-    When intento registrar un tipo con criterio "<criterio>", límite máximo "<maximo>" y tolerancia "<tolerancia>"
+    When intento registrar un tipo con criterio "<criterio>", mínimo "<minimo>", máximo "<maximo>" y tolerancia "<tolerancia>"
     Then el sistema rechaza el registro con el mensaje "<mensaje>"
 
     Examples:
-      | criterio | maximo | tolerancia | mensaje                                             |
-      | Maximum  | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band          |
-      | Band     | 5,0    | 2,0        | El límite máximo solo se usa con el modo Maximum    |
-      | Band     |        | 0          | La tolerancia debe ser mayor que 0                  |
+      | criterio | minimo | maximo | tolerancia | mensaje                                                      |
+      | Range    |        | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band                   |
+      | Range    | 8,0    | 2,0    |            | El límite mínimo debe ser menor que el máximo                |
+      | Band     |        | 5,0    | 2,0        | Los límites mínimo y máximo solo se usan con el modo Range   |
+      | Band     |        |        | 0          | La tolerancia debe ser mayor que 0                           |
 
   Scenario Outline: Rechazar puntos de medición mínimos fuera de rango
     When intento fijar los puntos de medición mínimos de "Congeladora" en <puntos>
@@ -588,7 +601,7 @@ Feature: Registro de lecturas inválidas
 
 **Como** supervisor **quiero** que cada lectura mayor que el límite aplicado genere una alerta asociada al sensor y a la marca de tiempo **para** revisar si fue una variación mínima o una falla del sensor.
 
-Reglas: RN-07, RN-10, RN-13, RN-18, RN-19, D-05 y [01 §6.4](01-vision-document.md#64-fuera-de-límite-sostenido-sensor-o-equipo). Comparación estricta: `TemperatureC > MaxTemperatureC` con criterio máximo; con criterio banda, `TemperatureC > SetpointC + ToleranceK` (`AboveLimit`) o `TemperatureC < SetpointC − ToleranceK` (`BelowLimit`, `IsBelowLimit` = 1). Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite. Es una **advertencia**: se registra y se resalta, pero **no** interrumpe al técnico con avisos, porque la temperatura puede variar por distintas causas (HU-15).
+Reglas: RN-07, RN-10, RN-13, RN-18, RN-19, D-05 y [01 §6.4](01-vision-document.md#64-fuera-de-límite-sostenido-sensor-o-equipo). Comparación estricta: `TemperatureC > MaxTemperatureC` con criterio rango (y `TemperatureC < MinTemperatureC` para el mínimo); con criterio banda, `TemperatureC > SetpointC + ToleranceK` (`AboveLimit`) o `TemperatureC < SetpointC − ToleranceK` (`BelowLimit`, `IsBelowLimit` = 1). Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite. Es una **advertencia**: se registra y se resalta, pero **no** interrumpe al técnico con avisos, porque la temperatura puede variar por distintas causas (HU-15).
 
 ```gherkin
 Feature: Alerta por lectura mayor que el límite máximo
@@ -608,6 +621,18 @@ Feature: Alerta por lectura mayor que el límite máximo
       | -4,99  | Sí    | se genera una alerta "AboveLimit"          |
       | -4,90  | Sí    | se genera una alerta "AboveLimit"          |
       | 2,00   | Sí    | se genera una alerta "AboveLimit"          |
+
+  Scenario Outline: Evaluación estricta del rango de una refrigeradora
+    Given la sesión es de una "Refrigeradora" con rango de +2,00 a +8,00 °C, en lugar del límite -5,00 °C
+    When el canal 2 reporta <valor> °C con estado "OK"
+    Then la lectura queda <resultado>
+
+    Examples:
+      | valor | resultado                                                  |
+      | 8,01  | fuera de límite por arriba, con una alerta "AboveLimit"    |
+      | 8,00  | dentro del rango, sin alerta                               |
+      | 2,00  | dentro del rango, sin alerta                               |
+      | 1,99  | fuera de límite por abajo, con una alerta "BelowLimit"     |
 
   Scenario Outline: Evaluación estricta de la banda de tolerancia
     Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo
@@ -1357,8 +1382,8 @@ Formato ficha (etiqueta en la columna A, valor en la columna B), seguido de la t
 | Marca / Modelo | `Equipment.Brand` / `Equipment.Model` | Haier / HBF-205 |
 | N.º de serie | `Equipment.SerialNumber` | SN-88231 |
 | Código interno | `Equipment.InternalCode` | ACT-00451 |
-| Límite aplicado (°C) | Criterio máximo: `MaxTemperatureC`. Criterio banda: `SetpointC ± ToleranceK`. Sin valor: "No definido (no se evaluó)" | -5,00 · o 20,00 ± 2,00 |
-| Criterio de límite | `LimitMode` traducido | Máximo: fuera de límite si la lectura es mayor que el límite. Banda: fuera de límite si se aleja de la consigna más que la tolerancia |
+| Límite aplicado (°C) | Criterio rango: `MinTemperatureC … MaxTemperatureC` (o solo uno de ellos). Criterio banda: `SetpointC ± ToleranceK`. Sin valor: "No definido (no se evaluó)". Si era sugerido al iniciar, se añade "(sugerido por la norma)" | 2,00 … 8,00 · o 20,00 ± 2,00 |
+| Criterio de límite | `LimitMode` traducido | Rango: fuera de límite si la lectura es mayor que el máximo o menor que el mínimo. Banda: fuera de límite si se aleja de la consigna más que la tolerancia |
 | Umbral de pérdida de sensores | `SensorLossThresholdPct` | 60 % (muestra afectada si más del 60 % de los canales no tiene dato válido) |
 | Técnico responsable | `AppUser.FullName` (técnico) | María Quispe |
 | Adquisidor | `AcquisitionDevice.DeviceIdentifier`, `Platform`, `FirmwareVersion`, `AcquisitionMode` | ADQ-ARD-0001 (Arduino, fw 1.2.0, POLL) |
@@ -1413,7 +1438,7 @@ Una fila por **muestra programada**, de 1 hasta la última muestra de la sesión
 | Caso | `SensorStatus` / condición | Contenido de la celda | Formato |
 |---|---|---|---|
 | Lectura válida dentro del límite | `OK`, `IsAboveLimit` = 0 | Número, p. ej. `-18,25` | Normal |
-| Lectura **por debajo de la banda** | `OK`, `IsBelowLimit` = 1 | Número, p. ej. `17,90` | Fondo azul claro `#DDEBF7`, fuente azul oscura `#1F4E78`, negrita |
+| Lectura **por debajo del límite** (mínimo del rango o banda) | `OK`, `IsBelowLimit` = 1 | Número, p. ej. `17,90` | Fondo azul claro `#DDEBF7`, fuente azul oscura `#1F4E78`, negrita |
 | Lectura **fuera de límite** | `OK`, `IsAboveLimit` = 1 | Número, p. ej. `-4,90` | Fondo rojo claro `#FFC7CE`, fuente roja oscura `#9C0006`, negrita |
 | Termopar abierto | `OpenCircuit` | Texto `ABIERTO` | Fondo gris `#D9D9D9`, fuente gris oscura |
 | Cortocircuito | `ShortCircuit` | Texto `CORTO` | Fondo gris `#D9D9D9` |
@@ -1435,7 +1460,7 @@ Una fila por alerta de la sesión, ordenadas por `OccurredAt` y después por `Al
 | Columna | Encabezado | Origen |
 |---|---|---|
 | A | `Fecha y hora` | `Alert.OccurredAt` |
-| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Fuera de límite sostenido, Bajo la banda, Bajo la banda sostenido, Mezcla de termopares, Menos puntos que el mínimo, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de sensores persistente, Sesión fallida, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
+| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Fuera de límite sostenido, Bajo el límite, Bajo el límite sostenido, Mezcla de termopares, Menos puntos que el mínimo, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de sensores persistente, Sesión fallida, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
 | C | `Severidad` | `Severity`: Info, Advertencia, Crítica |
 | D | `Sensor` | `S{ChannelNumber} ({ubicación})` o vacío si la alerta es de toda la sesión |
 | E | `Muestra` | `Reading.SampleNumber` o la muestra de inicio del episodio, o vacío |

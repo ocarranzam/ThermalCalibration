@@ -15,10 +15,11 @@ public sealed class EquipmentTypeTests
         decimal? maxTemperatureC = -5.00m,
         int minSessionDurationMinutes = EquipmentType.BaseSessionDurationMinutes,
         string? description = null,
-        LimitMode limitMode = LimitMode.Maximum,
+        LimitMode limitMode = LimitMode.Range,
         decimal? toleranceK = null,
-        int minMeasurementPoints = MeasurementPoints.DefaultMinimum) =>
-        new(name, limitMode, maxTemperatureC, toleranceK, minMeasurementPoints, minSessionDurationMinutes, description);
+        int minMeasurementPoints = MeasurementPoints.DefaultMinimum,
+        decimal? minTemperatureC = null) =>
+        new(name, limitMode, minTemperatureC, maxTemperatureC, toleranceK, minMeasurementPoints, minSessionDurationMinutes, description);
 
     [Fact] // HU-02 · Scenario: Registrar un tipo de equipo con límite definido
     public void Create_WithDefinedLimit_IsActiveWithLimitAndBaseDuration()
@@ -103,7 +104,7 @@ public sealed class EquipmentTypeTests
         // La copia del límite en MeasurementSession (RN-08) se probará cuando exista ese agregado.
         var freezer = NewEquipmentType(maxTemperatureC: -5.00m);
 
-        freezer.ChangeLimit(TemperatureLimit.Create(-8.00m));
+        freezer.ChangeLimit(TemperatureLimit.Range(null, -8.00m));
 
         freezer.MaxTemperatureC.Should().Be(-8.00m);
     }
@@ -113,7 +114,7 @@ public sealed class EquipmentTypeTests
     {
         var fridge = NewEquipmentType("Refrigeradora", maxTemperatureC: null);
 
-        fridge.ChangeLimit(TemperatureLimit.Create(8.00m));
+        fridge.ChangeLimit(TemperatureLimit.Range(null, 8.00m));
 
         fridge.Limit.IsDefined.Should().BeTrue();
         fridge.MaxTemperatureC.Should().Be(8.00m);
@@ -209,7 +210,7 @@ public sealed class EquipmentTypeTests
     }
 
     [Theory] // HU-02 · Regla D-05: cada modo usa solo su valor (CK_EquipmentType_LimitMode)
-    [InlineData(LimitMode.Maximum, null, 1.0, "ToleranceK")]
+    [InlineData(LimitMode.Range, null, 1.0, "ToleranceK")]
     [InlineData(LimitMode.Band, -5.0, null, "MaxTemperatureC")]
     [InlineData(LimitMode.Band, null, 0.0, "ToleranceK")]
     [InlineData(LimitMode.Band, null, -1.0, "ToleranceK")]
@@ -264,4 +265,31 @@ public sealed class EquipmentTypeTests
 
         incubator.MinMeasurementPoints.Should().Be(27);
     }
+
+    [Fact] // HU-02 · Regla D-07: rango absoluto con mínimo y máximo (refrigeradora de +2 a +8 °C)
+    public void Create_WithRange_StoresMinimumAndMaximum()
+    {
+        var fridge = NewEquipmentType("Refrigeradora de vacunas", minTemperatureC: 2.0m, maxTemperatureC: 8.0m);
+
+        fridge.LimitMode.Should().Be(LimitMode.Range);
+        fridge.MinTemperatureC.Should().Be(2.00m);
+        fridge.MaxTemperatureC.Should().Be(8.00m);
+        fridge.Limit.IsDefined.Should().BeTrue();
+    }
+
+    [Theory] // HU-02 · Regla D-07: el mínimo debe ser menor que el máximo
+    [InlineData(8.0, 2.0)]
+    [InlineData(5.0, 5.0)]
+    public void Create_WithMinimumNotBelowMaximum_IsRejected(double min, double max)
+    {
+        var create = () => NewEquipmentType(minTemperatureC: (decimal)min, maxTemperatureC: (decimal)max);
+
+        create.Should().Throw<DomainValidationException>()
+            .WithMessage("El límite mínimo debe ser menor que el máximo")
+            .Which.Property.Should().Be(nameof(EquipmentType.MinTemperatureC));
+    }
+
+    [Fact] // HU-02 · Regla D-07: un tipo creado por el administrador tiene el límite confirmado (no sugerido)
+    public void Create_ByAdministrator_HasConfirmedLimit() =>
+        NewEquipmentType().IsLimitSuggested.Should().BeFalse();
 }

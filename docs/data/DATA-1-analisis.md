@@ -95,8 +95,8 @@ El entrevistado recuerda la marca, pero no el modelo. Como el modelo es la clave
 | Intervalo de muestreo | RN-02: 120 s **[PC-01]** | 300 s | ✅ Admisible como parámetro (`SamplingIntervalSeconds`), dentro del rango de la OMS (1–15 min); no cumple los 60 s de IEC 60068-3-5 y DKD-R 5-7 (P-11) |
 | Duración | RN-04: base 1 h, por pedido del cliente hasta 7 días | 72 h | ✅ Equivalente al escenario TD-17 (72 h) |
 | Pérdida de sensores | RN-14: afectada si falta más del 60 % | Máx. 2 de 12 faltantes | ✅ 0 muestras afectadas. S9 sin datos 55 min al final: solo `SensorFault` (con 12 canales, afecta desde 8 sin dato) |
-| Límite | RN-06/07: criterio por tipo (**D-05**): "Cámara ambiental" usa **banda** alrededor de la consigna | Cámara a ~19,4 °C, consigna desconocida | ✅ Modelado con banda; la tolerancia queda pendiente. Referencia: la ficha del fabricante admite ±0,5 … 2 K de homogeneidad |
-| Tipo de equipo | Catálogo inicial | Cámara ambiental | Añadido: criterio `Band`, tolerancia pendiente, 9 puntos mínimos |
+| Límite | RN-06/07: criterio por tipo (**D-05**): "Cámara ambiental" usa **banda** alrededor de la consigna, con tolerancia **sugerida** de ±2,0 K (D-07) | Cámara a ~19,4 °C, consigna desconocida | ✅ Con consigna 20 °C y ±2,0 K, las lecturas del estado estacionario (18,3 … 20,4 °C) quedarían dentro de la banda. La tolerancia sugerida sale de la homogeneidad máxima declarada por el fabricante (±0,5 … 2 K) |
+| Tipo de equipo | Catálogo inicial | Cámara ambiental | Añadido: criterio `Band`, tolerancia sugerida ±2,0 K, 9 puntos mínimos |
 | Marca y modelo | Opcionales en `Equipment` | Modelo desconocido en campo | Pasan a ser **obligatorios**: son la clave de los perfiles de eficacia |
 
 ## 6. Datos que conviene pedir al entrevistado

@@ -12,6 +12,7 @@ public sealed record UpdateEquipmentTypeCommand(
     int Id,
     string Name,
     LimitMode? LimitMode,
+    decimal? MinTemperatureC,
     decimal? MaxTemperatureC,
     decimal? ToleranceK,
     int? MinMeasurementPoints,
@@ -37,7 +38,7 @@ internal sealed class UpdateEquipmentTypeCommandHandler(
 
         equipmentType.Rename(command.Name);
         equipmentType.ChangeLimit(TemperatureLimit.For(
-            command.LimitMode ?? LimitMode.Maximum, command.MaxTemperatureC, command.ToleranceK));
+            command.LimitMode ?? LimitMode.Range, command.MinTemperatureC, command.MaxTemperatureC, command.ToleranceK));
         equipmentType.ChangeMinMeasurementPoints(command.MinMeasurementPoints ?? MeasurementPoints.DefaultMinimum);
         equipmentType.ChangeMinSessionDuration(
             command.MinSessionDurationMinutes ?? EquipmentType.BaseSessionDurationMinutes);

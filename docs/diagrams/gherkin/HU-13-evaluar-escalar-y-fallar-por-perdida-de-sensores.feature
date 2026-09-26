@@ -1,5 +1,5 @@
 # HU-13 · Evaluar, escalar y fallar por pérdida de sensores
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como supervisor quiero que el sistema marque las muestras en las que más del 60 % de los sensores dejaron de enviar datos válidos, que me avise de forma crítica si la pérdida no se restablece en la 3.ª medición, y que dé la sesión por fallida si dura 30 min, para actuar a tiempo sin invalidar la sesión por fallas aisladas.
 # Perfil: Sistema · Escenarios de prueba: TD-03, TD-04, TD-05, TD-15, TD-16, TD-18

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ThermalCalibration API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     API REST del Sistema de Monitoreo Térmico para Calibración de Equipos de Refrigeración.
 
@@ -20,9 +20,10 @@ info:
     - Errores en formato Problem Details (RFC 7807), con el tipo de contenido `application/problem+json`.
     - Control de concurrencia optimista: `POST`, `GET` y `PUT` devuelven `ETag`, y `PUT` acepta `If-Match`.
     - Fechas en la zona del laboratorio (America/Lima, `-05:00`), redondeadas al segundo.
-    - Criterio de límite por tipo (D-05): `Maximum` (fuera de límite si la lectura es mayor que `maxTemperatureC`,
-      refrigeración) o `Band` (fuera de límite si se aleja de la consigna de la sesión más que `toleranceK`, por
-      arriba o por abajo; incubadoras y cámaras ambientales). Puntos de medición mínimos por tipo (D-06), de 1 a 27.
+    - Criterio de límite por tipo (D-05, D-07): `Range` (límites absolutos `minTemperatureC` y/o `maxTemperatureC`:
+      refrigeradora +2 … +8 °C, congeladora solo máximo) o `Band` (consigna de la sesión ± `toleranceK`, por arriba o
+      por abajo: incubadoras y cámaras ambientales). `isLimitSuggested` indica valores sugeridos por la norma en los
+      datos iniciales, pendientes de confirmar. Puntos de medición mínimos por tipo (D-06), de 1 a 27.
     - No hay `DELETE`: un tipo de equipo no se borra, se desactiva con `PUT` e `isActive: false` (HU-02).
       Un método no admitido responde 405.
 
@@ -69,10 +70,10 @@ paths:
       operationId: createEquipmentType
       summary: Registrar un tipo de equipo
       description: |
-        Crea un tipo de equipo activo. Por defecto el modo de límite es `Maximum`, los puntos de medición mínimos
-        son 9 y la duración mínima de sesión es la base de 60 minutos.
-        Sin `maxTemperatureC` (modo `Maximum`) o sin `toleranceK` (modo `Band`), el límite queda **pendiente**
-        y las sesiones de ese tipo se capturarán sin evaluar el límite (RN-09).
+        Crea un tipo de equipo activo, con el límite confirmado (`isLimitSuggested: false`). Por defecto el modo de
+        límite es `Range`, los puntos de medición mínimos son 9 y la duración mínima de sesión es la base de 60 minutos.
+        Sin `minTemperatureC` ni `maxTemperatureC` (modo `Range`) o sin `toleranceK` (modo `Band`), el límite queda
+        **pendiente** y las sesiones de ese tipo se capturarán sin evaluar el límite (RN-09).
         Requiere el rol `Admin`.
       requestBody:
         required: true
@@ -93,6 +94,13 @@ paths:
                 value:
                   name: Cámara de vacunas
                   maxTemperatureC: null
+              rangoRefrigeradora:
+                summary: Refrigeradora de vacunas con rango de +2 a +8 °C (OMS PQS E003)
+                value:
+                  name: Refrigeradora de vacunas
+                  limitMode: Range
+                  minTemperatureC: 2
+                  maxTemperatureC: 8
               bandaIncubadora:
                 summary: Incubadora de más de 50 L con banda de ±0,5 K y 27 puntos (DIN 12880)
                 value:
@@ -115,10 +123,12 @@ paths:
               example:
                 id: 5
                 name: Ultracongeladora
-                limitMode: Maximum
+                limitMode: Range
+                minTemperatureC: null
                 maxTemperatureC: -60
                 toleranceK: null
                 isLimitDefined: true
+                isLimitSuggested: false
                 minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Equipos de -80 °C para vacunas y reactivos
@@ -157,10 +167,12 @@ paths:
               example:
                 id: 2
                 name: Refrigeradora
-                limitMode: Maximum
-                maxTemperatureC: null
+                limitMode: Range
+                minTemperatureC: 2
+                maxTemperatureC: 8
                 toleranceK: null
-                isLimitDefined: false
+                isLimitDefined: true
+                isLimitSuggested: true
                 minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Refrigeradoras de laboratorio de 2 a 8 °C
@@ -177,8 +189,9 @@ paths:
       operationId: updateEquipmentType
       summary: Reemplazar un tipo de equipo
       description: |
-        Reemplaza todos los datos editables del tipo de equipo. Las propiedades que no se envían toman su valor
-        por defecto: `limitMode` vuelve a `Maximum` con el límite pendiente, `minMeasurementPoints` vuelve a 9,
+        Reemplaza todos los datos editables del tipo de equipo. El límite enviado queda **confirmado**
+        (`isLimitSuggested: false`). Las propiedades que no se envían toman su valor
+        por defecto: `limitMode` vuelve a `Range` con el límite pendiente, `minMeasurementPoints` vuelve a 9,
         `description` se vacía y `minSessionDurationMinutes` vuelve a 60.
 
         - Cambiar el límite o la duración mínima solo afecta a las sesiones que se inicien después (RN-08).
@@ -216,10 +229,12 @@ paths:
               example:
                 id: 1
                 name: Congeladora
-                limitMode: Maximum
+                limitMode: Range
+                minTemperatureC: null
                 maxTemperatureC: -8
                 toleranceK: null
                 isLimitDefined: true
+                isLimitSuggested: false
                 minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Congeladoras horizontales y verticales
@@ -294,6 +309,8 @@ components:
           $ref: '#/components/schemas/EquipmentTypeName'
         limitMode:
           $ref: '#/components/schemas/LimitMode'
+        minTemperatureC:
+          $ref: '#/components/schemas/MinTemperatureC'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
         toleranceK:
@@ -316,6 +333,8 @@ components:
           $ref: '#/components/schemas/EquipmentTypeName'
         limitMode:
           $ref: '#/components/schemas/LimitMode'
+        minTemperatureC:
+          $ref: '#/components/schemas/MinTemperatureC'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
         toleranceK:
@@ -337,9 +356,11 @@ components:
         - id
         - name
         - limitMode
+        - minTemperatureC
         - maxTemperatureC
         - toleranceK
         - isLimitDefined
+        - isLimitSuggested
         - minMeasurementPoints
         - minSessionDurationMinutes
         - description
@@ -358,6 +379,8 @@ components:
           $ref: '#/components/schemas/EquipmentTypeName'
         limitMode:
           $ref: '#/components/schemas/LimitMode'
+        minTemperatureC:
+          $ref: '#/components/schemas/MinTemperatureC'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
         toleranceK:
@@ -365,8 +388,16 @@ components:
         isLimitDefined:
           type: boolean
           readOnly: true
-          description: '`false` si el límite está pendiente de definir (`maxTemperatureC` en modo `Maximum` o `toleranceK` en modo `Band` es `null`).'
+          description: '`false` si el límite está pendiente de definir (sin `minTemperatureC` ni `maxTemperatureC` en modo `Range`, o sin `toleranceK` en modo `Band`).'
           example: true
+        isLimitSuggested:
+          type: boolean
+          readOnly: true
+          description: |
+            `true` si los valores del límite son los sugeridos por la norma en los datos iniciales (p. ej. +2 … +8 °C
+            para refrigeradoras, OMS PQS E003) y el laboratorio todavía no los confirmó. Pasa a `false` al crear o
+            editar el tipo (D-07).
+          example: false
         minMeasurementPoints:
           $ref: '#/components/schemas/MinMeasurementPoints'
         minSessionDurationMinutes:
@@ -404,21 +435,23 @@ components:
     LimitMode:
       type: string
       enum:
-        - Maximum
+        - Range
         - Band
-      default: Maximum
+      default: Range
       description: |
-        Criterio de límite del tipo de equipo (D-05). `Maximum`: fuera de límite si la lectura es estrictamente mayor
-        que `maxTemperatureC` (refrigeradoras, congeladoras, conservadoras). `Band`: fuera de límite si la lectura se
-        aleja de la consigna de la sesión más que `toleranceK`, por arriba o por abajo (incubadoras, cámaras ambientales).
-      example: Maximum
+        Criterio de límite del tipo de equipo (D-05, D-07). `Range`: límites absolutos; fuera de límite si la lectura es
+        estrictamente mayor que `maxTemperatureC` o menor que `minTemperatureC`, y cualquiera de los dos puede faltar
+        (refrigeradoras +2 … +8 °C, bancos de sangre +1 … +6 °C, congeladoras de plasma y ultracongeladoras solo con
+        máximo). `Band`: fuera de límite si la lectura se aleja de la consigna de la sesión más que `toleranceK`, por
+        arriba o por abajo (incubadoras, cámaras ambientales).
+      example: Range
     ToleranceK:
       type: number
       format: double
       nullable: true
       description: |
         Tolerancia ± en K alrededor de la consigna, solo con `limitMode: Band` (`DECIMAL(4,2)`, 2 decimales como máximo).
-        `null` = tolerancia pendiente. Con `limitMode: Maximum` debe omitirse o ser `null`.
+        `null` = tolerancia pendiente. Con `limitMode: Range` debe omitirse o ser `null`.
       exclusiveMinimum: true
       minimum: 0
       maximum: 99.99
@@ -437,13 +470,27 @@ components:
       maximum: 27
       default: 9
       example: 9
+    MinTemperatureC:
+      type: number
+      format: double
+      nullable: true
+      description: |
+        Temperatura mínima admisible en °C, solo con `limitMode: Range`, con 2 decimales como máximo (`DECIMAL(6,2)`).
+        Debe ser menor que `maxTemperatureC`. `null` = sin mínimo. Una lectura está fuera de límite si es
+        estrictamente menor que este valor (RN-07).
+      minimum: -9999.99
+      maximum: 9999.99
+      multipleOf: 0.01
+      default: null
+      example: 2
     MaxTemperatureC:
       type: number
       format: double
       nullable: true
       description: |
-        Temperatura máxima admisible en °C, solo con `limitMode: Maximum`, con 2 decimales como máximo (`DECIMAL(6,2)`).
-        `null` o ausente = límite **pendiente**: las sesiones se capturan sin evaluar el límite.
+        Temperatura máxima admisible en °C, solo con `limitMode: Range`, con 2 decimales como máximo (`DECIMAL(6,2)`).
+        `null` o ausente = sin máximo; sin mínimo ni máximo, el límite queda **pendiente** y las sesiones se capturan
+        sin evaluarlo.
         Una lectura está fuera de límite si es estrictamente mayor que este valor (RN-07).
       minimum: -9999.99
       maximum: 9999.99

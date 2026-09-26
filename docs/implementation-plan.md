@@ -6,7 +6,7 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 |---|---|
 | Versión | 0.1 |
 | Fecha | 2026-09-25 |
-| Estado actual | Ola 0 terminada: `EquipmentType` (HU-02 parcial) con D-05 y D-06. 82 pruebas correctas, contrato verificado 29/29 |
+| Estado actual | Ola 0 terminada: `EquipmentType` (HU-02 parcial) con D-05, D-06 y D-07. 94 pruebas correctas, contrato verificado 33/33 |
 | Relacionado | [validation.md](validation.md) (cobertura y auditorías), [ADR-001](architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md), [c4-containers.md §3.1](architecture/c4-containers.md#31-web-api-net-10) (endpoints previstos), [domain-model.md](architecture/domain-model.md), [01-schema.sql](db/01-schema.sql) |
 
 ---
@@ -15,7 +15,7 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 
 | Ola | Entidad (tabla) | Historias | Estado |
 |---|---|---|---|
-| 0 | `EquipmentType` | HU-02 | ✅ Implementada, con D-05 (máximo o banda) y D-06 (puntos mínimos por tipo): 10/17 escenarios completos; el resto depende de olas siguientes |
+| 0 | `EquipmentType` | HU-02 | ✅ Implementada, con D-05/D-07 (rango o banda, límites sugeridos) y D-06 (puntos mínimos por tipo); el detalle de escenarios está en validation.md §5.1 |
 | 1 | `AppSetting` | HU-02 (parámetros), HU-16 | ⏳ Siguiente |
 | 1 | `ThermocoupleType` (catálogo fijo T/K) | HU-07 (rango físico) | ⏳ |
 | 1 | `Company`, `Equipment` | HU-01, HU-02 (desactivar con equipos) | ⏳ |
@@ -98,7 +98,7 @@ flowchart LR
 | P-12 Duración mínima por tipo de equipo | Ola 1, datos | 60 min para todos |
 | P-14 `TypeMismatch` cuenta como sin dato válido | Ola 4 | Sí |
 | ~~P-18~~ → **D-06** Hasta 27 canales y puntos mínimos por tipo | Resuelta | Aplicada en `EquipmentType` (ola 0); resto en olas 3 y 4 (protocolo, sesión, Excel) |
-| ~~P-19~~ → **D-05** Criterio de límite: máximo o banda | Resuelta | Aplicada en `EquipmentType` (ola 0); evaluación en la ola 4 (`TemperatureLimit.Evaluate` ya disponible) |
+| ~~P-19~~ → **D-05** y **D-07** Criterio de límite: rango (mínimo y/o máximo) o banda | Resuelta | Aplicada en `EquipmentType` (ola 0); evaluación en la ola 4 (`TemperatureLimit.Evaluate` ya disponible) |
 
 Detalle en [01 §11](specs/functional/01-vision-document.md#11-preguntas-abiertas).
 

@@ -1,5 +1,5 @@
 # HU-01 · Registrar empresa cliente y equipo
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero registrar la empresa cliente (RUC) y sus equipos para asociar cada sesión de medición a un equipo identificable y mantener su historial.
 # Perfil: Técnico, Admin · Escenarios de prueba: —

@@ -2,9 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.5 (borrador para revisión) |
+| Versión | 0.6 (borrador para revisión) |
 | Cambios en 0.2 | Duración planificada, política de pérdida de sensores (escalamiento y falla), descanso del adquisidor y severidad de las alertas (críticas y advertencias). |
 | Cambios en 0.3 | Fuera de límite sostenido con causa probable (`AboveLimitSustained`, `SuspectedCause`). Mínimo de 9 puntos de medición con confirmación. |
+| Cambios en 0.6 | D-07: `LimitMode.Range` (mínimo y/o máximo) reemplaza a `Maximum`; `EquipmentType.MinTemperatureC` e `IsLimitSuggested`. |
 | Cambios en 0.5 | D-05 y D-06: `EquipmentType` con `LimitMode`, `ToleranceK` y `MinMeasurementPoints`; `TemperatureLimit` evalúa máximo o banda (`Evaluate`); eventos `ReadingBelowLimit` y `BelowLimitSustained`; sesiones de 1 a 27 canales. |
 | Cambios en 0.4 | `EquipmentType` alineado con [01-schema.sql](../db/01-schema.sql) y el contrato [thermal-v1.yaml](../api/thermal-v1.yaml): `MinSessionDurationMinutes` (antes `MinSessionMinutes`), `Description`, `IsActive`, `RowVersion` y sus métodos de edición y desactivación. |
 | Fecha | 2026-09-25 |
@@ -55,8 +56,10 @@ classDiagram
             +int Id
             +string Name
             +LimitMode LimitMode
+            +decimal MinTemperatureC
             +decimal MaxTemperatureC
             +decimal ToleranceK
+            +bool IsLimitSuggested
             +TemperatureLimit Limit
             +int MinMeasurementPoints
             +int MinSessionDurationMinutes
@@ -152,6 +155,7 @@ classDiagram
         class TemperatureLimit {
             <<ValueObject>>
             +LimitMode Mode
+            +decimal MinC
             +decimal MaxC
             +decimal ToleranceK
             +bool IsDefined
@@ -221,7 +225,7 @@ Notas de diseño:
 | Agregado | Invariante | Dónde se protege | Regla |
 |---|---|---|---|
 | `EquipmentType` | Nombre de 1 a 100 caracteres, sin espacios en los extremos y único. | Constructor y `Rename` + `CK_EquipmentType_Name`, `UQ_EquipmentType_Name` | HU-02 |
-| | Criterio de límite (D-05): `Maximum` con un máximo de 2 decimales entre -9999,99 y 9999,99 °C, o `Band` con una tolerancia positiva de hasta 99,99 K; cada modo solo admite su valor, y ambos pueden quedar pendientes. La base redondearía un tercer decimal, así que solo el dominio lo rechaza. | `TemperatureLimit.For` | RN-06, D-05 |
+| | Criterio de límite (D-05, D-07): `Range` con mínimo y/o máximo de 2 decimales entre -9999,99 y 9999,99 °C (mínimo menor que máximo), o `Band` con una tolerancia positiva de hasta 99,99 K; cada modo solo admite sus valores, y ambos pueden quedar pendientes. Editar el límite lo confirma (`IsLimitSuggested` = false). La base redondearía un tercer decimal, así que solo el dominio lo rechaza. | `TemperatureLimit.For` | RN-06, D-05 |
 | | Puntos de medición mínimos entre 1 y 27 (D-06). | `ChangeMinMeasurementPoints` + `CK_EquipmentType_MinPoints` | RN-20, D-06 |
 | | Duración mínima entre 60 y 43 200 min. Al planificar se comprueba además que no supere `MaxSessionMinutes`. | `ChangeMinSessionDuration` + `CK_EquipmentType_MinDuration`; `PlanDuration` | RN-04 |
 | | No se borra si tiene equipos: se desactiva. | `Deactivate` | HU-02 |

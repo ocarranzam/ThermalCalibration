@@ -55,11 +55,13 @@ CREATE TABLE dbo.ThermocoupleType (
 );
 GO
 
--- Tipos de equipo con su criterio de límite (D-05, antes P-19):
---   Maximum: fuera de límite si TemperatureC > MaxTemperatureC (refrigeración: no debe superar un valor).
---   Band:    fuera de límite si |TemperatureC - consigna| > ToleranceK (incubadoras, cámaras ambientales);
---            la consigna (SetpointC) se registra en cada sesión.
--- MaxTemperatureC / ToleranceK admiten NULL mientras el límite no esté definido (límite pendiente).
+-- Tipos de equipo con su criterio de límite (D-05 y D-07):
+--   Range: límites absolutos. Fuera de límite si TemperatureC > MaxTemperatureC o < MinTemperatureC; cualquiera
+--          de los dos puede faltar (refrigeradora 2..8 °C; congeladora de plasma o ultracongeladora: solo máximo).
+--   Band:  relativo a la consigna. Fuera de límite si |TemperatureC - consigna| > ToleranceK (incubadoras,
+--          cámaras ambientales); la consigna (SetpointC) se registra en cada sesión.
+-- Sin valores, el límite está pendiente. IsLimitSuggested = 1: valores sugeridos por la norma, pendientes de
+-- confirmar por el laboratorio (se pone en 0 al editar el límite).
 -- MinMeasurementPoints: puntos mínimos que exige la norma del tipo (D-06, antes P-18): 9 según IEC 60068-3-5,
 --   DKD-R 5-7 y USP <1079.4> para equipos de hasta 2000 L; 27 en incubadoras de más de 50 L (DIN 12880).
 -- MinSessionDurationMinutes: duración mínima que exige el tipo por su forma de funcionar (base: 60 min).
@@ -67,9 +69,11 @@ GO
 CREATE TABLE dbo.EquipmentType (
     EquipmentTypeId            INT IDENTITY(1, 1) NOT NULL,
     Name                       NVARCHAR(100)      NOT NULL,
-    LimitMode                  VARCHAR(10)        NOT NULL CONSTRAINT DF_EquipmentType_LimitMode DEFAULT ('Maximum'),
+    LimitMode                  VARCHAR(10)        NOT NULL CONSTRAINT DF_EquipmentType_LimitMode DEFAULT ('Range'),
+    MinTemperatureC            DECIMAL(6, 2)      NULL,
     MaxTemperatureC            DECIMAL(6, 2)      NULL,
     ToleranceK                 DECIMAL(4, 2)      NULL,
+    IsLimitSuggested           BIT                NOT NULL CONSTRAINT DF_EquipmentType_LimitSuggested DEFAULT (0),
     MinMeasurementPoints       TINYINT            NOT NULL CONSTRAINT DF_EquipmentType_MinPoints DEFAULT (9),
     MinSessionDurationMinutes  INT                NOT NULL CONSTRAINT DF_EquipmentType_MinDuration DEFAULT (60),
     Description                NVARCHAR(500)      NULL,
@@ -82,8 +86,10 @@ CREATE TABLE dbo.EquipmentType (
     CONSTRAINT CK_EquipmentType_Name CHECK (LEN(Name) > 0 AND Name NOT LIKE N' %' AND DATALENGTH(Name) = DATALENGTH(RTRIM(Name))),
     CONSTRAINT CK_EquipmentType_MinDuration CHECK (MinSessionDurationMinutes BETWEEN 60 AND 43200),
     CONSTRAINT CK_EquipmentType_LimitMode CHECK (
-        (LimitMode = 'Maximum' AND ToleranceK IS NULL)
-        OR (LimitMode = 'Band' AND MaxTemperatureC IS NULL AND (ToleranceK IS NULL OR ToleranceK > 0))),
+        (LimitMode = 'Range' AND ToleranceK IS NULL
+            AND (MinTemperatureC IS NULL OR MaxTemperatureC IS NULL OR MinTemperatureC < MaxTemperatureC))
+        OR (LimitMode = 'Band' AND MinTemperatureC IS NULL AND MaxTemperatureC IS NULL
+            AND (ToleranceK IS NULL OR ToleranceK > 0))),
     CONSTRAINT CK_EquipmentType_MinPoints CHECK (MinMeasurementPoints BETWEEN 1 AND 27)
 );
 GO
@@ -184,8 +190,9 @@ CREATE TABLE dbo.MeasurementSession (
     DurationSource              VARCHAR(20)        NOT NULL CONSTRAINT DF_MeasurementSession_DurationSource DEFAULT ('Base'),
     ClientRequestReference      NVARCHAR(100)      NULL,       -- p. ej. orden de servicio del cliente
     -- Copia del criterio de límite vigente al iniciar: editar el tipo de equipo no altera sesiones pasadas (RN-08).
-    -- Maximum: MaxTemperatureC. Band: SetpointC (consigna de esta sesión, la indica el técnico) ± ToleranceK.
-    LimitMode                   VARCHAR(10)        NOT NULL CONSTRAINT DF_MeasurementSession_LimitMode DEFAULT ('Maximum'),
+    -- Range: MinTemperatureC y/o MaxTemperatureC. Band: SetpointC (consigna de esta sesión, la indica el técnico) ± ToleranceK.
+    LimitMode                   VARCHAR(10)        NOT NULL CONSTRAINT DF_MeasurementSession_LimitMode DEFAULT ('Range'),
+    MinTemperatureC             DECIMAL(6, 2)      NULL,
     MaxTemperatureC             DECIMAL(6, 2)      NULL,
     SetpointC                   DECIMAL(6, 2)      NULL,
     ToleranceK                  DECIMAL(4, 2)      NULL,
@@ -247,8 +254,9 @@ CREATE TABLE dbo.MeasurementSession (
     CONSTRAINT CK_MeasurementSession_MinPoints CHECK (MinMeasurementPoints BETWEEN 1 AND 27),
     -- Banda: la consigna es obligatoria para iniciar; sin tolerancia definida, el límite queda pendiente
     CONSTRAINT CK_MeasurementSession_LimitMode CHECK (
-        (LimitMode = 'Maximum' AND SetpointC IS NULL AND ToleranceK IS NULL)
-        OR (LimitMode = 'Band' AND MaxTemperatureC IS NULL AND (ToleranceK IS NULL OR ToleranceK > 0)
+        (LimitMode = 'Range' AND SetpointC IS NULL AND ToleranceK IS NULL
+            AND (MinTemperatureC IS NULL OR MaxTemperatureC IS NULL OR MinTemperatureC < MaxTemperatureC))
+        OR (LimitMode = 'Band' AND MinTemperatureC IS NULL AND MaxTemperatureC IS NULL AND (ToleranceK IS NULL OR ToleranceK > 0)
             AND (Status IN ('Configured', 'Cancelled') OR SetpointC IS NOT NULL))),
     -- Con menos puntos que el mínimo, la sesión no puede iniciar sin la confirmación del técnico
     CONSTRAINT CK_MeasurementSession_BelowMinAck CHECK (IsBelowMinimumPoints = 0 OR Status IN ('Configured', 'Cancelled') OR BelowMinimumAcknowledgedAt IS NOT NULL),
@@ -297,7 +305,7 @@ CREATE TABLE dbo.Reading (
     SensorStatus              VARCHAR(20)           NOT NULL,
     ReportedThermocoupleType  CHAR(1)               NULL,       -- tipo informado por el adquisidor
     IsAboveLimit              BIT                   NOT NULL CONSTRAINT DF_Reading_IsAboveLimit DEFAULT (0),   -- > máximo, o > consigna + tolerancia
-    IsBelowLimit              BIT                   NOT NULL CONSTRAINT DF_Reading_IsBelowLimit DEFAULT (0),   -- < consigna - tolerancia (solo en banda)
+    IsBelowLimit              BIT                   NOT NULL CONSTRAINT DF_Reading_IsBelowLimit DEFAULT (0),   -- < mínimo, o < consigna - tolerancia
     RawFrame                  VARCHAR(200)          NULL,       -- trama serial original para auditoría
     ReceivedAt                DATETIMEOFFSET(3)     NOT NULL CONSTRAINT DF_Reading_ReceivedAt DEFAULT (SYSDATETIMEOFFSET()),
     CONSTRAINT PK_Reading PRIMARY KEY (ReadingId),
@@ -471,13 +479,14 @@ VALUES
 GO
 
 -- Solo la congeladora tiene límite definido; el resto queda pendiente (NULL)
-INSERT INTO dbo.EquipmentType (Name, LimitMode, MaxTemperatureC, ToleranceK, MinMeasurementPoints, Description)
+-- Límites SUGERIDOS por la normativa (IsLimitSuggested = 1): el laboratorio debe confirmarlos (D-07, P-03).
+INSERT INTO dbo.EquipmentType (Name, LimitMode, MinTemperatureC, MaxTemperatureC, ToleranceK, IsLimitSuggested, MinMeasurementPoints, Description)
 VALUES
-    (N'Refrigeradora',    'Maximum', NULL,  NULL, 9,  N'Límite máximo pendiente de definir. 9 puntos (USP <1079.4>, equipos pequeños)'),
-    (N'Congeladora',      'Maximum', -5.00, NULL, 9,  N'No debe superar -5,0 °C; -4,9 °C ya está fuera de límite. 9 puntos'),
-    (N'Conservadora',     'Maximum', NULL,  NULL, 9,  N'Límite máximo pendiente de definir. 9 puntos'),
-    (N'Incubadora',       'Band',    NULL,  NULL, 27, N'Banda alrededor de la consigna, tolerancia pendiente. 27 puntos (DIN 12880, más de 50 L; 9 si es de 50 L o menos)'),
-    (N'Cámara ambiental', 'Band',    NULL,  NULL, 9,  N'Cámara de ensayos ambientales (p. ej. Memmert CTC/TTC). Banda alrededor de la consigna, tolerancia pendiente. 9 puntos (IEC 60068-3-5, hasta 2000 L). Ver docs/data/DATA-1-analisis.md');
+    (N'Refrigeradora',    'Range', 2.00, 8.00,  NULL, 1, 9,  N'Sugerido: +2 a +8 °C (OMS PQS E003, vacunas y medicamentos). Banco de sangre: +1 a +6 °C (AABB). 9 puntos (USP <1079.4>)'),
+    (N'Congeladora',      'Range', NULL, -5.00, NULL, 0, 9,  N'No debe superar -5,0 °C; -4,9 °C ya está fuera de límite. 9 puntos'),
+    (N'Conservadora',     'Range', 2.00, 8.00,  NULL, 1, 9,  N'Sugerido: +2 a +8 °C (cadena de frío de vacunas, OMS). 9 puntos'),
+    (N'Incubadora',       'Band',  NULL, NULL,  1.00, 1, 27, N'Sugerido: consigna ± 1,0 K (p. ej. 37 ± 1 °C). 27 puntos (DIN 12880, más de 50 L; 9 si es de 50 L o menos)'),
+    (N'Cámara ambiental', 'Band',  NULL, NULL,  2.00, 1, 9,  N'Sugerido: consigna ± 2,0 K (homogeneidad máxima declarada por Memmert CTC/TTC). 9 puntos (IEC 60068-3-5, hasta 2000 L). Ver docs/data/DATA-1-analisis.md');
 GO
 
 -- Parámetros iniciales (confirmados por el laboratorio el 2026-09-25)

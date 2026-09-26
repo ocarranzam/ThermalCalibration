@@ -23,7 +23,7 @@ builder.Services
     {
         // additionalProperties: false en los schemas de request.
         options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
-        // Enumeraciones como texto (limitMode: "Maximum" | "Band"), igual que el contrato.
+        // Enumeraciones como texto (limitMode: "Range" | "Band"), igual que el contrato.
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
     });
 

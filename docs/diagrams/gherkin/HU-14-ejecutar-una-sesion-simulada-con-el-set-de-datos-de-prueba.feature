@@ -1,5 +1,5 @@
 # HU-14 · Ejecutar una sesión simulada con el set de datos de prueba
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico o administrador quiero ejecutar una sesión completa con el adquisidor simulado y un escenario del set de datos de prueba para probar la captura, las alertas, los huecos, el cierre y la exportación sin tener sensores ni adquisidor.
 # Perfil: Técnico, Admin · Escenarios de prueba: Todos

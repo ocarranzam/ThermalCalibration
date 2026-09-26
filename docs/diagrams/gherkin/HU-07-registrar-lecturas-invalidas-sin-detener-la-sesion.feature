@@ -1,5 +1,5 @@
 # HU-07 · Registrar lecturas inválidas sin detener la sesión
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como laboratorio quiero que las lecturas de un sensor desconectado, las tramas corruptas y los tipos no coincidentes queden registrados y marcados sin detener la sesión para que el resto de los sensores siga midiendo y quede evidencia del problema.
 # Perfil: Sistema · Escenarios de prueba: TD-09, TD-15

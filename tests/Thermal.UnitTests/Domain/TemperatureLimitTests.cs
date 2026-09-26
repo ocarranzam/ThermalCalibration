@@ -6,7 +6,7 @@ namespace Thermal.UnitTests.Domain;
 /// <summary>Value object <see cref="TemperatureLimit"/>: formato del límite (HU-02) y evaluación estricta (HU-08, HU-05).</summary>
 public sealed class TemperatureLimitTests
 {
-    private static readonly TemperatureLimit FreezerLimit = TemperatureLimit.Create(-5.00m);
+    private static readonly TemperatureLimit FreezerLimit = TemperatureLimit.Range(null, -5.00m);
 
     public static TheoryData<decimal, bool> StrictLimitExamples => new()
     {
@@ -38,6 +38,31 @@ public sealed class TemperatureLimitTests
     public void Evaluate_Band_IsStrictOnBothSides(decimal readingC, LimitEvaluation expected) =>
         TemperatureLimit.Band(2.00m).Evaluate(readingC, setpointC: 20.00m).Should().Be(expected);
 
+    public static TheoryData<decimal, LimitEvaluation> RangeExamples => new()
+    {
+        { 8.01m, LimitEvaluation.Above },
+        { 8.00m, LimitEvaluation.Within },
+        { 5.00m, LimitEvaluation.Within },
+        { 2.00m, LimitEvaluation.Within },
+        { 1.99m, LimitEvaluation.Below },
+    };
+
+    [Theory] // HU-08 · Regla D-07: rango +2 … +8 °C (refrigeradora) con comparación estricta en ambos extremos
+    [Trait("Story", "HU-08")]
+    [MemberData(nameof(RangeExamples))]
+    public void Evaluate_Range_IsStrictOnBothEnds(decimal readingC, LimitEvaluation expected) =>
+        TemperatureLimit.Range(2.00m, 8.00m).Evaluate(readingC).Should().Be(expected);
+
+    [Fact] // HU-08 · Regla D-07: rango con solo mínimo (sin máximo)
+    [Trait("Story", "HU-08")]
+    public void Evaluate_RangeWithOnlyMinimum_IgnoresHighValues()
+    {
+        var onlyMinimum = TemperatureLimit.Range(-30.00m, null);
+
+        onlyMinimum.Evaluate(50m).Should().Be(LimitEvaluation.Within);
+        onlyMinimum.Evaluate(-30.01m).Should().Be(LimitEvaluation.Below);
+    }
+
     [Fact] // HU-08 · Regla D-05: en modo banda la consigna es obligatoria
     [Trait("Story", "HU-08")]
     public void Evaluate_BandWithoutSetpoint_IsRejected()
@@ -65,7 +90,7 @@ public sealed class TemperatureLimitTests
     [InlineData("-5.123", false)]
     public void Create_AcceptsAtMostTwoDecimals(string value, bool isValid)
     {
-        var create = () => TemperatureLimit.Create(decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+        var create = () => TemperatureLimit.Range(null, decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
 
         if (isValid)
         {
@@ -86,7 +111,7 @@ public sealed class TemperatureLimitTests
     [InlineData(10000, false)]
     public void Create_RespectsDecimal62Range(double value, bool isValid)
     {
-        var create = () => TemperatureLimit.Create((decimal)value);
+        var create = () => TemperatureLimit.Range(null, (decimal)value);
 
         if (isValid)
         {
@@ -102,5 +127,5 @@ public sealed class TemperatureLimitTests
     [Fact] // HU-02 · Scenario: Registrar un tipo de equipo con límite pendiente
     [Trait("Story", "HU-02")]
     public void Create_WithNull_ReturnsPending() =>
-        TemperatureLimit.Create(null).Should().Be(TemperatureLimit.Pending);
+        TemperatureLimit.Range(null, null).Should().Be(TemperatureLimit.Pending);
 }

@@ -1,5 +1,5 @@
 # HU-04 · Advertir la mezcla de termopares T y K
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero que el sistema me advierta si mezclo termopares T y K para evitar una mala práctica o, si es inevitable, dejar constancia de que la acepté.
 # Perfil: Técnico · Escenarios de prueba: TD-10

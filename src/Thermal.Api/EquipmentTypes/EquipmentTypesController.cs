@@ -29,6 +29,7 @@ public sealed class EquipmentTypesController(
             new CreateEquipmentTypeCommand(
                 request.Name!,
                 request.LimitMode,
+                request.MinTemperatureC,
                 request.MaxTemperatureC,
                 request.ToleranceK,
                 request.MinMeasurementPoints,
@@ -66,6 +67,7 @@ public sealed class EquipmentTypesController(
                 id,
                 request.Name!,
                 request.LimitMode,
+                request.MinTemperatureC,
                 request.MaxTemperatureC,
                 request.ToleranceK,
                 request.MinMeasurementPoints,

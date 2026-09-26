@@ -1,5 +1,5 @@
 # HU-02 · Gestionar tipos de equipo y límite máximo
-# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.9). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como administrador quiero mantener el catálogo de tipos de equipo con su temperatura máxima admisible, o dejarla pendiente, para que las sesiones evalúen el límite correcto sin alterar las mediciones ya registradas.
 # Perfil: Admin · Escenarios de prueba: TD-14, TD-19
@@ -15,6 +15,17 @@ Feature: Catálogo de tipos de equipo con límite máximo
     Then el tipo queda activo con límite máximo -60,00 °C
     And su duración mínima de sesión es 60 minutos
 
+  Scenario: Registrar un tipo de equipo con rango de temperatura
+    When registro el tipo de equipo "Refrigeradora de vacunas" con criterio "Range", mínimo "2,0" °C y máximo "8,0" °C
+    Then el tipo queda activo con rango de +2,00 a +8,00 °C y el límite confirmado
+
+  Scenario: Confirmar los límites sugeridos del catálogo inicial
+    Given el tipo "Refrigeradora" tiene el rango sugerido de +2,00 a +8,00 °C (OMS PQS E003)
+    And el catálogo lo muestra con la etiqueta "Límite sugerido, pendiente de confirmar"
+    When el administrador guarda el tipo con el rango de +1,00 a +6,00 °C para un banco de sangre
+    Then el límite queda confirmado con +1,00 a +6,00 °C
+    And el catálogo deja de mostrarlo como sugerido
+
   Scenario: Registrar un tipo de equipo con banda de tolerancia
     When registro el tipo de equipo "Cámara ambiental" con criterio "Band" y tolerancia "2,0" K
     Then el tipo queda activo con banda de ±2,00 K alrededor de la consigna de cada sesión
@@ -27,14 +38,15 @@ Feature: Catálogo de tipos de equipo con límite máximo
     And las sesiones ya registradas conservan su mínimo copiado
 
   Scenario Outline: Rechazar un valor que no corresponde al criterio de límite
-    When intento registrar un tipo con criterio "<criterio>", límite máximo "<maximo>" y tolerancia "<tolerancia>"
+    When intento registrar un tipo con criterio "<criterio>", mínimo "<minimo>", máximo "<maximo>" y tolerancia "<tolerancia>"
     Then el sistema rechaza el registro con el mensaje "<mensaje>"
 
     Examples:
-      | criterio | maximo | tolerancia | mensaje                                             |
-      | Maximum  | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band          |
-      | Band     | 5,0    | 2,0        | El límite máximo solo se usa con el modo Maximum    |
-      | Band     |        | 0          | La tolerancia debe ser mayor que 0                  |
+      | criterio | minimo | maximo | tolerancia | mensaje                                                      |
+      | Range    |        | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band                   |
+      | Range    | 8,0    | 2,0    |            | El límite mínimo debe ser menor que el máximo                |
+      | Band     |        | 5,0    | 2,0        | Los límites mínimo y máximo solo se usan con el modo Range   |
+      | Band     |        |        | 0          | La tolerancia debe ser mayor que 0                           |
 
   Scenario Outline: Rechazar puntos de medición mínimos fuera de rango
     When intento fijar los puntos de medición mínimos de "Congeladora" en <puntos>

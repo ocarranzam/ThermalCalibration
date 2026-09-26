@@ -3,9 +3,9 @@ using Thermal.Domain.Common;
 namespace Thermal.Domain.EquipmentTypes;
 
 /// <summary>
-/// Agregado del catálogo de tipos de equipo (HU-02). Guarda el criterio de límite (un máximo o una banda
-/// alrededor de la consigna, que pueden quedar pendientes), los puntos de medición mínimos que exige su norma
-/// y la duración mínima de sesión (RN-04, RN-06, RN-20, D-05, D-06).
+/// Agregado del catálogo de tipos de equipo (HU-02). Guarda el criterio de límite (un rango absoluto o una banda
+/// alrededor de la consigna, que pueden quedar pendientes o ser sugeridos por la norma), los puntos de medición
+/// mínimos que exige su norma y la duración mínima de sesión (RN-04, RN-06, RN-20, D-05, D-06, D-07).
 /// </summary>
 /// <remarks>
 /// El constructor primario valida los datos de creación. Sus parámetros tienen los mismos nombres
@@ -16,6 +16,7 @@ namespace Thermal.Domain.EquipmentTypes;
 public sealed class EquipmentType(
     string name,
     LimitMode limitMode,
+    decimal? minTemperatureC,
     decimal? maxTemperatureC,
     decimal? toleranceK,
     int minMeasurementPoints,
@@ -31,13 +32,22 @@ public sealed class EquipmentType(
 
     public string Name { get; private set => field = ValidName(value); } = ValidName(name);
 
-    public LimitMode LimitMode { get; private set; } = TemperatureLimit.For(limitMode, maxTemperatureC, toleranceK).Mode;
+    public LimitMode LimitMode { get; private set; } = TemperatureLimit.For(limitMode, minTemperatureC, maxTemperatureC, toleranceK).Mode;
 
-    /// <summary>Máximo persistido (modo <see cref="LimitMode.Maximum"/>); <c>null</c> = pendiente.</summary>
-    public decimal? MaxTemperatureC { get; private set; } = TemperatureLimit.For(limitMode, maxTemperatureC, toleranceK).MaxC;
+    /// <summary>Mínimo persistido (modo <see cref="LimitMode.Range"/>); <c>null</c> = sin mínimo.</summary>
+    public decimal? MinTemperatureC { get; private set; } = TemperatureLimit.For(limitMode, minTemperatureC, maxTemperatureC, toleranceK).MinC;
+
+    /// <summary>Máximo persistido (modo <see cref="LimitMode.Range"/>); <c>null</c> = sin máximo.</summary>
+    public decimal? MaxTemperatureC { get; private set; } = TemperatureLimit.For(limitMode, minTemperatureC, maxTemperatureC, toleranceK).MaxC;
 
     /// <summary>Tolerancia ± persistida (modo <see cref="LimitMode.Band"/>); <c>null</c> = pendiente.</summary>
-    public decimal? ToleranceK { get; private set; } = TemperatureLimit.For(limitMode, maxTemperatureC, toleranceK).ToleranceK;
+    public decimal? ToleranceK { get; private set; } = TemperatureLimit.For(limitMode, minTemperatureC, maxTemperatureC, toleranceK).ToleranceK;
+
+    /// <summary>
+    /// Verdadero si los valores del límite son los sugeridos por la norma en los datos iniciales y el laboratorio
+    /// aún no los confirmó (D-07). Un tipo creado o editado por el administrador tiene el límite confirmado.
+    /// </summary>
+    public bool IsLimitSuggested { get; private set; }
 
     /// <summary>Puntos de medición mínimos que exige la norma del tipo (1 a 27); se copian en cada sesión.</summary>
     public int MinMeasurementPoints { get; private set => field = ValidMinMeasurementPoints(value); }
@@ -60,16 +70,21 @@ public sealed class EquipmentType(
     /// <summary>Versión de concurrencia optimista (<c>ROWVERSION</c>); la API la expone como ETag.</summary>
     public byte[] RowVersion { get; private set; } = [];
 
-    public TemperatureLimit Limit => TemperatureLimit.For(LimitMode, MaxTemperatureC, ToleranceK);
+    public TemperatureLimit Limit => TemperatureLimit.For(LimitMode, MinTemperatureC, MaxTemperatureC, ToleranceK);
 
     public void Rename(string newName) => Name = newName;
 
-    /// <summary>Solo afecta a las sesiones que se inicien después: las demás conservan su copia (RN-08).</summary>
+    /// <summary>
+    /// Fija el límite indicado por el administrador, que queda confirmado (deja de ser sugerido). Solo afecta a las
+    /// sesiones que se inicien después: las demás conservan su copia (RN-08).
+    /// </summary>
     public void ChangeLimit(TemperatureLimit limit)
     {
         LimitMode = limit.Mode;
+        MinTemperatureC = limit.MinC;
         MaxTemperatureC = limit.MaxC;
         ToleranceK = limit.ToleranceK;
+        IsLimitSuggested = false;
     }
 
     public void ChangeMinMeasurementPoints(int points) => MinMeasurementPoints = points;
