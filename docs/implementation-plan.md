@@ -4,9 +4,9 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.1 |
-| Fecha | 2026-09-25 |
-| Estado actual | Ola 0 terminada: `EquipmentType` (HU-02 parcial) con D-05, D-06 y D-07. 94 pruebas correctas, contrato verificado 33/33 |
+| Versión | 0.2 |
+| Fecha | 2026-09-26 |
+| Estado actual | Olas 0 y 1 terminadas (sprints 0 a 2): `EquipmentType`, `AppSetting`, `ThermocoupleType`, `Company` y `Equipment`. 179 pruebas correctas, contrato v1.3.0 verificado 88/88 |
 | Relacionado | [validation.md](validation.md) (cobertura y auditorías), [ADR-001](architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md), [c4-containers.md §3.1](architecture/c4-containers.md#31-web-api-net-10) (endpoints previstos), [domain-model.md](architecture/domain-model.md), [01-schema.sql](db/01-schema.sql) |
 
 ---
@@ -16,30 +16,29 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 | Ola | Entidad (tabla) | Historias | Estado |
 |---|---|---|---|
 | 0 | `EquipmentType` | HU-02 | ✅ Implementada, con D-05/D-07 (rango o banda, límites sugeridos) y D-06 (puntos mínimos por tipo); el detalle de escenarios está en validation.md §5.1 |
-| 1 | `AppSetting` | HU-02 (parámetros), HU-16 | ⏳ Siguiente |
-| 1 | `ThermocoupleType` (catálogo fijo T/K) | HU-07 (rango físico) | ⏳ |
-| 1 | `Company`, `Equipment` | HU-01, HU-02 (desactivar con equipos) | ⏳ |
-| 2 | `AppUser` y autenticación | Todas (técnico responsable, roles) | 🔒 Bloqueada por la decisión de autenticación |
-| 3 | `AcquisitionDevice`, protocolo serial, simulador | HU-03, HU-09, HU-14 | ⏳ |
+| 1 | `AppSetting` | HU-02 (parámetros), HU-16 | ✅ Implementada como `SystemSettings` con los rangos de D-08; la copia en la sesión llega con `MeasurementSession` |
+| 1 | `ThermocoupleType` (catálogo fijo T/K) | HU-07 (rango físico) | ✅ Consulta de solo lectura (la validación V10 llega con `Reading`) |
+| 1 | `Company`, `Equipment` | HU-01, HU-02 (desactivar con equipos) | ✅ Implementadas, con `CK_Company_TaxId` (M-08); validation.md §5.1.1 |
+| 3 | `AcquisitionDevice`, protocolo serial, simulador | HU-03, HU-09, HU-14 | ⏳ **Siguiente** |
 | 4 | `MeasurementSession` + `SessionChannel` (configurar e iniciar) | HU-03, HU-04, HU-05, HU-16, HU-17 | ⏳ |
 | 4 | `Reading`, `CommunicationGap`, `Alert` (captura) | HU-06, HU-07, HU-08, HU-09, HU-13, HU-15 | ⏳ |
 | 4 | Cierre y reanudación | HU-10 | ⏳ |
 | 5 | Consultas, `SessionExport` y Excel | HU-11, HU-12 | ⏳ |
 | 6 | Pruebas de extremo a extremo con TD-01 a TD-22, documentación de entrega | HU-14 y todas | ⏳ |
+| Final | `AppUser` y autenticación | Todas (técnico responsable, roles) | ⏳ **Al final** (decisión del 2026-09-26); mientras tanto, JWT de desarrollo e `ICurrentUser` |
 
-Mantener esta tabla al día al terminar cada entidad (y la §5 de [validation.md](validation.md)).
+Mantener esta tabla al día al terminar cada entidad (y la §5 de [validation.md](validation.md)). El orden por sprints, con casillas marcables, está en [sprints.md](sprints.md).
 
 ## 2. Olas y dependencias
 
 ```mermaid
 flowchart LR
-    O0["Ola 0 ✅<br/>EquipmentType"] --> O1["Ola 1<br/>AppSetting · ThermocoupleType<br/>Company · Equipment"]
-    O1 --> O2["Ola 2 🔒<br/>AppUser · autenticación"]
+    O0["Ola 0 ✅<br/>EquipmentType"] --> O1["Ola 1 ✅<br/>AppSetting · ThermocoupleType<br/>Company · Equipment"]
     O1 --> O3["Ola 3<br/>AcquisitionDevice<br/>protocolo serial · simulador"]
-    O2 --> O4["Ola 4<br/>MeasurementSession<br/>Reading · Gap · Alert · cierre"]
-    O3 --> O4
+    O3 --> O4["Ola 4<br/>MeasurementSession<br/>Reading · Gap · Alert · cierre<br/>(ICurrentUser con JWT de desarrollo)"]
     O4 --> O5["Ola 5<br/>Historial · Excel · SessionExport"]
-    O5 --> O6["Ola 6<br/>E2E TD-01..TD-22<br/>documentación de entrega"]
+    O5 --> O6["Ola 6<br/>E2E TD-01..TD-22<br/>perfiles de eficacia"]
+    O6 --> OF["Al final<br/>AppUser · autenticación<br/>despliegue · entrega"]
 ```
 
 ### Ola 1 · Catálogos y configuración
@@ -51,8 +50,9 @@ flowchart LR
 | `Company` | `POST /companies`, `GET /companies/{id}`, `GET /companies?taxId&name` | RUC único, 11 dígitos, prefijo 10/15/17/20 y dígito verificador módulo 11 (HU-01) | 7 escenarios de HU-01 | Mejora M-08 de 05: `CHECK` del RUC en la base |
 | `Equipment` | `POST /companies/{id}/equipment`, `GET /equipment/{id}` | Serie única por empresa; tipo obligatorio y **activo**; **marca y modelo obligatorios**, con `IsModelConfirmed` para los modelos inferidos ([DATA-1](data/DATA-1-analisis.md)) | HU-01 (equipo, 8 escenarios) y HU-02 "Desactivar un tipo con equipos asociados" | Al existir `Equipment`, completar la regla de HU-02: no se borra un tipo con equipos. Método `ConfirmModel` para pasar de inferido a confirmado |
 
-### Ola 2 · Identidad (bloqueada)
+### Identidad (al final)
 
+- **Se implementa al final** (decisión del 2026-09-26), en el sprint 10 de [sprints.md](sprints.md).
 - **Decisión pendiente:** cuentas propias con JWT o Windows/AD ([c4-containers.md §3.1](architecture/c4-containers.md#31-web-api-net-10)). Hasta decidir, el JWT de desarrollo (`dotnet user-jwts`) cubre roles.
 - Lo que se puede avanzar sin la decisión: el agregado `AppUser` (rol ∈ `Admin`/`Technician`/`Supervisor`, correo único) y un puerto `ICurrentUser` en la aplicación, que la API resuelva desde el token. Las sesiones necesitan el técnico responsable (`TechnicianId`).
 
@@ -91,7 +91,7 @@ flowchart LR
 
 | Pregunta | Afecta a | Propuesta provisional (usar mientras no se decida) |
 |---|---|---|
-| Autenticación definitiva | Ola 2 | JWT de desarrollo |
+| Autenticación definitiva | Al final (sprint 10) | JWT de desarrollo e `ICurrentUser` |
 | P-03 Límites de refrigeradora, conservadora e incubadora | Datos iniciales | Pendientes (NULL) |
 | P-06 ¿Exportar sesiones canceladas? | Ola 5 | No |
 | P-07 `SensorFault`/`TypeMismatch` por lectura o por episodio | Ola 4 | Por episodio |
@@ -155,4 +155,7 @@ node docs/diagrams/generate-features.mjs              # si cambió 03 o 06
 | Persistencia en la aplicación | Comparar `RowVersion` en el handler obligaba a usar reflexión en las pruebas | La versión la comprueba el repositorio (`EnsureVersion`) |
 | Formato | `dotnet format` mezclaba CRLF y LF | [.editorconfig](../.editorconfig) con LF y UTF-8 |
 | Git Bash en Windows | Convierte rutas `/opt/...` en `docker exec`; cuerpos con "°" se envían en otra codificación | `MSYS_NO_PATHCONV=1`; enviar JSON con `--data-binary @archivo` en UTF-8 |
+| Contrato OpenAPI 3.0 | `additionalProperties: false` junto a `allOf` rechaza **todas** las propiedades (cada subesquema se valida por separado) | Schemas de request planos, con sus propiedades en el mismo objeto |
+| Mensajes de obligatorio | `[Required]` sin mensaje responde en inglés ("The Name field is required.") | `[Required(ErrorMessage = "… es obligatorio")]` en español, igual que la historia |
+| Parámetros clave-valor | `AppSetting` son varias filas, cada una con su `RowVersion` | El `ETag` del recurso es una huella de todas las `RowVersion` (ordenadas por clave); al guardar solo se actualizan las filas que cambian |
 | Docker | Memoria limitada en la PC; SQL Server no atiende SIGTERM | SQL Server a 2 GB y API a 256 MB; detener el compose antes de Testcontainers; cierre ordenado con `SHUTDOWN`; no borrar los contenedores del compose salvo que den problemas |

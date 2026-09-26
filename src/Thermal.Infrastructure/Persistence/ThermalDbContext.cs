@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Thermal.Domain.Companies;
+using Thermal.Domain.Equipments;
 using Thermal.Domain.EquipmentTypes;
+using Thermal.Infrastructure.Persistence.Settings;
 
 namespace Thermal.Infrastructure.Persistence;
 
@@ -10,14 +13,28 @@ namespace Thermal.Infrastructure.Persistence;
 public sealed class ThermalDbContext(DbContextOptions<ThermalDbContext> options, TimeProvider timeProvider)
     : DbContext(options)
 {
+    private const string UpdatedAtProperty = "UpdatedAt";
+
     public DbSet<EquipmentType> EquipmentTypes => Set<EquipmentType>();
 
+    public DbSet<Company> Companies => Set<Company>();
+
+    public DbSet<Equipment> Equipment => Set<Equipment>();
+
+    internal DbSet<AppSettingRow> AppSettings => Set<AppSettingRow>();
+
+    internal DbSet<ThermocoupleTypeRow> ThermocoupleTypes => Set<ThermocoupleTypeRow>();
+
+    /// <summary>Asigna <c>UpdatedAt</c> a toda entidad editada que tenga esa columna.</summary>
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var now = RoundToSecond(timeProvider.GetLocalNow());
-        foreach (var entry in ChangeTracker.Entries<EquipmentType>().Where(e => e.State == EntityState.Modified))
+        foreach (var entry in ChangeTracker.Entries().Where(e => e.State == EntityState.Modified))
         {
-            entry.Property(e => e.UpdatedAt).CurrentValue = now;
+            if (entry.Metadata.FindProperty(UpdatedAtProperty) is not null)
+            {
+                entry.Property(UpdatedAtProperty).CurrentValue = now;
+            }
         }
 
         return base.SaveChangesAsync(cancellationToken);

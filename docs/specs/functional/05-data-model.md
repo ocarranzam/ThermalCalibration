@@ -2,7 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.9 (borrador para revisión) |
+| Versión | 0.10 (borrador para revisión) |
+| Cambios en 0.10 | Sprints 1 y 2: `AppSetting.RowVersion` (el `ETag` de los parámetros es una huella de las `RowVersion` de todas las filas); `Company` y `Equipment` con `UpdatedAt` y `RowVersion` (concurrencia optimista); `CK_Company_TaxId` valida el RUC peruano (M-08 aplicada). Rangos de los parámetros según D-08. |
 | Cambios en 0.9 | D-07: `LimitMode` = `Range` (reemplaza a `Maximum`) con `MinTemperatureC` y/o `MaxTemperatureC`; `EquipmentType.IsLimitSuggested`; `MeasurementSession.MinTemperatureC` copiado; `IsBelowLimit` también para el mínimo del rango. Límites sugeridos en los datos iniciales. |
 | Cambios en 0.8 | D-05: `EquipmentType.LimitMode` (`Maximum`/`Band`) y `ToleranceK`; `MeasurementSession.LimitMode`, `SetpointC` y `ToleranceK` copiados; `Reading.IsBelowLimit`; alertas `BelowLimit` y `BelowLimitSustained`. D-06: hasta 27 canales (`ChannelCount`, `ChannelNumber`, vista pivote con S1…S27) y `EquipmentType.MinMeasurementPoints` (el parámetro global `AppSetting.MinMeasurementPoints` desaparece). |
 | Cambios en 0.7 | `Equipment.Brand` y `Equipment.Model` **obligatorios** (`CK_Equipment_BrandModel`) y `Equipment.IsModelConfirmed`, para los perfiles de eficacia por modelo. Tipo de equipo "Cámara ambiental" en los datos iniciales. Origen: primer registro real ([DATA-1](../../data/DATA-1-analisis.md)). |
@@ -80,6 +81,8 @@ erDiagram
         nvarchar Address
         bit IsActive
         datetimeoffset CreatedAt
+        datetimeoffset UpdatedAt
+        rowversion RowVersion "ETag de la API"
     }
     Equipment {
         int EquipmentId PK
@@ -93,6 +96,8 @@ erDiagram
         nvarchar Notes
         bit IsActive
         datetimeoffset CreatedAt
+        datetimeoffset UpdatedAt
+        rowversion RowVersion "ETag de la API"
     }
     AcquisitionDevice {
         int AcquisitionDeviceId PK
@@ -230,7 +235,7 @@ stateDiagram-v2
 
 **`EquipmentType`**: catálogo ampliable de tipos de equipo (Refrigeradora, Congeladora, Conservadora, Incubadora, Cámara ambiental…) con su **criterio de límite** (D-05, D-07): `LimitMode` = `Range` con `MinTemperatureC` y/o `MaxTemperatureC` (límites absolutos), o `Band` con `ToleranceK` (± K alrededor de la consigna de cada sesión); sin valores, el límite está *pendiente*. `IsLimitSuggested` = 1 marca los valores sugeridos por la norma en los datos iniciales (refrigeradora y conservadora +2 … +8 °C, incubadora ±1,0 K, cámara ambiental ±2,0 K), hasta que el administrador edita el límite. Tiene también los **puntos de medición mínimos** que exige su norma (`MinMeasurementPoints`, 1 a 27; 9 por defecto y 27 en incubadoras de más de 50 L, D-06) y la **duración mínima de sesión** (`MinSessionDurationMinutes`, 60 min por defecto). Nombre único. Solo el administrador lo crea o edita, y registra `UpdatedAt` al editar. Se desactiva en lugar de borrarse cuando tiene equipos. `RowVersion` cambia en cada edición y la API lo usa como `ETag` para rechazar ediciones simultáneas (412). La base redondea un límite con más de 2 decimales, así que el rechazo de "-5,123" lo hace el dominio (`TemperatureLimit`).
 
-**`AppSetting`**: parámetros del sistema que mantiene el administrador (clave y valor). Incluye el intervalo de muestreo, la duración base (60 min), la duración máxima planificable (7 días), el descanso del adquisidor (15 min, propuesta) y la política de pérdida de sensores (umbral del 60 %, escalamiento en la 3.ª muestra y falla a los 30 min). Los que afectan la evaluación de una sesión se **copian** en `MeasurementSession` al iniciarla.
+**`AppSetting`**: parámetros del sistema que mantiene el administrador (clave y valor). Incluye el intervalo de muestreo, la duración base (60 min), la duración máxima planificable (7 días), el descanso del adquisidor (15 min, propuesta) y la política de pérdida de sensores (umbral del 60 %, escalamiento en la 3.ª muestra y falla a los 30 min). Los que afectan la evaluación de una sesión se **copian** en `MeasurementSession` al iniciarla. Los rangos admitidos son los de D-08 y los valida la aplicación (M-15); la API los expone como un único recurso (`/api/v1/settings`) cuyo `ETag` es una huella de las `RowVersion` de todas las filas, y al editar solo se escriben las filas que cambian (con su `UpdatedAt`).
 
 **`Tally`**: tabla auxiliar con los números 1 a 100 000. La usa `vSessionSampleCoverage` para generar las muestras programadas de sesiones de cualquier duración.
 
@@ -238,9 +243,9 @@ stateDiagram-v2
 
 **`AppUser`**: usuarios de la aplicación con un rol (`Admin`, `Technician`, `Supervisor`). Se llama `AppUser` porque `User` es palabra reservada en SQL Server. El correo es único.
 
-**`Company`**: empresa cliente, identificada por su RUC (`TaxId`, único). Guarda los datos de contacto. Las simulaciones usan una empresa de prueba dedicada.
+**`Company`**: empresa cliente, identificada por su RUC (`TaxId`, único y no editable), que la base valida con `CK_Company_TaxId` (11 dígitos, prefijo 10, 15, 17 o 20 y dígito verificador módulo 11). Guarda los datos de contacto. Se desactiva en lugar de borrarse; `UpdatedAt` y `RowVersion` como en `EquipmentType`. Las simulaciones usan una empresa de prueba dedicada.
 
-**`Equipment`**: equipo bajo prueba de una empresa. Tiene tipo, marca y modelo (**obligatorios**, porque son la clave de los perfiles de eficacia por modelo), número de serie (único por empresa) y código interno del cliente. `IsModelConfirmed` = 0 indica que el modelo se infirió (p. ej. con la ficha del fabricante) y falta confirmarlo en la placa del equipo. Su historial de sesiones se obtiene con `MeasurementSession.EquipmentId` (índice `IX_MeasurementSession_EquipmentId_StartedAt`).
+**`Equipment`**: equipo bajo prueba de una empresa. Tiene tipo, marca y modelo (**obligatorios**, porque son la clave de los perfiles de eficacia por modelo), número de serie (único por empresa) y código interno del cliente. Se desactiva en lugar de borrarse; `UpdatedAt` y `RowVersion` como en `EquipmentType`. `IsModelConfirmed` = 0 indica que el modelo se infirió (p. ej. con la ficha del fabricante) y falta confirmarlo en la placa del equipo. Su historial de sesiones se obtiene con `MeasurementSession.EquipmentId` (índice `IX_MeasurementSession_EquipmentId_StartedAt`).
 
 ### 3.3 Adquisición
 
@@ -330,6 +335,7 @@ Las alertas `Critical` se notifican visualmente y exigen reconocimiento. Las `Wa
 | `CK_AppUser_Role` | Rol ∈ {`Admin`, `Technician`, `Supervisor`}. | Visión §4 |
 | `UQ_AppUser_Email` | Correo único. | — |
 | `UQ_Company_TaxId` | RUC único. | HU-01 |
+| `CK_Company_TaxId` | RUC peruano: 11 dígitos, prefijo 10, 15, 17 o 20 y dígito verificador módulo 11 (pesos 5, 4, 3, 2, 7, 6, 5, 4, 3, 2). La aplicación da el mensaje de cada caso antes de llegar a la base. | HU-01 (M-08) |
 | `UQ_Equipment_Company_Serial` | Número de serie único por empresa. | HU-01 |
 | `CK_Equipment_BrandModel` | Marca y modelo no vacíos (además de `NOT NULL`). | HU-01 |
 | `UQ_AcquisitionDevice_Identifier` | Identificador de adquisidor único. | HU-03 |
@@ -401,7 +407,7 @@ Las alertas `Critical` se notifican visualmente y exigen reconocimiento. Las `Wa
 
 ## 5. Observaciones y mejoras propuestas al script
 
-Hallazgos de la revisión de [01-schema.sql](../../db/01-schema.sql) contra esta especificación. **No están aplicados**: requieren aprobación.
+Hallazgos de la revisión de [01-schema.sql](../../db/01-schema.sql) contra esta especificación. **No están aplicados**, salvo los marcados como aplicados: requieren aprobación.
 
 | # | Observación | Propuesta |
 |---|---|---|
@@ -412,11 +418,11 @@ Hallazgos de la revisión de [01-schema.sql](../../db/01-schema.sql) contra esta
 | M-05 | `TemperatureC` puede tener valor en los estados de falla. | `CHECK (SensorStatus IN ('OK','TypeMismatch') OR TemperatureC IS NULL)`. |
 | M-06 | `ReportedThermocoupleType` no tiene FK. | FK a `ThermocoupleType`, o `CHECK (ReportedThermocoupleType IN ('T','K'))`. |
 | M-07 | La inmutabilidad de `Reading`, `Alert` y `CommunicationGap` depende solo de la aplicación. | Rol de base de datos de la aplicación con `DENY DELETE` sobre esas tablas y `DENY UPDATE` sobre `Reading`. Alternativa: triggers de auditoría. |
-| M-08 | `Company.TaxId` acepta cualquier texto. | `CHECK (TaxId NOT LIKE '%[^0-9]%' AND LEN(TaxId) = 11)`, si solo habrá clientes con RUC peruano. |
+| M-08 | `Company.TaxId` acepta cualquier texto. | **Aplicada** (sprint 2): `CK_Company_TaxId` con longitud, dígitos, prefijo y dígito verificador. |
 | M-09 | `Alert` para `AboveLimit` no exige `SessionChannelId`, `ReadingId`, `ValueC` ni `LimitC`. | `CHECK (AlertType <> 'AboveLimit' OR (SessionChannelId IS NOT NULL AND ReadingId IS NOT NULL AND ValueC IS NOT NULL AND LimitC IS NOT NULL))`. |
 | M-10 | `vSessionReadingPivot` solo expone `TemperatureC`. Para el Excel también hacen falta `SensorStatus` e `IsAboveLimit` por celda. | Vista complementaria en formato largo, o dejar el pivotado en el generador. |
 | M-11 | `CK_Reading_SampleNumber` ya no tiene tope fijo. Una lectura con un número mayor que el de la duración planificada no se detecta en la base. | Opcional: trigger que compare `SampleNumber` con `PlannedDurationMinutes × 60 / SamplingIntervalSeconds + 1`. |
 | M-12 | `CK_MeasurementSession_MinDuration` solo controla la duración de reloj. La exigencia de 31 muestras válidas (P-02) es una regla de aplicación (RA-12). | Opcional: trigger `AFTER UPDATE` que rechace `Completed` si `vSessionSampleCoverage` tiene menos de 31 muestras no afectadas. |
 | M-13 | Nada impide usar un adquisidor `Simulator` en una sesión real (`IsSimulation` = 0). | Trigger o validación en el procedimiento de inicio. No se puede expresar con un `CHECK` porque cruza tablas. |
 | M-14 | `vSessionSampleCoverage` recalcula la cobertura en cada consulta (hasta 5 041 muestras × 10 canales en una sesión de 7 días). | Suficiente para la fase 1. Si el historial crece, materializar la cobertura al cerrar la sesión (columnas `ValidSamples` y `AffectedSamples` en `MeasurementSession`). |
-| M-15 | `AppSetting.SettingValue` es texto: la base no valida el tipo ni el rango de cada parámetro. | La aplicación valida al guardar. Alternativa: una tabla con columnas tipadas y `CHECK` por parámetro. |
+| M-15 | `AppSetting.SettingValue` es texto: la base no valida el tipo ni el rango de cada parámetro. | La aplicación valida al guardar con los rangos de D-08 (`SystemSettings`). Alternativa: una tabla con columnas tipadas y `CHECK` por parámetro. |

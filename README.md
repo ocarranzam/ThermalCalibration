@@ -7,8 +7,8 @@ Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de re
 | Estado | |
 |---|---|
 | Especificación y arquitectura | Completas ([docs/](docs/)) |
-| Backend implementado | Catálogo de **tipos de equipo** (HU-02): `POST`, `GET` y `PUT` de `/api/v1/equipment-types` |
-| Pruebas | 94 automatizadas (84 unitarias y 10 de integración), todas correctas |
+| Backend implementado | **Tipos de equipo** (HU-02), **parámetros del sistema** y **tipos de termopar** (sprint 1), **empresas cliente y equipos** (HU-01, sprint 2). Ver [docs/sprints.md](docs/sprints.md) |
+| Pruebas | 179 automatizadas (155 unitarias y 24 de integración), todas correctas |
 | Contrato | [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml), verificado contra la API en ejecución ([validation.md §5.2](docs/validation.md#52-auditoría-código--contrato--gherkin-2026-09-25)) |
 
 > Ante cualquier diferencia entre este README y la especificación, prevalece [docs/specs/functional/](docs/specs/functional/).
@@ -57,7 +57,7 @@ curl -s http://localhost:8080/openapi/v1.json | head -c 200
 | Servicio | Qué hace | Puerto | Memoria máxima |
 |---|---|---|---|
 | `sqlserver` | SQL Server 2022 Developer, zona horaria America/Lima, datos en el volumen `sqlserver-data` | `localhost:14333` | 2 GB (mínimo que exige SQL Server) |
-| `db-init` | Crea `ThermalCalibration` con [01-schema.sql](docs/db/01-schema.sql) si no existe, y termina | — | 256 MB |
+| `db-init` | Crea `ThermalCalibration` con [01-schema.sql](docs/db/01-schema.sql) y carga los datos de desarrollo de [02-dev-data.sql](docs/db/02-dev-data.sql) (empresa de ejemplo y la cámara Memmert de DATA-1) si no existe, y termina | — | 256 MB |
 | `api` | Web API .NET 10 ([Dockerfile](src/Thermal.Api/Dockerfile)) | `http://localhost:8080` | 256 MB |
 
 ```bash
@@ -81,6 +81,7 @@ Variables opcionales (en el entorno o en `.env`): `MSSQL_SA_PASSWORD` (por defec
 
 ```bash
 sqlcmd -S "(localdb)\MSSQLLocalDB" -f 65001 -i docs/db/01-schema.sql   # una sola vez: crea ThermalCalibration
+sqlcmd -S "(localdb)\MSSQLLocalDB" -f 65001 -i docs/db/02-dev-data.sql # opcional: datos de ejemplo (idempotente)
 dotnet run --project src/Thermal.Api                                     # https://localhost:5001
 ```
 
@@ -101,8 +102,19 @@ TOKEN=$(dotnet user-jwts create --project src/Thermal.Api --role Admin \
 | `POST /api/v1/equipment-types` | Admin | 201 (`Location`, `ETag`), 400, 401, 403, 409, 415 | HU-02 |
 | `GET /api/v1/equipment-types/{id}` | Cualquiera autenticado | 200 (`ETag`), 401, 404 | HU-02 |
 | `PUT /api/v1/equipment-types/{id}` | Admin | 200 (`ETag`), 400, 401, 403, 404, 409, 412, 415 | HU-02 |
+| `GET /api/v1/settings` | Cualquiera autenticado | 200 (`ETag`), 401 | HU-02, D-08 |
+| `PUT /api/v1/settings` | Admin | 200 (`ETag`), 400, 401, 403, 412, 415 | HU-02, D-08 |
+| `GET /api/v1/thermocouple-types` | Cualquiera autenticado | 200, 401 | HU-07 |
+| `POST /api/v1/companies` | Admin, Technician | 201 (`Location`, `ETag`), 400, 401, 403, 409 (`existingId`), 415 | HU-01 |
+| `GET /api/v1/companies?taxId=&name=` | Cualquiera autenticado | 200 (hasta 100, por razón social), 401 | HU-01 |
+| `GET /api/v1/companies/{id}` | Cualquiera autenticado | 200 (`ETag`), 401, 404 | HU-01 |
+| `PUT /api/v1/companies/{id}` | Admin, Technician | 200 (`ETag`), 400, 401, 403, 404, 412, 415 | HU-01 |
+| `POST /api/v1/companies/{id}/equipment` | Admin, Technician | 201 (`Location`, `ETag`), 400, 401, 403, 404, 409, 415 | HU-01 |
+| `GET /api/v1/companies/{id}/equipment` | Cualquiera autenticado | 200, 401, 404 | HU-01 |
+| `GET /api/v1/equipment/{id}` | Cualquiera autenticado | 200 (`ETag`), 401, 404 | HU-01 |
+| `PUT /api/v1/equipment/{id}` | Admin, Technician | 200 (`ETag`), 400, 401, 403, 404, 409, 412, 415 | HU-01 |
 
-No hay `DELETE` (responde 405): un tipo de equipo se **desactiva** con `PUT` e `isActive: false`.
+No hay `DELETE` (responde 405): tipos de equipo, empresas y equipos se **desactivan** con `PUT` e `isActive: false`.
 
 **Crear un tipo de equipo** → `201 Created`
 
@@ -145,6 +157,44 @@ curl -i -X PUT "$API/api/v1/equipment-types/2" \
 curl -i -X PUT "$API/api/v1/equipment-types/4" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name":"Incubadora","minSessionDurationMinutes":120,"isActive":false}'
+```
+
+**Parámetros del sistema** (D-08): `GET` para todos; `PUT` reemplaza los 8 parámetros y solo afecta a las sesiones que se inicien después
+
+```bash
+curl -i "$API/api/v1/settings" -H "Authorization: Bearer $TOKEN"
+# {"samplingIntervalSeconds":…,"baseSessionMinutes":60,"maxSessionMinutes":10080,"restPeriodMinutes":15,
+#  "sensorLossThresholdPct":60,"sensorLossCriticalAfterSamples":3,"sensorLossFailMinutes":30,
+#  "aboveLimitCriticalMinutes":30,"minValidSamples":…,"updatedAt":"…"}
+
+# 400: umbral fuera de rango  →  errors.sensorLossThresholdPct = "El umbral debe ser mayor que 0 y menor que 100"
+curl -i -X PUT "$API/api/v1/settings" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"samplingIntervalSeconds":60,"baseSessionMinutes":60,"maxSessionMinutes":10080,"restPeriodMinutes":15,
+       "sensorLossThresholdPct":100,"sensorLossCriticalAfterSamples":3,"sensorLossFailMinutes":30,"aboveLimitCriticalMinutes":30}'
+
+curl -i "$API/api/v1/thermocouple-types" -H "Authorization: Bearer $TOKEN"   # [{"code":"K",…},{"code":"T",…}]
+```
+
+**Empresas y equipos** (HU-01; el técnico también registra)
+
+```bash
+# Registrar una empresa → 201. Un RUC inválido da 400 con el mensaje de HU-01 ("El dígito verificador del RUC no es válido")
+curl -i -X POST "$API/api/v1/companies" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"taxId":"20100070970","name":"Laboratorios Andinos S.A.C.","email":"calidad@andinos.pe"}'
+
+# Repetir el RUC → 409 "Ya existe una empresa con el RUC 20100070970", con existingId para abrir la existente
+# Buscar por RUC o por parte de la razón social
+curl -i "$API/api/v1/companies?name=andinos" -H "Authorization: Bearer $TOKEN"
+
+# Registrar un equipo de la empresa 1 (tipo 2 = Congeladora) → 201. La serie es única dentro de la empresa (409)
+curl -i -X POST "$API/api/v1/companies/1/equipment" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"equipmentTypeId":2,"brand":"Haier","model":"HBF-205","serialNumber":"SN-88231"}'
+
+# Modelo inferido (sin ver la placa): isModelConfirmed false. Se confirma después con PUT /api/v1/equipment/{id}
+curl -i -X POST "$API/api/v1/companies/1/equipment" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"equipmentTypeId":5,"brand":"Memmert","model":"TTC256","isModelConfirmed":false,"serialNumber":"DATA-1"}'
+
+curl -i "$API/api/v1/companies/1/equipment" -H "Authorization: Bearer $TOKEN"
 ```
 
 **Errores** (todos en `application/problem+json`, RFC 7807, con títulos en español)
@@ -227,6 +277,7 @@ Todo lo que es código o contrato va en **inglés**, con los mismos nombres en t
 | Dominio | `EquipmentType` | `TemperatureLimit`, `ChangeLimit`, `Deactivate` |
 | Aplicación | `CreateEquipmentTypeCommand` | `UpdateEquipmentTypeCommand`, `GetEquipmentTypeByIdQuery`, `EquipmentTypeDto` |
 | API | `EquipmentTypesController` | `/api/v1/equipment-types`; schemas `CreateEquipmentTypeRequest`, `CreateEquipmentTypeResponse`, `UpdateEquipmentTypeRequest`, `EquipmentTypeResponse`, `ErrorResponse` |
+| Otras entidades | `Company`, `Equipment`, `SystemSettings` | `CompaniesController` (`/api/v1/companies`), `EquipmentController` (`/api/v1/equipment`, incontable), `SettingsController` (`/api/v1/settings`, recurso único sobre `dbo.AppSetting`) |
 | JSON y datos de prueba | camelCase | `maxTemperatureC`, `isActive`, `config.equipmentTypeMinSessionDurationMinutes` |
 
 - **No** usar nombres en español en clases, propiedades, rutas ni schemas (`TipoEquipo`, `CreateTipoEquipamientoCommand`… no existen).
@@ -238,8 +289,8 @@ Todo lo que es código o contrato va en **inglés**, con los mismos nombres en t
 
 | Proyecto | Qué prueba | Requiere |
 |---|---|---|
-| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (84) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
-| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (10) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia y fechas | Docker en ejecución |
+| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (155) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
+| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (24) | Persistencia contra el esquema real: valores que genera la base, unicidad, `CK_Company_TaxId`, concurrencia y fechas | Docker en ejecución |
 
 ```bash
 dotnet test --solution Thermal.slnx                                             # todas
@@ -275,6 +326,20 @@ dotnet test --project tests/Thermal.UnitTests -- --filter-trait "Story=HU-02"   
 
 Los parámetros se guardan en la tabla `AppSetting`, los mantiene el administrador y se **copian en cada sesión al iniciarla**.
 
+### Catálogo inicial de tipos de equipo
+
+Datos iniciales de [01-schema.sql](docs/db/01-schema.sql) (D-05, D-06, D-07). Los límites **sugeridos** vienen de la norma y el laboratorio debe confirmarlos (P-03): al editarlos quedan confirmados (`isLimitSuggested: false`).
+
+| Tipo | Criterio | Límite | Estado del límite | Puntos mínimos | Base |
+|---|---|---|---|---|---|
+| Refrigeradora | `Range` | +2 a +8 °C | Sugerido | 9 | OMS PQS E003 (vacunas y medicamentos); banco de sangre: +1 a +6 °C (AABB), mejor como tipo propio |
+| Congeladora | `Range` | Máximo −5,00 °C (sin mínimo) | Confirmado | 9 | Especificación original (RN-07) |
+| Conservadora | `Range` | +2 a +8 °C | Sugerido | 9 | Cadena de frío de vacunas (OMS) |
+| Incubadora | `Band` | Consigna ± 1,0 K | Sugerido | 27 | Práctica habitual (37 ± 1 °C); 27 puntos por DIN 12880 (más de 50 L; 9 si es de 50 L o menos) |
+| Cámara ambiental | `Band` | Consigna ± 2,0 K | Sugerido | 9 | Homogeneidad máxima declarada por Memmert CTC/TTC ([catálogo](docs/equipment-catalog/README.md)); 9 puntos por IEC 60068-3-5 (hasta 2000 L) |
+
+Criterios: `Range` = límites absolutos (fuera si la lectura es mayor que el máximo o menor que el mínimo); `Band` = consigna de la sesión ± tolerancia. Comparación estricta: el valor del límite cumple.
+
 **Punto de cambio PC-01 (intervalo de muestreo).** Se mantiene en 120 s en la fase 1 (P-11), aunque DKD-R 5-7 §7.3 e IEC 60068-3-5 §4.4 piden 60 s o menos. Todos los lugares donde se define llevan la marca `[PC-01]` (`grep -rn "PC-01" docs test-data`). El código no debe usar los literales `120` ni `31`. Detalle en [01 §12](docs/specs/functional/01-vision-document.md#pc-01--intervalo-de-muestreo).
 
 ## 6. Documentación
@@ -294,6 +359,7 @@ Los parámetros se guardan en la tabla `AppSetting`, los mantiene el administrad
 | [docs/validation.md](docs/validation.md) | Trazabilidad HU ↔ RN ↔ TD, cobertura de pruebas, estado por historia y auditoría código ↔ contrato |
 | [docs/equipment-catalog/](docs/equipment-catalog/README.md) | Fichas públicas de fabricantes (Memmert CTC/TTC, HPP, ICH) con sus especificaciones de temperatura |
 | [docs/data/](docs/data/README.md) | Registros reales de temperatura con su análisis y su perfil (DATA-1: cámara ambiental Memmert TTC256 inferida, 72 h, 12 × tipo T, óptima) |
+| [docs/sprints.md](docs/sprints.md) | **Checklist de los próximos sprints** (configuración primero, autenticación al final) |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Orden de las entidades pendientes, definición de terminado, guía paso a paso y lecciones aprendidas |
 | [docs/delivery/](docs/delivery/README.md) | Plantillas de la documentación de entrega: despliegue, usuario, administrador y cierre técnico con acta de aceptación |
 | [tools/contract-check/](tools/contract-check/README.md) | Auditoría automática de la API en ejecución contra el contrato OpenAPI |
@@ -304,7 +370,7 @@ Los parámetros se guardan en la tabla `AppSetting`, los mantiene el administrad
 
 | Tema | Estado |
 |---|---|
-| Resto de historias (sesiones, captura serial, alertas, Excel) | Especificadas; sin implementar |
+| Resto de historias (sesiones, captura serial, alertas, Excel) | Especificadas; sin implementar. Siguiente: sprint 3 de [docs/sprints.md](docs/sprints.md) |
 | Autenticación definitiva | Cuentas propias o Windows/AD, por decidir |
 | Preguntas abiertas | P-03, P-04, P-06 a P-10, P-12 y P-14, con propuesta provisional ([01 §11](docs/specs/functional/01-vision-document.md#11-preguntas-abiertas)) |
 | Normas | Revisar la edición 2025-01 de DKD-R 5-7 |

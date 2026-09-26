@@ -2,8 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Thermal.Application.Abstractions;
+using Thermal.Application.Companies;
+using Thermal.Application.Equipments;
 using Thermal.Application.EquipmentTypes;
+using Thermal.Application.Settings;
+using Thermal.Application.ThermocoupleTypes;
 using Thermal.Infrastructure.Persistence;
+using Thermal.Infrastructure.Persistence.Settings;
 
 namespace Thermal.Infrastructure;
 
@@ -22,6 +27,13 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IEquipmentTypeRepository, EquipmentTypeRepository>();
         services.AddScoped<IEquipmentTypeReadStore, EquipmentTypeReadStore>();
+        services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddScoped<ISystemSettingsReadStore, SystemSettingsReadStore>();
+        services.AddScoped<IThermocoupleTypeReadStore, ThermocoupleTypeReadStore>();
+        services.AddScoped<ICompanyRepository, CompanyRepository>();
+        services.AddScoped<ICompanyReadStore, CompanyReadStore>();
+        services.AddScoped<IEquipmentRepository, EquipmentRepository>();
+        services.AddScoped<IEquipmentReadStore, EquipmentReadStore>();
 
         return services;
     }

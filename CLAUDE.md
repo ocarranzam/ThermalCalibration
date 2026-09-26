@@ -4,11 +4,12 @@ Sistema de monitoreo térmico para calibración de equipos de refrigeración. We
 
 ## Dónde está cada cosa
 
-- **Qué construir y en qué orden:** [docs/implementation-plan.md](docs/implementation-plan.md) (estado por entidad, olas, definición de terminado, guía paso a paso y lecciones aprendidas). Empezar siempre por aquí y actualizar su §1 al terminar una entidad.
+- **Qué sigue:** [docs/sprints.md](docs/sprints.md) (checklist por sprint; la autenticación va al final). Marcar las casillas al avanzar.
+- **Cómo construir cada entidad:** [docs/implementation-plan.md](docs/implementation-plan.md) (estado por entidad, olas, definición de terminado, guía paso a paso y lecciones aprendidas). Empezar siempre por aquí y actualizar su §1 al terminar una entidad.
 - Especificación, que prevalece ante cualquier diferencia: [docs/specs/functional/](docs/specs/functional/). Historias en `03-user-stories.md` (IDs `HU-xx`, reglas `RN-xx`, escenarios de prueba `TD-xx`).
 - Contrato: [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml). Primero el contrato, después el código.
 - Arquitectura: [ADR-001](docs/architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md), [domain-model.md](docs/architecture/domain-model.md), [c4-containers.md](docs/architecture/c4-containers.md).
-- Base de datos (base primero, sin migraciones de EF): [docs/db/01-schema.sql](docs/db/01-schema.sql) y [05-data-model.md](docs/specs/functional/05-data-model.md).
+- Base de datos (base primero, sin migraciones de EF): [docs/db/01-schema.sql](docs/db/01-schema.sql) (esquema y catálogos; lo usan las pruebas), [docs/db/02-dev-data.sql](docs/db/02-dev-data.sql) (datos de ejemplo solo para desarrollo, idempotente) y [05-data-model.md](docs/specs/functional/05-data-model.md).
 - Trazabilidad, cobertura de pruebas y auditorías: [docs/validation.md](docs/validation.md).
 - Plantillas de la documentación de entrega: [docs/delivery/](docs/delivery/README.md).
 - Registros reales de campo y su análisis (base de los perfiles de eficacia por modelo): [docs/data/](docs/data/README.md). Marca y modelo del equipo son **obligatorios**; un modelo deducido se marca como inferido.

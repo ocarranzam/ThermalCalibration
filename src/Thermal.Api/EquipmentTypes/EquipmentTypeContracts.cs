@@ -10,7 +10,7 @@ namespace Thermal.Api.EquipmentTypes;
 /// <summary>Schema <c>CreateEquipmentTypeRequest</c>.</summary>
 public sealed record CreateEquipmentTypeRequest
 {
-    [Required]
+    [Required(ErrorMessage = "El nombre del tipo de equipo es obligatorio")]
     public string? Name { get; init; }
 
     public LimitMode? LimitMode { get; init; }
@@ -31,7 +31,7 @@ public sealed record CreateEquipmentTypeRequest
 /// <summary>Schema <c>UpdateEquipmentTypeRequest</c> (semántica de reemplazo de PUT).</summary>
 public sealed record UpdateEquipmentTypeRequest
 {
-    [Required]
+    [Required(ErrorMessage = "El nombre del tipo de equipo es obligatorio")]
     public string? Name { get; init; }
 
     public LimitMode? LimitMode { get; init; }
@@ -48,7 +48,7 @@ public sealed record UpdateEquipmentTypeRequest
 
     public string? Description { get; init; }
 
-    [Required]
+    [Required(ErrorMessage = "Indique si el tipo de equipo está activo")]
     public bool? IsActive { get; init; }
 }
 

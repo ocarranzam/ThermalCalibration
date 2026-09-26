@@ -6,4 +6,7 @@ internal static class Roles
     public const string Admin = "Admin";
     public const string Technician = "Technician";
     public const string Supervisor = "Supervisor";
+
+    /// <summary>Registran y editan empresas y equipos (HU-01); el supervisor solo consulta.</summary>
+    public const string Editors = $"{Admin},{Technician}";
 }

@@ -31,7 +31,7 @@
 ## 1. Resumen del sistema entregado
 
 **Contenido:** alcance entregado frente al comprometido (historias HU-01 a HU-17), versión, repositorio y fecha. Una tabla por módulo (Sesión de Medición, Adquisición Serial, Exportación) con su estado.
-**Fuente:** [validation.md §5.3](../validation.md#53-estado-de-implementación-por-historia-2026-09-25). **Estado:** ⏳
+**Fuente:** [validation.md §5.3](../validation.md#53-estado-de-implementación-por-historia-2026-09-26). **Estado:** ⏳
 
 ## 2. Arquitectura y decisiones
 

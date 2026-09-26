@@ -51,8 +51,8 @@ Feature: Registro de empresas cliente y equipos
 
   Scenario: Permitir la misma serie en otra empresa
     Given la empresa con RUC "20100070970" tiene un equipo con serie "SN-88231"
-    And existe la empresa con RUC "20601234561"
-    When registro para la empresa "20601234561" un equipo con serie "SN-88231"
+    And existe la empresa con RUC "20601234565"
+    When registro para la empresa "20601234565" un equipo con serie "SN-88231"
     Then el equipo queda registrado
 
   Scenario Outline: Datos obligatorios del equipo

@@ -28,7 +28,8 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 Detail = "Revise los campos indicados en errors.",
             },
             NotFoundException => Problem(StatusCodes.Status404NotFound, "Recurso no encontrado", exception),
-            ConflictException => Problem(StatusCodes.Status409Conflict, "Conflicto con el estado del recurso", exception),
+            ConflictException conflict => WithExistingId(
+                Problem(StatusCodes.Status409Conflict, "Conflicto con el estado del recurso", exception), conflict.ExistingId),
             ConcurrencyConflictException => Problem(StatusCodes.Status412PreconditionFailed, "El recurso cambió", exception),
             _ => null,
         };
@@ -47,6 +48,17 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
             ProblemDetails = problem,
             Exception = exception,
         });
+    }
+
+    /// <summary>Permite al cliente ofrecer abrir el recurso existente (HU-01, RUC duplicado).</summary>
+    private static ProblemDetails WithExistingId(ProblemDetails problem, int? existingId)
+    {
+        if (existingId is { } id)
+        {
+            problem.Extensions["existingId"] = id;
+        }
+
+        return problem;
     }
 
     private static ProblemDetails Problem(int status, string title, Exception exception) => new()

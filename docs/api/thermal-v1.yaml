@@ -1,17 +1,19 @@
 openapi: 3.0.3
 info:
   title: ThermalCalibration API
-  version: 1.2.0
+  version: 1.3.0
   description: |
     API REST del Sistema de Monitoreo Térmico para Calibración de Equipos de Refrigeración.
 
     Contrato de la Web API (.NET 10, ASP.NET Core con controladores) de la fase 1 de ThermalCalibration.
-    Implementación: `src/Thermal.Api/EquipmentTypes/EquipmentTypesController.cs`. Verificado contra la API
-    en ejecución el 2026-09-25 (24 casos, todos conformes; ver `docs/validation.md` §5.2).
+    Implementación: `src/Thermal.Api/*/*Controller.cs`. Verificado contra la API en ejecución con
+    `tools/contract-check` (ver `docs/validation.md` §5.2).
 
-    Esta versión cubre el recurso **tipos de equipo** (agregado `EquipmentType`, HU-02):
-    catálogo con el límite máximo de temperatura, que puede quedar pendiente, y la duración
-    mínima de sesión que exige cada tipo.
+    Recursos de esta versión:
+    - **Tipos de equipo** (agregado `EquipmentType`, HU-02): catálogo con el criterio de límite, que puede quedar
+      pendiente, los puntos de medición mínimos y la duración mínima de sesión que exige cada tipo.
+    - **Parámetros del sistema** (`AppSetting`, D-08) y catálogo fijo de **tipos de termopar** (sprint 1).
+    - **Empresas cliente y equipos** (agregados `Company` y `Equipment`, HU-01, sprint 2).
 
     Convenciones:
     - Rutas en plural, minúsculas y kebab-case, versionadas con el prefijo `/api/v1`.
@@ -24,10 +26,10 @@ info:
       refrigeradora +2 … +8 °C, congeladora solo máximo) o `Band` (consigna de la sesión ± `toleranceK`, por arriba o
       por abajo: incubadoras y cámaras ambientales). `isLimitSuggested` indica valores sugeridos por la norma en los
       datos iniciales, pendientes de confirmar. Puntos de medición mínimos por tipo (D-06), de 1 a 27.
-    - No hay `DELETE`: un tipo de equipo no se borra, se desactiva con `PUT` e `isActive: false` (HU-02).
-      Un método no admitido responde 405.
+    - No hay `DELETE`: tipos de equipo, empresas y equipos no se borran, se desactivan con `PUT` e
+      `isActive: false` (HU-01, HU-02). Un método no admitido responde 405.
 
-    Fuentes: `docs/architecture/domain-model.md`, `docs/specs/functional/03-user-stories.md` (HU-02),
+    Fuentes: `docs/architecture/domain-model.md`, `docs/specs/functional/03-user-stories.md` (HU-01, HU-02),
     `docs/specs/functional/05-data-model.md` y `docs/db/01-schema.sql`.
   license:
     name: Propietaria, uso interno del laboratorio
@@ -60,6 +62,16 @@ tags:
       Catálogo de tipos de equipo con su límite máximo y su duración mínima de sesión (HU-02, RN-04, RN-06 a RN-08).
       Solo el rol `Admin` crea o edita tipos. Cambiar un tipo no altera las sesiones ya iniciadas, que conservan
       una copia del límite tomada al iniciar (RN-08).
+  - name: Settings
+    description: |
+      Parámetros del sistema (intervalo de muestreo, duraciones, descanso del kit y umbrales de alerta; D-08) y
+      catálogo fijo de tipos de termopar. Todos los roles consultan; solo `Admin` edita los parámetros. Un cambio solo
+      afecta a las sesiones que se inicien después, que guardan una copia (RN-08).
+  - name: Companies
+    description: |
+      Empresas cliente identificadas por su RUC y sus equipos bajo prueba (HU-01). `Admin` y `Technician` registran y
+      editan; `Supervisor` solo consulta. La marca y el modelo del equipo son obligatorios porque agrupan los perfiles
+      de eficacia por modelo; un modelo inferido se registra con `isModelConfirmed: false`.
 security:
   - bearerAuth: []
 paths:
@@ -255,6 +267,371 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '415':
           $ref: '#/components/responses/UnsupportedMediaType'
+  /api/v1/settings:
+    get:
+      tags:
+        - Settings
+      operationId: getSettings
+      summary: Obtener los parámetros del sistema
+      description: |
+        Devuelve los parámetros vigentes y `minValidSamples`, el mínimo de muestras válidas de una sesión base
+        (`baseSessionMinutes × 60 / samplingIntervalSeconds + 1`). Disponible para todos los roles.
+      responses:
+        '200':
+          description: Parámetros vigentes.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags:
+        - Settings
+      operationId: updateSettings
+      summary: Reemplazar los parámetros del sistema
+      description: |
+        Reemplaza todos los parámetros (D-08). Solo afecta a las sesiones que se inicien después (RN-08). El intervalo
+        de muestreo debe dividir exactamente la duración base. Con `If-Match`, el cambio solo se aplica si ningún
+        parámetro cambió desde que se leyeron. Si los valores son iguales a los guardados, no se escribe nada.
+        Requiere el rol `Admin`.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingsRequest'
+      responses:
+        '200':
+          description: Parámetros actualizados.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /api/v1/thermocouple-types:
+    get:
+      tags:
+        - Settings
+      operationId: listThermocoupleTypes
+      summary: Listar los tipos de termopar
+      description: Catálogo fijo de tipos de termopar con su rango de medición, ordenado por código.
+      responses:
+        '200':
+          description: Tipos de termopar.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ThermocoupleTypeResponse'
+              example:
+                - code: K
+                  name: Termopar tipo K (cromel-alumel)
+                  minRangeC: -200
+                  maxRangeC: 1260
+                - code: T
+                  name: Termopar tipo T (cobre-constantán)
+                  minRangeC: -200
+                  maxRangeC: 350
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/companies:
+    post:
+      tags:
+        - Companies
+      operationId: createCompany
+      summary: Registrar una empresa cliente
+      description: |
+        Registra una empresa activa. El RUC se valida (11 dígitos, prefijo 10, 15, 17 o 20 y dígito verificador
+        módulo 11) y es único: si ya existe, responde 409 con `existingId` para ofrecer abrir la empresa existente.
+        Requiere el rol `Admin` o `Technician`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+            example:
+              taxId: '20100070970'
+              name: Laboratorios Andinos S.A.C.
+              contactName: Ana Torres
+              phone: '+51 1 555 0100'
+              email: calidad@andinos.pe
+      responses:
+        '201':
+          description: Empresa registrada.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/DuplicateTaxId'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    get:
+      tags:
+        - Companies
+      operationId: searchCompanies
+      summary: Buscar empresas
+      description: |
+        Busca por RUC exacto y/o por parte de la razón social, sin distinguir mayúsculas. Sin filtros devuelve todas.
+        Como máximo 100 resultados, ordenados por razón social. Incluye las empresas desactivadas.
+      parameters:
+        - name: taxId
+          in: query
+          required: false
+          description: RUC exacto.
+          schema:
+            type: string
+          example: '20100070970'
+        - name: name
+          in: query
+          required: false
+          description: Parte de la razón social.
+          schema:
+            type: string
+          example: Andinos
+      responses:
+        '200':
+          description: Empresas encontradas (puede estar vacío).
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/CompanyResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/companies/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CompanyId'
+    get:
+      tags:
+        - Companies
+      operationId: getCompany
+      summary: Obtener una empresa
+      responses:
+        '200':
+          description: Empresa encontrada.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Companies
+      operationId: updateCompany
+      summary: Reemplazar los datos de una empresa
+      description: |
+        Reemplaza los datos editables. El RUC no se edita. Las propiedades opcionales que no se envían se vacían.
+        Una empresa no se borra: se desactiva con `isActive: false`. Requiere el rol `Admin` o `Technician`.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Empresa actualizada.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /api/v1/companies/{id}/equipment:
+    parameters:
+      - $ref: '#/components/parameters/CompanyId'
+    post:
+      tags:
+        - Companies
+      operationId: createCompanyEquipment
+      summary: Registrar un equipo de la empresa
+      description: |
+        Registra un equipo activo de la empresa. El tipo de equipo debe existir y estar activo. La serie es única dentro
+        de la empresa (otra empresa puede tener la misma). Sin `isModelConfirmed`, el modelo se considera confirmado.
+        Requiere el rol `Admin` o `Technician`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEquipmentRequest'
+            examples:
+              congeladora:
+                summary: Equipo con el modelo leído en la placa
+                value:
+                  equipmentTypeId: 2
+                  brand: Haier
+                  model: HBF-205
+                  serialNumber: SN-88231
+              modeloInferido:
+                summary: Modelo inferido con la ficha del fabricante (DATA-1)
+                value:
+                  equipmentTypeId: 5
+                  brand: Memmert
+                  model: TTC256
+                  isModelConfirmed: false
+                  serialNumber: DATA-1
+      responses:
+        '201':
+          description: Equipo registrado.
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/DuplicateSerial'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    get:
+      tags:
+        - Companies
+      operationId: listCompanyEquipment
+      summary: Listar los equipos de la empresa
+      description: Equipos de la empresa, activos y desactivados, ordenados por número de serie.
+      responses:
+        '200':
+          description: Equipos de la empresa (puede estar vacío).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EquipmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/equipment/{id}:
+    parameters:
+      - $ref: '#/components/parameters/EquipmentId'
+    get:
+      tags:
+        - Companies
+      operationId: getEquipment
+      summary: Obtener un equipo
+      responses:
+        '200':
+          description: Equipo encontrado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Companies
+      operationId: updateEquipment
+      summary: Reemplazar los datos de un equipo
+      description: |
+        Reemplaza los datos editables. La empresa no cambia. Solo se exige un tipo activo si el tipo cambia: un equipo
+        conserva su tipo aunque este se haya desactivado. `isModelConfirmed: true` confirma el modelo leído en la placa.
+        Un equipo no se borra: se desactiva con `isActive: false`. Requiere el rol `Admin` o `Technician`.
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEquipmentRequest'
+      responses:
+        '200':
+          description: Equipo actualizado.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipmentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/DuplicateSerial'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
 components:
   securitySchemes:
     bearerAuth:
@@ -270,6 +647,26 @@ components:
       in: path
       required: true
       description: Identificador del tipo de equipo (`EquipmentTypeId`).
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+    CompanyId:
+      name: id
+      in: path
+      required: true
+      description: Identificador de la empresa (`CompanyId`).
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+      example: 1
+    EquipmentId:
+      name: id
+      in: path
+      required: true
+      description: Identificador del equipo (`EquipmentId`).
       schema:
         type: integer
         format: int32
@@ -515,6 +912,532 @@ components:
       maxLength: 500
       default: null
       example: Incubadoras de CO2 a 37 °C
+    UpdateSettingsRequest:
+      type: object
+      description: Todos los parámetros (D-08, semántica de reemplazo de `PUT`).
+      additionalProperties: false
+      required:
+        - samplingIntervalSeconds
+        - baseSessionMinutes
+        - maxSessionMinutes
+        - restPeriodMinutes
+        - sensorLossThresholdPct
+        - sensorLossCriticalAfterSamples
+        - sensorLossFailMinutes
+        - aboveLimitCriticalMinutes
+      properties:
+        samplingIntervalSeconds:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 900
+          description: Intervalo de muestreo en segundos [PC-01]. Debe dividir exactamente la duración base.
+          example: 60
+        baseSessionMinutes:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 240
+          description: Duración base de una sesión en minutos.
+          example: 60
+        maxSessionMinutes:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 43200
+          description: Duración máxima planificable en minutos; no menor que la base (hasta 30 días).
+          example: 10080
+        restPeriodMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 240
+          description: Descanso mínimo del kit de medición entre sesiones, en minutos.
+          example: 15
+        sensorLossThresholdPct:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          exclusiveMaximum: true
+          maximum: 100
+          multipleOf: 0.01
+          description: Una muestra está afectada si MÁS de este % de canales no tiene lectura válida (2 decimales como máximo).
+          example: 60
+        sensorLossCriticalAfterSamples:
+          type: integer
+          format: int32
+          minimum: 2
+          maximum: 10
+          description: La pérdida de sensores pasa a alerta crítica en la N-ésima muestra afectada consecutiva.
+          example: 3
+        sensorLossFailMinutes:
+          type: integer
+          format: int32
+          minimum: 10
+          maximum: 240
+          description: La sesión falla tras estos minutos consecutivos de muestras afectadas.
+          example: 30
+        aboveLimitCriticalMinutes:
+          type: integer
+          format: int32
+          minimum: 10
+          maximum: 240
+          description: Un canal fuera de límite estos minutos seguidos genera una alerta crítica.
+          example: 30
+    SettingsResponse:
+      type: object
+      description: Parámetros vigentes.
+      required:
+        - samplingIntervalSeconds
+        - baseSessionMinutes
+        - maxSessionMinutes
+        - restPeriodMinutes
+        - sensorLossThresholdPct
+        - sensorLossCriticalAfterSamples
+        - sensorLossFailMinutes
+        - aboveLimitCriticalMinutes
+        - minValidSamples
+        - updatedAt
+      properties:
+        samplingIntervalSeconds:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 900
+          description: Intervalo de muestreo en segundos [PC-01]. Debe dividir exactamente la duración base.
+          example: 60
+        baseSessionMinutes:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 240
+          description: Duración base de una sesión en minutos.
+          example: 60
+        maxSessionMinutes:
+          type: integer
+          format: int32
+          minimum: 30
+          maximum: 43200
+          description: Duración máxima planificable en minutos; no menor que la base (hasta 30 días).
+          example: 10080
+        restPeriodMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 240
+          description: Descanso mínimo del kit de medición entre sesiones, en minutos.
+          example: 15
+        sensorLossThresholdPct:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          exclusiveMaximum: true
+          maximum: 100
+          multipleOf: 0.01
+          description: Una muestra está afectada si MÁS de este % de canales no tiene lectura válida (2 decimales como máximo).
+          example: 60
+        sensorLossCriticalAfterSamples:
+          type: integer
+          format: int32
+          minimum: 2
+          maximum: 10
+          description: La pérdida de sensores pasa a alerta crítica en la N-ésima muestra afectada consecutiva.
+          example: 3
+        sensorLossFailMinutes:
+          type: integer
+          format: int32
+          minimum: 10
+          maximum: 240
+          description: La sesión falla tras estos minutos consecutivos de muestras afectadas.
+          example: 30
+        aboveLimitCriticalMinutes:
+          type: integer
+          format: int32
+          minimum: 10
+          maximum: 240
+          description: Un canal fuera de límite estos minutos seguidos genera una alerta crítica.
+          example: 30
+        minValidSamples:
+          type: integer
+          format: int32
+          readOnly: true
+          description: Mínimo de muestras válidas de una sesión base (`baseSessionMinutes × 60 / samplingIntervalSeconds + 1`).
+          example: 61
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Fecha y hora de la última edición de cualquier parámetro.
+          example: '2026-09-25T10:15:00-05:00'
+    ThermocoupleTypeResponse:
+      type: object
+      description: Tipo de termopar del catálogo fijo, con su rango de medición.
+      required:
+        - code
+        - name
+        - minRangeC
+        - maxRangeC
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 1
+          description: Código del tipo (`ThermocoupleTypeCode`).
+          example: T
+        name:
+          type: string
+          example: Termopar tipo T (cobre-constantán)
+        minRangeC:
+          type: number
+          format: double
+          example: -200
+        maxRangeC:
+          type: number
+          format: double
+          example: 350
+    TaxId:
+      type: string
+      description: |
+        RUC peruano: 11 dígitos, prefijo 10, 15, 17 o 20 y dígito verificador módulo 11 (`CK_Company_TaxId`, M-08).
+        Único (`UQ_Company_TaxId`).
+      pattern: ^(10|15|17|20)[0-9]{9}$
+      example: '20100070970'
+    CompanyName:
+      type: string
+      description: Razón social, sin espacios al inicio ni al final.
+      minLength: 1
+      maxLength: 200
+      pattern: ^\S(.*\S)?$
+      example: Laboratorios Andinos S.A.C.
+    CreateCompanyRequest:
+      type: object
+      description: Datos para registrar una empresa. Nace activa.
+      additionalProperties: false
+      required:
+        - taxId
+        - name
+      properties:
+        taxId:
+          $ref: '#/components/schemas/TaxId'
+        name:
+          $ref: '#/components/schemas/CompanyName'
+        contactName:
+          type: string
+          nullable: true
+          maxLength: 150
+          example: Ana Torres
+        phone:
+          type: string
+          nullable: true
+          maxLength: 30
+          example: '+51 1 555 0100'
+        email:
+          type: string
+          nullable: true
+          maxLength: 150
+          description: Correo de contacto (una sola `@`, sin espacios).
+          example: calidad@andinos.pe
+        address:
+          type: string
+          nullable: true
+          maxLength: 300
+          example: Av. Los Frutales 123, Ate, Lima
+    UpdateCompanyRequest:
+      type: object
+      description: Datos editables de la empresa (semántica de reemplazo de `PUT`). El RUC no se edita.
+      additionalProperties: false
+      required:
+        - name
+        - isActive
+      properties:
+        name:
+          $ref: '#/components/schemas/CompanyName'
+        contactName:
+          type: string
+          nullable: true
+          maxLength: 150
+          example: Ana Torres
+        phone:
+          type: string
+          nullable: true
+          maxLength: 30
+          example: '+51 1 555 0100'
+        email:
+          type: string
+          nullable: true
+          maxLength: 150
+          description: Correo de contacto (una sola `@`, sin espacios).
+          example: calidad@andinos.pe
+        address:
+          type: string
+          nullable: true
+          maxLength: 300
+          example: Av. Los Frutales 123, Ate, Lima
+        isActive:
+          type: boolean
+          description: '`false` desactiva el registro; no se borra.'
+          example: true
+    CompanyResponse:
+      type: object
+      description: Representación del recurso empresa.
+      required:
+        - id
+        - taxId
+        - name
+        - contactName
+        - phone
+        - email
+        - address
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          example: 1
+        taxId:
+          $ref: '#/components/schemas/TaxId'
+        name:
+          $ref: '#/components/schemas/CompanyName'
+        contactName:
+          type: string
+          nullable: true
+          maxLength: 150
+          example: Ana Torres
+        phone:
+          type: string
+          nullable: true
+          maxLength: 30
+          example: '+51 1 555 0100'
+        email:
+          type: string
+          nullable: true
+          maxLength: 150
+          description: Correo de contacto (una sola `@`, sin espacios).
+          example: calidad@andinos.pe
+        address:
+          type: string
+          nullable: true
+          maxLength: 300
+          example: Av. Los Frutales 123, Ate, Lima
+        isActive:
+          type: boolean
+          description: '`false` desactiva el registro; no se borra.'
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          example: '2026-09-26T09:00:00-05:00'
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          example: null
+    CreateEquipmentRequest:
+      type: object
+      description: Datos para registrar un equipo. La empresa va en la ruta; el equipo nace activo.
+      additionalProperties: false
+      required:
+        - equipmentTypeId
+        - brand
+        - model
+        - serialNumber
+      properties:
+        equipmentTypeId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Tipo de equipo; al registrar o al cambiar el tipo debe estar activo.
+          example: 2
+        brand:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          example: Haier
+        model:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Modelo; clave de los perfiles de eficacia por modelo.
+          example: HBF-205
+        isModelConfirmed:
+          type: boolean
+          description: '`false` si el modelo se infirió (p. ej. con la ficha del fabricante) y falta confirmarlo en la placa.'
+          example: true
+        serialNumber:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Número de serie, único dentro de la empresa (`UQ_Equipment_Company_Serial`).
+          example: SN-88231
+        internalCode:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: Código interno del cliente.
+          example: CONG-03
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: null
+    UpdateEquipmentRequest:
+      type: object
+      description: Datos editables del equipo (semántica de reemplazo de `PUT`). La empresa no cambia.
+      additionalProperties: false
+      required:
+        - equipmentTypeId
+        - brand
+        - model
+        - isModelConfirmed
+        - serialNumber
+        - isActive
+      properties:
+        equipmentTypeId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Tipo de equipo; al registrar o al cambiar el tipo debe estar activo.
+          example: 2
+        brand:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          example: Haier
+        model:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Modelo; clave de los perfiles de eficacia por modelo.
+          example: HBF-205
+        isModelConfirmed:
+          type: boolean
+          description: '`false` si el modelo se infirió (p. ej. con la ficha del fabricante) y falta confirmarlo en la placa.'
+          example: true
+        serialNumber:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Número de serie, único dentro de la empresa (`UQ_Equipment_Company_Serial`).
+          example: SN-88231
+        internalCode:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: Código interno del cliente.
+          example: CONG-03
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: null
+        isActive:
+          type: boolean
+          description: '`false` desactiva el registro; no se borra.'
+          example: true
+    EquipmentResponse:
+      type: object
+      description: Representación del recurso equipo.
+      required:
+        - id
+        - companyId
+        - equipmentTypeId
+        - equipmentTypeName
+        - brand
+        - model
+        - isModelConfirmed
+        - serialNumber
+        - internalCode
+        - notes
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          example: 1
+        companyId:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          example: 1
+        equipmentTypeId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Tipo de equipo; al registrar o al cambiar el tipo debe estar activo.
+          example: 2
+        brand:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          example: Haier
+        model:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Modelo; clave de los perfiles de eficacia por modelo.
+          example: HBF-205
+        isModelConfirmed:
+          type: boolean
+          description: '`false` si el modelo se infirió (p. ej. con la ficha del fabricante) y falta confirmarlo en la placa.'
+          example: true
+        serialNumber:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^\S(.*\S)?$
+          description: Número de serie, único dentro de la empresa (`UQ_Equipment_Company_Serial`).
+          example: SN-88231
+        internalCode:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: Código interno del cliente.
+          example: CONG-03
+        notes:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: null
+        equipmentTypeName:
+          type: string
+          readOnly: true
+          example: Congeladora
+        isActive:
+          type: boolean
+          description: '`false` desactiva el registro; no se borra.'
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          example: '2026-09-26T09:00:00-05:00'
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          example: null
     ErrorResponse:
       type: object
       description: |
@@ -555,15 +1478,21 @@ components:
           type: string
           description: Identificador de la traza para correlacionar con los registros del servidor.
           example: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+        existingId:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Solo en el 409 de RUC duplicado; id de la empresa existente, para ofrecer abrirla (HU-01).
+          example: 1
         errors:
           type: object
           description: |
             Mensajes de validación por propiedad (solo en errores 400). Hay dos orígenes:
-            - Reglas del negocio (dominio): clave = propiedad en camelCase y mensaje en español de HU-02;
+            - Reglas del negocio (dominio): clave = propiedad en camelCase y mensaje en español de la historia;
               la respuesta incluye además `detail` e `instance`.
-            - Formato del cuerpo (ASP.NET Core): campo obligatorio ausente (clave = propiedad), propiedad
-              desconocida (clave = ruta JSON, p. ej. `$.color`) o cuerpo vacío (clave vacía `""`).
-              Estos mensajes los genera el framework en inglés y la respuesta no incluye `detail` ni `instance`.
+            - Formato del cuerpo (ASP.NET Core): campo obligatorio ausente (clave = propiedad, mensaje en español),
+              propiedad desconocida (clave = ruta JSON, p. ej. `$.color`) o cuerpo vacío (clave vacía `""`).
+              Los dos últimos mensajes los genera el framework en inglés; la respuesta no incluye `detail` ni `instance`.
           additionalProperties:
             type: array
             items:
@@ -611,7 +1540,7 @@ components:
                 traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
                 errors:
                   name:
-                    - The Name field is required.
+                    - El nombre del tipo de equipo es obligatorio
             propiedadDesconocida:
               summary: Propiedad no definida en el schema (additionalProperties false)
               value:
@@ -633,7 +1562,7 @@ components:
             title: No autenticado
             status: 401
     Forbidden:
-      description: El usuario no tiene el rol `Admin`.
+      description: El usuario no tiene el rol que exige la operación.
       content:
         application/problem+json:
           schema:
@@ -644,7 +1573,7 @@ components:
             status: 403
             traceId: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
     NotFound:
-      description: No existe un tipo de equipo con ese identificador.
+      description: No existe el recurso con ese identificador (o la empresa de la ruta).
       content:
         application/problem+json:
           schema:
@@ -667,8 +1596,33 @@ components:
             status: 409
             detail: Ya existe el tipo de equipo Congeladora
             instance: /api/v1/equipment-types
+    DuplicateTaxId:
+      description: Ya existe una empresa con ese RUC; `existingId` es su identificador.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.10
+            title: Conflicto con el estado del recurso
+            status: 409
+            detail: Ya existe una empresa con el RUC 20100070970
+            instance: /api/v1/companies
+            existingId: 1
+    DuplicateSerial:
+      description: La empresa ya tiene otro equipo con ese número de serie.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            type: https://tools.ietf.org/html/rfc9110#section-15.5.10
+            title: Conflicto con el estado del recurso
+            status: 409
+            detail: La empresa ya tiene un equipo con la serie SN-88231
+            instance: /api/v1/companies/1/equipment
     PreconditionFailed:
-      description: El `If-Match` no coincide con la versión actual; otro usuario modificó el tipo.
+      description: El `If-Match` no coincide con la versión actual; otro usuario modificó el recurso.
       content:
         application/problem+json:
           schema:

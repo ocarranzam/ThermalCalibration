@@ -23,6 +23,7 @@ CREATE TABLE dbo.AppSetting (
     Description   NVARCHAR(300)      NULL,
     UpdatedAt     DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_AppSetting_UpdatedAt DEFAULT (SYSDATETIMEOFFSET()),
     UpdatedById   INT                NULL,
+    RowVersion    ROWVERSION         NOT NULL,   -- la API expone la versión del conjunto como ETag (GET/PUT /api/v1/settings)
     CONSTRAINT PK_AppSetting PRIMARY KEY (SettingKey)
 );
 GO
@@ -122,8 +123,14 @@ CREATE TABLE dbo.Company (
     Address      NVARCHAR(300)      NULL,
     IsActive     BIT                NOT NULL CONSTRAINT DF_Company_IsActive DEFAULT (1),
     CreatedAt    DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_Company_CreatedAt DEFAULT (SYSDATETIMEOFFSET()),
+    UpdatedAt    DATETIMEOFFSET(0)  NULL,
+    RowVersion   ROWVERSION         NOT NULL,
     CONSTRAINT PK_Company PRIMARY KEY (CompanyId),
-    CONSTRAINT UQ_Company_TaxId UNIQUE (TaxId)
+    CONSTRAINT UQ_Company_TaxId UNIQUE (TaxId),
+    -- RUC peruano (M-08): 11 dígitos, prefijo 10/15/17/20 y dígito verificador módulo 11 = (11 - suma % 11) % 10
+    CONSTRAINT CK_Company_TaxId CHECK (
+        LEN(TaxId) = 11 AND TaxId NOT LIKE '%[^0-9]%' AND LEFT(TaxId, 2) IN ('10', '15', '17', '20')
+        AND TRY_CAST(SUBSTRING(TaxId, 11, 1) AS INT) = (11 - (TRY_CAST(SUBSTRING(TaxId, 1, 1) AS INT) * 5 + TRY_CAST(SUBSTRING(TaxId, 2, 1) AS INT) * 4 + TRY_CAST(SUBSTRING(TaxId, 3, 1) AS INT) * 3 + TRY_CAST(SUBSTRING(TaxId, 4, 1) AS INT) * 2 + TRY_CAST(SUBSTRING(TaxId, 5, 1) AS INT) * 7 + TRY_CAST(SUBSTRING(TaxId, 6, 1) AS INT) * 6 + TRY_CAST(SUBSTRING(TaxId, 7, 1) AS INT) * 5 + TRY_CAST(SUBSTRING(TaxId, 8, 1) AS INT) * 4 + TRY_CAST(SUBSTRING(TaxId, 9, 1) AS INT) * 3 + TRY_CAST(SUBSTRING(TaxId, 10, 1) AS INT) * 2) % 11) % 10)
 );
 GO
 
@@ -139,6 +146,8 @@ CREATE TABLE dbo.Equipment (
     Notes            NVARCHAR(500)      NULL,
     IsActive         BIT                NOT NULL CONSTRAINT DF_Equipment_IsActive DEFAULT (1),
     CreatedAt        DATETIMEOFFSET(0)  NOT NULL CONSTRAINT DF_Equipment_CreatedAt DEFAULT (SYSDATETIMEOFFSET()),
+    UpdatedAt        DATETIMEOFFSET(0)  NULL,
+    RowVersion       ROWVERSION         NOT NULL,
     CONSTRAINT PK_Equipment PRIMARY KEY (EquipmentId),
     CONSTRAINT FK_Equipment_Company FOREIGN KEY (CompanyId) REFERENCES dbo.Company (CompanyId),
     CONSTRAINT FK_Equipment_EquipmentType FOREIGN KEY (EquipmentTypeId) REFERENCES dbo.EquipmentType (EquipmentTypeId),

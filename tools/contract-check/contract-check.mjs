@@ -10,12 +10,14 @@ import * as yaml from 'js-yaml';
 import AjvModule from 'ajv';
 import addFormatsModule from 'ajv-formats';
 import { cases as equipmentTypeCases } from './cases/equipment-types.mjs';
+import { cases as settingsCases } from './cases/settings.mjs';
+import { cases as companyCases } from './cases/companies.mjs';
 
 const Ajv = AjvModule.default ?? AjvModule;
 const addFormats = addFormatsModule.default ?? addFormatsModule;
 
 // Añadir aquí los casos de cada entidad nueva (un archivo por recurso en ./cases).
-const SUITES = [equipmentTypeCases];
+const SUITES = [equipmentTypeCases, settingsCases, companyCases];
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const base = process.argv[2] ?? 'http://localhost:8080';

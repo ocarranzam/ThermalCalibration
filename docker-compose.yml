@@ -47,6 +47,7 @@ services:
         if [ "$$EXISTS" = "0" ]; then
           echo "Creando ThermalCalibration con 01-schema.sql..."
           $$SQLCMD -f 65001 -i /schema/01-schema.sql > /dev/null && echo "Base creada."
+          $$SQLCMD -f 65001 -i /schema/02-dev-data.sql > /dev/null && echo "Datos de desarrollo cargados."
         else
           echo "ThermalCalibration ya existe; no se modifica."
         fi

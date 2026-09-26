@@ -44,13 +44,14 @@
 | Consultar tipos de equipo | ✅ | ✅ | ✅ |
 | Crear o editar tipos de equipo y límites | ✅ | ❌ | ❌ |
 | Editar parámetros globales | ✅ | ❌ | ❌ |
-| Registrar empresas y equipos | ✅ | [COMPLETAR] | ✅ |
+| Consultar empresas, equipos y parámetros | ✅ | ✅ | ✅ |
+| Registrar o editar empresas y equipos | ✅ | ❌ | ✅ |
 | Configurar, iniciar y cerrar sesiones | [COMPLETAR] | ✅ (cerrar) | ✅ |
 | Autorizar un inicio durante el descanso | ✅ | ✅ | ❌ |
 | Reconocer alertas críticas | [COMPLETAR] | ✅ | [COMPLETAR] |
 | Consultar el historial y exportar a Excel | ✅ | ✅ | ✅ |
 
-**Fuente:** historias (HU-02, HU-16, HU-08) y RA-02 de [05 §4](../specs/functional/05-data-model.md#4-reglas-de-negocio). **Estado:** ⚠️ Parcial (implementado: tipos de equipo)
+**Fuente:** historias (HU-02, HU-16, HU-08) y RA-02 de [05 §4](../specs/functional/05-data-model.md#4-reglas-de-negocio). **Estado:** ⚠️ Parcial (implementado: tipos de equipo, parámetros, empresas y equipos)
 
 ## 3. Gestión de usuarios
 
@@ -67,8 +68,8 @@
 
 ### 4.2 Tipos de termopar
 
-**Contenido:** catálogo fijo T/K con su rango físico; solo consulta.
-**Estado:** ⏳
+**Contenido:** catálogo fijo T/K con su rango físico; solo consulta (`GET /api/v1/thermocouple-types`).
+**Estado:** ✅ (funcionalidad implementada, sprint 1)
 
 ## 5. Configuración global (parámetros del sistema)
 
@@ -76,16 +77,15 @@
 
 | Parámetro | Por defecto | Rango | Efecto |
 |---|---|---|---|
-| Intervalo de muestreo **[PC-01]** | 120 s | [COMPLETAR] | Punto de cambio: con 60 s cambian las muestras mínimas (31 → 61) |
-| Umbral de pérdida de sensores | 60 % | Mayor que 0 y menor que 100 | Muestra afectada si se supera |
+| Intervalo de muestreo **[PC-01]** | 120 s | 30 a 900 s, y debe dividir exactamente la duración base | Punto de cambio: con 60 s cambian las muestras mínimas (31 → 61); la API las informa en `minValidSamples` |
+| Umbral de pérdida de sensores | 60 % | Mayor que 0 y menor que 100, con 2 decimales como máximo | Muestra afectada si se supera |
 | Muestras para escalar a crítica | 3 | 2 a 10 | |
 | Minutos para declarar la sesión fallida | 30 | 10 a 240 | |
 | Minutos de fuera de límite sostenido | 30 | 10 a 240 | |
-| Descanso del kit de medición | 15 min | [COMPLETAR] | |
-| Duración base y máxima planificable | 60 min / 7 días | [COMPLETAR] | |
-| Mínimo de puntos de medición | 9 | [COMPLETAR] | |
+| Descanso del kit de medición | 15 min | 0 a 240 min (0 lo desactiva) | |
+| Duración base y máxima planificable | 60 min / 7 días | Base 30 a 240 min; máxima desde la base hasta 43 200 min (30 días) | |
 
-**Fuente:** [01 §6 y §12](../specs/functional/01-vision-document.md#6-reglas-de-negocio-principales), `AppSetting` en [01-schema.sql](../db/01-schema.sql). **Estado:** ⏳ (ola 1)
+**Fuente:** [01 §6 y §12](../specs/functional/01-vision-document.md#6-reglas-de-negocio-principales), `AppSetting` en [01-schema.sql](../db/01-schema.sql), rangos de la decisión D-08 (01 §10). El mínimo de puntos de medición ya no es un parámetro global: lo fija cada tipo de equipo (D-06, §4.1). Edición con `PUT /api/v1/settings` (solo `Admin`, con `If-Match`: si otro administrador guardó antes, "El recurso cambió"). **Estado:** ✅ (funcionalidad implementada, sprint 1) / ⏳ (capturas)
 
 ## 6. Adquisidores y equipo de medición
 

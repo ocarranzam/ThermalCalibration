@@ -4,12 +4,13 @@ Cómo se comprueba que la especificación de la fase 1 es coherente y cómo se v
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.5 |
+| Versión | 0.6 |
+| Cambios en 0.6 | Sprints 1 y 2: parámetros del sistema (D-08), tipos de termopar, empresas y equipos (HU-01). Cobertura de HU-01 (§5.1.1), HU-02 con los parámetros, pruebas 179/179, auditoría del contrato 88/88 (v1.3.0) y ejemplo de RUC de HU-01 corregido. |
 | Cambios en 0.5 | D-07 (criterio `Range` con mínimo y/o máximo, límites sugeridos): escenarios nuevos en HU-02 y HU-08 (152 en total), pruebas 94/94 y auditoría del contrato 33/33. |
 | Cambios en 0.4 | Decisiones D-05 (criterio de límite: máximo o banda) y D-06 (hasta 27 canales, puntos mínimos por tipo) a partir de DATA-1: nuevos escenarios en HU-02, HU-03, HU-05, HU-08 y HU-17 (149 en total), cobertura de HU-02 ampliada (§5.1) y auditoría del contrato 29/29 (§5.2). |
 | Cambios en 0.3 | Artefactos de código, pruebas y auditoría en la §1; estado de implementación por historia (§5.3); mantenimiento al añadir entidades (§7). Plan de las siguientes entidades en [implementation-plan.md](implementation-plan.md). |
 | Cambios en 0.2 | Hallazgos H-01 a H-08 corregidos en 03 v0.6 y 06 v0.5. Diagramas separados en `docs/diagrams/gherkin/` y `docs/diagrams/sequence/`. |
-| Fecha | 2026-09-25 |
+| Fecha | 2026-09-26 |
 | Fuentes | [03-user-stories.md](specs/functional/03-user-stories.md) v0.6, [06-test-data.md](specs/functional/06-test-data.md) v0.5, [01-vision-document.md](specs/functional/01-vision-document.md), [test-data/scenarios/index.json](../test-data/scenarios/index.json), [standards/README.md](standards/README.md) |
 | Diagramas | [docs/diagrams/gherkin/](diagrams/gherkin/) (un `.feature` por historia, generado) y [docs/diagrams/sequence/](diagrams/sequence/) (secuencia en Mermaid) |
 
@@ -155,7 +156,7 @@ Resumen de [06 §7](specs/functional/06-test-data.md#7-uso-en-las-pruebas), con 
 
 ### 5.1 Cobertura automatizada de HU-02 (2026-09-25)
 
-Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **94/94 correctas** (84 unitarias, 10 de integración con SQL Server 2022 en Docker).
+Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx` (2026-09-26, tras los sprints 1 y 2): **179/179 correctas** (155 unitarias, 24 de integración con SQL Server 2022 en Docker), de todas las historias.
 
 | Escenario Gherkin de HU-02 | Pruebas | Estado |
 |---|---|---|
@@ -168,10 +169,10 @@ Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resu
 | Editar el límite sin afectar sesiones registradas | `ChangeLimit_ReplacesTheCatalogLimit`, `Update_ExistingType_…`, `Update_SetsUpdatedAt…` | ⚠️ Parcial: la copia del límite en la sesión (RN-08) requiere `MeasurementSession` |
 | Editar el límite de una sesión en curso no la afecta | — | ⏳ Pendiente de `MeasurementSession` |
 | Definir un límite que estaba pendiente | `ChangeLimit_FromPendingToDefined_…` | ⚠️ Parcial: el lado de la sesión 103 requiere `MeasurementSession` |
-| Cambiar el umbral de pérdida de sensores | — | ⏳ Pendiente de `AppSetting` |
-| Rechazar un umbral fuera de rango | — | ⏳ Pendiente de `AppSetting` |
+| Cambiar el umbral de pérdida de sensores | `SystemSettingsHandlersTests.Update_ValidValues_…`, `SettingsPersistenceTests.Replace_ChangedValue_…`, contract-check "PUT If-Match vigente" (parámetros) | ⚠️ Parcial: que la sesión 104 conserve el umbral (RN-08) requiere `MeasurementSession` |
+| Rechazar un umbral fuera de rango | `SystemSettingsTests.Create_OutOfRange_IsRejected` (0 y 100, y el resto de rangos de D-08), `Create_ThresholdWithThreeDecimals_…`, contract-check "PUT umbral 100" | ✅ |
 | Un técnico no puede editar límites | `EquipmentTypesControllerAuthorizationTests.WriteActions_RequireAdminRole` | ✅ (verificado además con la API en ejecución: 403) |
-| Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…` | ⚠️ Parcial: la API no tiene `DELETE` (responde 405) y se desactiva con `PUT` e `isActive: false`; ofrecer la desactivación al intentar borrar es de la interfaz, y comprobar los equipos asociados requiere `Equipment` (HU-01) |
+| Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…`, `CreateEquipment_InactiveType_IsRejected`, `UpdateEquipment_SameInactiveType_IsAllowed` | ⚠️ Parcial: la API no tiene `DELETE` (responde 405) y se desactiva con `PUT` e `isActive: false`; un tipo desactivado ya no se acepta para equipos nuevos y los equipos existentes lo conservan. Ofrecer la desactivación al intentar borrar es de la interfaz |
 | Registrar un tipo de equipo con banda de tolerancia (D-05) | `Create_WithBand_StoresToleranceAndNoMaximum`, `Create_BandWith27Points_KeepsTheCriterion`, `Add_BandTypeWith27Points_RoundTrips`, contract-check "POST banda 27 puntos" | ✅ |
 | Fijar los puntos de medición mínimos de un tipo de equipo (D-06) | `ChangeMinMeasurementPoints_ForIncubator_Requires27`, `Update_ToBand_…` | ⚠️ Parcial: la copia en la sesión requiere `MeasurementSession` |
 | Rechazar un valor que no corresponde al criterio de límite (D-05, D-07) | `Create_WithValueOfTheOtherMode_IsRejected` (4 casos), `Create_WithMinimumNotBelowMaximum_IsRejected`, contract-check "rango con tolerancia", "rango con mínimo ≥ máximo", "banda con mínimo", "banda con máximo", "modo inválido" | ✅ |
@@ -181,9 +182,28 @@ Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resu
 
 Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00), **evaluación de la banda** 20,00 ± 2,00 °C por arriba y por abajo (22,01 / 22,00 / 20,00 / 18,00 / 17,99, D-05), **evaluación del rango** +2 … +8 °C (8,01 / 8,00 / 5,00 / 2,00 / 1,99) y rango con solo mínimo (D-07) y lecturas sin límite de HU-05 (máximo y banda pendientes), en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración; `UpdatedAt` nunca anterior a `CreatedAt` (`ThermalDbContextTests`, `Update_RightAfterCreate_…`).
 
+Parámetros del sistema (D-08): rangos de los 8 parámetros, división exacta de la duración base por el intervalo y `MinValidSamples` derivado del intervalo (PC-01) en `SystemSettingsTests`; versión del conjunto (`ETag` = huella de las `RowVersion`) y 412 con una versión anterior en `SettingsPersistenceTests`; catálogo de termopares T y K en `ThermocoupleTypes_AreListedByCode`.
+
+#### 5.1.1 Cobertura automatizada de HU-01 (2026-09-26)
+
+Pruebas vinculadas con `[Trait("Story", "HU-01")]`: `CompanyTests`, `EquipmentTests`, `CompanyAndEquipmentHandlersTests`, `CompanyAndEquipmentPersistenceTests` y `CompanyAndSettingsAuthorizationTests`, más los casos de [companies.mjs](../tools/contract-check/cases/companies.mjs).
+
+| Escenario Gherkin de HU-01 | Pruebas | Estado |
+|---|---|---|
+| Registrar una empresa nueva | `Create_ValidCompany_IsActive`, `CreateCompany_New_…`, `AddCompany_AssignsDatabaseValuesAndIsSearchable` (buscador por RUC y por razón social), contract-check "POST empresa válida", "GET buscar …" | ✅ |
+| Rechazar un RUC duplicado | `CreateCompany_DuplicateTaxId_ThrowsConflictWithExistingId`, `AddCompany_DuplicateTaxId_…`, contract-check "POST RUC duplicado" (409 con `existingId`) | ✅ (abrir la empresa existente es de la interfaz, con `existingId`) |
+| Rechazar un RUC con formato inválido (4 ejemplos) | `Create_InvalidTaxId_IsRejected` (los 4 mensajes), `CheckConstraint_RejectsInvalidTaxId` (`CK_Company_TaxId`), contract-check (4 casos) | ✅ |
+| Registrar un equipo asociado a la empresa | `Create_ValidEquipment_…`, `CreateEquipment_Valid_AddsAndReturnsTypeName`, `AddEquipment_IsListedWithTheTypeName`, contract-check "POST equipo válido" | ⚠️ Parcial: "su historial de sesiones está vacío" requiere `MeasurementSession` (HU-12) |
+| Rechazar un número de serie duplicado en la misma empresa | `CreateEquipment_DuplicateSerial_ThrowsConflict`, `AddEquipment_DuplicateSerialInSameCompany_IsRejected`, contract-check "POST serie duplicada", "PUT serie de otro equipo" | ✅ |
+| Permitir la misma serie en otra empresa | `AddEquipment_SameSerialInOtherCompany_IsAllowed`, contract-check "POST misma serie en otra empresa" | ✅ |
+| Datos obligatorios del equipo (4 ejemplos) | `Create_MissingRequiredData_IsRejected`, `CreateEquipment_UnknownType_IsRejected`, contract-check "POST sin serie / tipo / marca / modelo" (mensajes en español) | ✅ |
+| Registrar un equipo con el modelo inferido | Dato de desarrollo DATA-1 en [02-dev-data.sql](db/02-dev-data.sql), `Create_InferredModel_IsPendingConfirmation`, `ConfirmModel_SetsModelAndConfirms`, contract-check "POST equipo con modelo inferido", "PUT confirmar modelo" | ⚠️ Parcial: el perfil de eficacia por modelo es de una fase posterior |
+
+Además: autorización (`Admin` y `Technician` registran y editan; `Supervisor` solo consulta), concurrencia optimista de empresa y equipo (`If-Match` → 412) y un tipo de equipo desactivado que el equipo conserva al editarlo.
+
 ### 5.2 Auditoría código ↔ contrato ↔ Gherkin (2026-09-25)
 
-Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** (ahora automatizadas en [tools/contract-check/](../tools/contract-check/README.md), casos de [equipment-types.mjs](../tools/contract-check/cases/equipment-types.mjs)) con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias. Tras D-05 y D-06 (contrato v1.1.0, 5 casos nuevos): **29/29 conformes**. Tras D-07 (contrato v1.2.0, 4 casos nuevos): **33/33 conformes**.
+Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** (ahora automatizadas en [tools/contract-check/](../tools/contract-check/README.md), casos de [equipment-types.mjs](../tools/contract-check/cases/equipment-types.mjs)) con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias. Tras D-05 y D-06 (contrato v1.1.0, 5 casos nuevos): **29/29 conformes**. Tras D-07 (contrato v1.2.0, 4 casos nuevos): **33/33 conformes**. Tras los sprints 1 y 2 (contrato v1.3.0; casos de [settings.mjs](../tools/contract-check/cases/settings.mjs) y [companies.mjs](../tools/contract-check/cases/companies.mjs), 55 nuevos) contra la base del compose recreada: **88/88 conformes** (2026-09-26).
 
 | Id | Desviación encontrada | Corrección |
 |---|---|---|
@@ -197,18 +217,20 @@ Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes re
 | A-08 | Los `servers` del contrato no incluían los entornos de desarrollo. | Servidores de `docker compose` (8080) y `dotnet run` (5001). |
 | A-09 | `dotnet user-jwts create --audience X` **reescribe** `appsettings.Development.json` con solo esa audiencia y rompe los tokens del otro entorno. | Las tres audiencias quedan en `appsettings.Development.json`, y el README indica un único comando con las tres. |
 | A-10 | El modelo de dominio mostraba `EquipmentTypeId Id`; el código usa `int`. | [domain-model.md](architecture/domain-model.md) actualizado. |
+| A-12 | Los mensajes de campo obligatorio ausente los daba ASP.NET Core en inglés ("The Name field is required."), distintos de los de las historias. | `[Required(ErrorMessage = …)]` en español en todos los contratos de la API; ejemplo del contrato actualizado (v1.3.0). |
+| A-13 | El ejemplo de HU-01 "existe la empresa con RUC 20601234561" tenía un dígito verificador inválido: la regla de la misma historia lo rechazaría. | Ejemplo cambiado a 20601234565 en 03 y en el `.feature` generado. |
 | A-11 | El README describía `docker-compose up`, pero no existía ningún archivo de Compose ni Dockerfile. | [docker-compose.yml](../docker-compose.yml), [Dockerfile](../src/Thermal.Api/Dockerfile) y `.dockerignore`. |
 
-Los criterios Gherkin de HU-02 **no** se modificaron: siguen siendo la especificación. Las diferencias con el código son funcionalidad aún no implementada (sesiones, `AppSetting`, equipos, interfaz), no contradicciones; están en la §5.1.
+Los criterios Gherkin de HU-02 **no** se modificaron: siguen siendo la especificación. Las diferencias con el código son funcionalidad aún no implementada (sesiones, alertas, interfaz), no contradicciones; están en la §5.1.
 
-### 5.3 Estado de implementación por historia (2026-09-25)
+### 5.3 Estado de implementación por historia (2026-09-26)
 
 Resumen para planificar las siguientes sesiones. El orden, las dependencias y la definición de terminado están en [implementation-plan.md](implementation-plan.md). Al terminar cada entidad se añade aquí su tabla de cobertura (con la forma de la §5.1) y se actualiza esta tabla.
 
 | Historia | Escenarios | Entidades | Ola | Estado |
 |---|---|---|---|---|
-| HU-01 Registrar empresa cliente y equipo | 8 | `Company`, `Equipment` | 1 | ⏳ Pendiente (marca y modelo obligatorios desde DATA-1) |
-| HU-02 Gestionar tipos de equipo y límite máximo | 19 | `EquipmentType`, `AppSetting` | 0 y 1 | ⚠️ Parcial: 12 completos, 4 parciales y 3 pendientes (§5.1) |
+| HU-01 Registrar empresa cliente y equipo | 8 | `Company`, `Equipment` | 1 | ⚠️ Parcial: 6 completos y 2 parciales (§5.1.1) |
+| HU-02 Gestionar tipos de equipo y límite máximo | 19 | `EquipmentType`, `AppSetting` | 0 y 1 | ⚠️ Parcial: 13 completos, 5 parciales y 1 pendiente (§5.1) |
 | HU-03 Configurar una sesión de medición | 12 | `MeasurementSession`, `SessionChannel`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
 | HU-04 Advertir la mezcla de termopares T y K | 6 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
 | HU-05 Advertir límite no definido | 4 | `MeasurementSession`, `Alert` | 4 | ⚠️ Parcial: regla del límite pendiente en `TemperatureLimit` (1 escenario) |
@@ -224,7 +246,7 @@ Resumen para planificar las siguientes sesiones. El orden, las dependencias y la
 | HU-15 Priorizar alertas: críticas y advertencias | 4 | `Alert`, SignalR | 4 | ⏳ Pendiente |
 | HU-16 Planificar la duración y respetar el descanso | 9 | `MeasurementSession`, `AppSetting` | 1 y 4 | ⏳ Pendiente |
 | HU-17 Advertir menos puntos que el mínimo del tipo de equipo | 7 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente (puntos mínimos por tipo ya en `EquipmentType`) |
-| **Total** | **152** | | | 12 escenarios completos (8 %) |
+| **Total** | **152** | | | 19 escenarios completos (12 %) |
 
 ### 5.4 Cambios por el primer registro real (D-05, D-06 y D-07, 2026-09-25)
 

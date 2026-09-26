@@ -2,13 +2,14 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.6 (borrador para revisión) |
+| Versión | 0.7 (borrador para revisión) |
 | Cambios en 0.2 | Duración planificada, política de pérdida de sensores (escalamiento y falla), descanso del adquisidor y severidad de las alertas (críticas y advertencias). |
 | Cambios en 0.3 | Fuera de límite sostenido con causa probable (`AboveLimitSustained`, `SuspectedCause`). Mínimo de 9 puntos de medición con confirmación. |
+| Cambios en 0.7 | Sprints 1 y 2 implementados: `Equipment` con sus métodos de edición, `Company` con el RUC validado (`TaxId`) y `SystemSettings` (parámetros de `AppSetting`, D-08). |
 | Cambios en 0.6 | D-07: `LimitMode.Range` (mínimo y/o máximo) reemplaza a `Maximum`; `EquipmentType.MinTemperatureC` e `IsLimitSuggested`. |
 | Cambios en 0.5 | D-05 y D-06: `EquipmentType` con `LimitMode`, `ToleranceK` y `MinMeasurementPoints`; `TemperatureLimit` evalúa máximo o banda (`Evaluate`); eventos `ReadingBelowLimit` y `BelowLimitSustained`; sesiones de 1 a 27 canales. |
 | Cambios en 0.4 | `EquipmentType` alineado con [01-schema.sql](../db/01-schema.sql) y el contrato [thermal-v1.yaml](../api/thermal-v1.yaml): `MinSessionDurationMinutes` (antes `MinSessionMinutes`), `Description`, `IsActive`, `RowVersion` y sus métodos de edición y desactivación. |
-| Fecha | 2026-09-25 |
+| Fecha | 2026-09-26 |
 | Enfoque | DDD táctico: agregados con comportamiento (dominio enriquecido). Ver [ADR-001](adr/ADR-001-clean-architecture-cqrs-ddd.md). |
 | Fuentes | [03-user-stories.md](../specs/functional/03-user-stories.md), [05-data-model.md](../specs/functional/05-data-model.md), [02-serial-protocol.md](../specs/functional/02-serial-protocol.md) |
 
@@ -76,14 +77,24 @@ classDiagram
         }
         class Equipment {
             <<AggregateRoot>>
-            +EquipmentId Id
-            +CompanyId CompanyId
-            +EquipmentTypeId TypeId
-            +SerialNumber Serial
+            +int Id
+            +int CompanyId
+            +int EquipmentTypeId
+            +string SerialNumber
             +string Brand
             +string Model
             +bool IsModelConfirmed
+            +string InternalCode
+            +string Notes
+            +bool IsActive
+            +byte[] RowVersion
+            +Reclassify(int)
+            +Identify(string, string, bool)
             +ConfirmModel(string)
+            +ChangeSerialNumber(string)
+            +Describe(string, string)
+            +Activate()
+            +Deactivate()
         }
     }
 
@@ -231,6 +242,10 @@ Notas de diseño:
 | | No se borra si tiene equipos: se desactiva. | `Deactivate` | HU-02 |
 | `Equipment` | Serie única dentro de la empresa. | Comprobación en la aplicación + `UQ_Equipment_Company_Serial` | HU-01 |
 | | Marca y modelo obligatorios (clave de los perfiles de eficacia). Un modelo inferido se registra con `IsModelConfirmed` = false hasta confirmarlo en la placa. | Constructor + `CK_Equipment_BrandModel` | HU-01, [DATA-1](../data/DATA-1-analisis.md) |
+| | El tipo debe estar activo al registrar el equipo o al cambiarle el tipo; un equipo conserva su tipo aunque este se desactive después. | Caso de uso (`EquipmentRules.ActiveTypeAsync`) | HU-01, HU-02 |
+| `Company` | RUC peruano válido (11 dígitos, prefijo 10/15/17/20, dígito verificador módulo 11), único y no editable. | `TaxId.Parse` + `CK_Company_TaxId`, `UQ_Company_TaxId` | HU-01 |
+| | Razón social obligatoria (hasta 200 caracteres, sin espacios en los extremos); correo con formato básico. Se desactiva en lugar de borrarse. | Constructor, `Rename`, `ChangeContact` | HU-01 |
+| `SystemSettings` | Rangos de D-08; el intervalo de muestreo divide exactamente la duración base; la duración máxima no es menor que la base. Inmutable: editar crea otra instancia. | `SystemSettings.Create` | HU-02, D-08 |
 | `AcquisitionDevice` | Entre 1 y 27 canales. `DeviceId` único. | Constructor + `UQ_AcquisitionDevice_Identifier` | RN-01 |
 | `MeasurementSession` | De 1 a 27 canales, sin repetir número y sin superar `ChannelCount`. | `AssignChannel`, `RequestStart` | RN-01 |
 | | Con mezcla T/K, no se puede iniciar sin la confirmación del técnico. | `Start` exige `MixedTypesAcknowledgedAt` | RN-05 |
@@ -314,7 +329,8 @@ Para mantener el camino corto, estos elementos existen en [05-data-model.md](../
 
 | Elemento | Dónde vive | Motivo |
 |---|---|---|
-| `Company` | Agregado propio, referenciado por `CompanyId`. | Solo aporta datos del cliente, sin reglas de captura. |
+| `Company` | Agregado propio (`Thermal.Domain.Companies`), referenciado por `CompanyId`. Invariantes en la §3. | Solo aporta datos del cliente, sin reglas de captura. |
+| `SystemSettings` | Valor inmutable (`Thermal.Domain.Settings`) persistido en `AppSetting` (clave-valor). Invariantes en la §3. | Se copia en la sesión al iniciarla (`SensorLossPolicy`, duración base). |
 | `AppUser` | Contexto de identidad, referenciado por `UserId`. | Genérico. |
 | `CommunicationGap` | Entidad del agregado `MeasurementSession`. | Sigue el mismo patrón que `Reading`: la crean `ReportCommunicationLost` y `Reconnect`. |
 | `SessionExport` | Registro de la capa de aplicación (exportación). | No tiene reglas de dominio: es una bitácora. |

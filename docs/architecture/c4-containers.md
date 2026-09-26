@@ -79,11 +79,11 @@ C4Container
 | `ExcelExporter` | Infrastructure | Genera el .xlsx con el formato de la HU-11 (con una librería OpenXML, p. ej. ClosedXML). |
 | `IClock` (`TimeProvider`) | Infrastructure | Reloj del sistema (`TimeProvider.System`), o reloj virtual en simulación (SIM-06). |
 
-**Interfaz pública (resumen):** todas las rutas llevan el prefijo de versión `/api/v1`. El contrato OpenAPI está en [docs/api/thermal-v1.yaml](../api/thermal-v1.yaml) (por ahora cubre los tipos de equipo) y se valida con `npx @redocly/cli lint docs/api/thermal-v1.yaml`.
+**Interfaz pública (resumen):** todas las rutas llevan el prefijo de versión `/api/v1`. El contrato OpenAPI está en [docs/api/thermal-v1.yaml](../api/thermal-v1.yaml) (v1.3.0: tipos de equipo, parámetros, tipos de termopar, empresas y equipos) y se valida con `npx @redocly/cli lint docs/api/thermal-v1.yaml`.
 
 | Método y ruta | Tipo | HU |
 |---|---|---|
-| `POST /companies`, `POST /companies/{id}/equipment` | Comando | HU-01 |
+| `POST /companies`, `PUT /companies/{id}`, `POST /companies/{id}/equipment`, `PUT /equipment/{id}` (Admin, Technician); `GET /companies?taxId&name`, `GET /companies/{id}`, `GET /companies/{id}/equipment`, `GET /equipment/{id}` | Comando / Consulta | HU-01 |
 | `POST /equipment-types`, `PUT /equipment-types/{id}` (Admin), `GET /equipment-types/{id}` | Comando / Consulta | HU-02 |
 | `GET /ports`, `POST /ports/{port}/detect` | Consulta / Comando | HU-03 |
 | `POST /sessions`, `PUT /sessions/{id}/channels` | Comando | HU-03 |
@@ -91,7 +91,7 @@ C4Container
 | `POST /sessions/{id}/authorize-early-start` (Supervisor, Admin) | Comando | HU-16 |
 | `POST /sessions/{id}/extend` | Comando | HU-10, HU-16 |
 | `GET /devices/{id}/rest` | Consulta | HU-16 |
-| `GET /settings`, `PUT /settings` (Admin) | Consulta / Comando | HU-02 |
+| `GET /settings`, `PUT /settings` (Admin), `GET /thermocouple-types` | Consulta / Comando | HU-02, D-08 |
 | `POST /sessions/{id}/close`, `POST /sessions/{id}/cancel` | Comando | HU-10 |
 | `GET /sessions?companyId&equipmentId&from&to&includeSimulations` | Consulta | HU-12 |
 | `GET /sessions/{id}`, `GET /sessions/{id}/coverage`, `GET /sessions/{id}/alerts?severity=` | Consulta | HU-12, HU-13, HU-15 |
