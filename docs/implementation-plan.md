@@ -6,7 +6,7 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 |---|---|
 | Versión | 0.1 |
 | Fecha | 2026-09-25 |
-| Estado actual | Ola 0 terminada: `EquipmentType` (HU-02 parcial). 59 pruebas correctas, contrato verificado 24/24 |
+| Estado actual | Ola 0 terminada: `EquipmentType` (HU-02 parcial) con D-05 y D-06. 82 pruebas correctas, contrato verificado 29/29 |
 | Relacionado | [validation.md](validation.md) (cobertura y auditorías), [ADR-001](architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md), [c4-containers.md §3.1](architecture/c4-containers.md#31-web-api-net-10) (endpoints previstos), [domain-model.md](architecture/domain-model.md), [01-schema.sql](db/01-schema.sql) |
 
 ---
@@ -15,7 +15,7 @@ Orden, dependencias y definición de terminado para implementar las entidades qu
 
 | Ola | Entidad (tabla) | Historias | Estado |
 |---|---|---|---|
-| 0 | `EquipmentType` | HU-02 | ✅ Implementada (7/13 escenarios completos; el resto depende de olas siguientes) |
+| 0 | `EquipmentType` | HU-02 | ✅ Implementada, con D-05 (máximo o banda) y D-06 (puntos mínimos por tipo): 10/17 escenarios completos; el resto depende de olas siguientes |
 | 1 | `AppSetting` | HU-02 (parámetros), HU-16 | ⏳ Siguiente |
 | 1 | `ThermocoupleType` (catálogo fijo T/K) | HU-07 (rango físico) | ⏳ |
 | 1 | `Company`, `Equipment` | HU-01, HU-02 (desactivar con equipos) | ⏳ |
@@ -49,7 +49,7 @@ flowchart LR
 | `AppSetting` | `GET /settings`, `PUT /settings` (Admin) | Umbral de pérdida > 0 y < 100 (HU-02); escalamiento 2 a 10 muestras; falla 10 a 240 min; descanso; duración base y máxima; `SamplingIntervalSeconds` **[PC-01]**. Se **copian** en la sesión al iniciarla (RN-08) | Escenarios "Cambiar el umbral…" y "Rechazar un umbral fuera de rango" de HU-02 | Tabla clave-valor: el agregado debe exponer valores tipados (p. ej. `SensorLossPolicy`), no cadenas |
 | `ThermocoupleType` | `GET /thermocouple-types` (solo lectura) | Rango físico por tipo (T: -200 a 350 °C; K: -200 a 1260 °C), usado en la validación V10 | HU-07 "Valor fuera del rango físico" | Catálogo sembrado por el script; sin edición en la fase 1 |
 | `Company` | `POST /companies`, `GET /companies/{id}`, `GET /companies?taxId&name` | RUC único, 11 dígitos, prefijo 10/15/17/20 y dígito verificador módulo 11 (HU-01) | 7 escenarios de HU-01 | Mejora M-08 de 05: `CHECK` del RUC en la base |
-| `Equipment` | `POST /companies/{id}/equipment`, `GET /equipment/{id}` | Serie única por empresa; tipo obligatorio y **activo**; campos obligatorios | HU-01 (equipo) y HU-02 "Desactivar un tipo con equipos asociados" | Al existir `Equipment`, completar la regla de HU-02: no se borra un tipo con equipos |
+| `Equipment` | `POST /companies/{id}/equipment`, `GET /equipment/{id}` | Serie única por empresa; tipo obligatorio y **activo**; **marca y modelo obligatorios**, con `IsModelConfirmed` para los modelos inferidos ([DATA-1](data/DATA-1-analisis.md)) | HU-01 (equipo, 8 escenarios) y HU-02 "Desactivar un tipo con equipos asociados" | Al existir `Equipment`, completar la regla de HU-02: no se borra un tipo con equipos. Método `ConfirmModel` para pasar de inferido a confirmado |
 
 ### Ola 2 · Identidad (bloqueada)
 
@@ -75,6 +75,13 @@ flowchart LR
 - Historial y detalle (HU-12) sobre las vistas `vSessionSampleCoverage` y `vSessionReadingPivot`, sin pasar por el agregado.
 - Excel con ClosedXML (u otra librería OpenXML con licencia libre: **verificar la licencia antes de añadirla**), con el formato de [03 §Formato del Excel](specs/functional/03-user-stories.md#formato-del-excel-exportado); `SessionExport` como bitácora.
 
+### Perfiles de eficacia por modelo (propuesta, a partir de los registros reales)
+
+- **Origen:** el primer registro real ([docs/data/](data/README.md), DATA-1) mostró que las métricas de un ensayo (homogeneidad, fluctuación, variación estándar, deriva, disponibilidad) permiten comparar un equipo con la ficha de su fabricante. Agrupadas por **marca y modelo**, dan un perfil de eficacia del modelo.
+- **Requisito ya aplicado:** marca y modelo obligatorios en `Equipment` (HU-01), con `IsModelConfirmed`.
+- **Pendiente de especificar** (historia nueva, después de la ola 5): cálculo de las métricas al cerrar una sesión (sobre `vSessionReadingPivot`, en estado estacionario), almacenamiento por sesión, perfil por modelo (media, dispersión, número de ensayos, % de modelos confirmados) y comparación con la especificación del fabricante registrada por modelo. La implementación de referencia de las métricas es [analyze_thermal_data.py](data/analyze_thermal_data.py).
+- **Escenario de prueba sugerido:** convertir DATA-1 en un escenario TD de datos reales (12 canales a 5 min, criterio de banda), posible desde D-06 (hasta 27 canales).
+
 ### Ola 6 · Cierre
 
 - Pruebas de integración de extremo a extremo: API + `SimulatedTransport` con los 22 escenarios; el validador SIM-09 debe informar "OK" en todos.
@@ -90,6 +97,8 @@ flowchart LR
 | P-07 `SensorFault`/`TypeMismatch` por lectura o por episodio | Ola 4 | Por episodio |
 | P-12 Duración mínima por tipo de equipo | Ola 1, datos | 60 min para todos |
 | P-14 `TypeMismatch` cuenta como sin dato válido | Ola 4 | Sí |
+| ~~P-18~~ → **D-06** Hasta 27 canales y puntos mínimos por tipo | Resuelta | Aplicada en `EquipmentType` (ola 0); resto en olas 3 y 4 (protocolo, sesión, Excel) |
+| ~~P-19~~ → **D-05** Criterio de límite: máximo o banda | Resuelta | Aplicada en `EquipmentType` (ola 0); evaluación en la ola 4 (`TemperatureLimit.Evaluate` ya disponible) |
 
 Detalle en [01 §11](specs/functional/01-vision-document.md#11-preguntas-abiertas).
 

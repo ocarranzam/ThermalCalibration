@@ -4,7 +4,9 @@ Módulos: **Sesión de Medición** (SM), **Adquisición Serial** (AS) y **Export
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.6 (borrador para revisión) |
+| Versión | 0.8 (borrador para revisión) |
+| Cambios en 0.8 | D-05: criterio de límite por tipo (máximo o banda alrededor de la consigna) en HU-02, HU-03, HU-05, HU-08 y el Excel. D-06: hasta 27 canales (HU-03) y puntos mínimos por tipo de equipo (HU-02, HU-17; 27 en incubadoras de más de 50 L). |
+| Cambios en 0.7 | HU-01: marca y modelo obligatorios y registro de un modelo inferido (a partir del primer registro real, [DATA-1](../../data/DATA-1-analisis.md)). |
 | Cambios en 0.6 | Trazabilidad: TD-19 en HU-02, RN-13 citada en HU-08 y HU-09, enlace del índice a HU-10 corregido. Cada historia tiene su `.feature` en [docs/diagrams/gherkin/](../../diagrams/gherkin/) (ver [validation.md](../../validation.md)). |
 | Cambios en 0.5 | Mínimo de 9 puntos de medición con advertencia y confirmación (HU-17). Escenario TD-22. |
 | Cambios en 0.4 | Fuera de límite sostenido 30 min → alerta crítica con causa probable, sensor o equipo (HU-08). Descanso de 15 min confirmado. Escenarios TD-20 y TD-21. |
@@ -41,7 +43,7 @@ Convenciones:
 | [HU-14](#hu-14--ejecutar-una-sesión-simulada-con-el-set-de-datos-de-prueba) | Ejecutar una sesión simulada con el set de datos de prueba | AS | Técnico, Admin | Todos |
 | [HU-15](#hu-15--priorizar-alertas-críticas-y-advertencias) | Priorizar alertas: críticas y advertencias | SM | Técnico, Supervisor | TD-02, TD-04, TD-16, TD-20, TD-21 |
 | [HU-16](#hu-16--planificar-la-duración-y-respetar-el-descanso-del-adquisidor) | Planificar la duración y respetar el descanso del adquisidor | SM | Técnico, Supervisor | TD-10, TD-12, TD-17, TD-19 |
-| [HU-17](#hu-17--advertir-menos-de-9-puntos-de-medición) | Advertir menos de 9 puntos de medición | SM | Técnico | TD-15, TD-22 y los de 5 canales |
+| [HU-17](#hu-17--advertir-menos-puntos-que-el-mínimo-del-tipo-de-equipo) | Advertir menos puntos que el mínimo del tipo de equipo | SM | Técnico | TD-15, TD-22 y los de 5 canales |
 
 ---
 
@@ -49,7 +51,7 @@ Convenciones:
 
 **Como** técnico de calibración **quiero** registrar la empresa cliente (RUC) y sus equipos **para** asociar cada sesión de medición a un equipo identificable y mantener su historial.
 
-Reglas: el RUC es único (`UQ_Company_TaxId`). El número de serie es único dentro de la empresa (`UQ_Equipment_Company_Serial`). El tipo de equipo es obligatorio y se elige del catálogo de tipos activos. Validación del RUC peruano en la aplicación: 11 dígitos, prefijo 10, 15, 17 o 20, y dígito verificador módulo 11.
+Reglas: el RUC es único (`UQ_Company_TaxId`). El número de serie es único dentro de la empresa (`UQ_Equipment_Company_Serial`). La **marca y el modelo son obligatorios** (`CK_Equipment_BrandModel`), porque son la clave de los perfiles de eficacia por modelo; si el cliente no conoce el modelo, se registra el inferido con la ficha del fabricante y se marca como pendiente de confirmar (`IsModelConfirmed` = 0; ver [DATA-1](../../data/DATA-1-analisis.md)). El tipo de equipo es obligatorio y se elige del catálogo de tipos activos. Validación del RUC peruano en la aplicación: 11 dígitos, prefijo 10, 15, 17 o 20, y dígito verificador módulo 11.
 
 ```gherkin
 Feature: Registro de empresas cliente y equipos
@@ -102,9 +104,22 @@ Feature: Registro de empresas cliente y equipos
     When registro para la empresa "20601234561" un equipo con serie "SN-88231"
     Then el equipo queda registrado
 
-  Scenario: Datos obligatorios del equipo
-    When intento registrar un equipo sin número de serie o sin tipo de equipo
+  Scenario Outline: Datos obligatorios del equipo
+    When intento registrar un equipo sin <campo>
     Then el sistema no guarda el equipo e indica los campos obligatorios faltantes
+
+    Examples:
+      | campo            |
+      | número de serie  |
+      | tipo de equipo   |
+      | marca            |
+      | modelo           |
+
+  Scenario: Registrar un equipo con el modelo inferido
+    Given el cliente no recuerda el modelo de su cámara ambiental marca "Memmert"
+    When registro el equipo con el modelo "TTC256" marcado como "inferido"
+    Then el equipo queda registrado con el modelo pendiente de confirmar en la placa
+    And las sesiones de ese equipo se agrupan igual en el perfil de eficacia del modelo "TTC256", indicando que el modelo es inferido
 ```
 
 ---
@@ -113,7 +128,7 @@ Feature: Registro de empresas cliente y equipos
 
 **Como** administrador **quiero** mantener el catálogo de tipos de equipo con su temperatura máxima admisible, o dejarla pendiente, **para** que las sesiones evalúen el límite correcto sin alterar las mediciones ya registradas.
 
-Reglas: RN-04, RN-06, RN-07, RN-08. Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). Cada tipo tiene una **duración mínima de sesión** (60 min por defecto), por si su forma de funcionar exige más de 1 h de datos. El administrador también mantiene los parámetros de `AppSetting`: el umbral de pérdida de sensores (60 %), las muestras para escalar (3), los minutos para fallar (30), el descanso del adquisidor (15 min) y la duración máxima planificable (7 días).
+Reglas: RN-04, RN-06, RN-07, RN-08, RN-20, D-05 y D-06. Cada tipo tiene un **criterio de límite** (`Maximum` o `Band`, con su máximo o su tolerancia, que pueden quedar pendientes) y sus **puntos de medición mínimos** (1 a 27; 9 por defecto). Solo el rol `Admin` crea o edita tipos. Un tipo con equipos asociados no se borra: se desactiva (`IsActive` = 0). Cada tipo tiene una **duración mínima de sesión** (60 min por defecto), por si su forma de funcionar exige más de 1 h de datos. El administrador también mantiene los parámetros de `AppSetting`: el umbral de pérdida de sensores (60 %), las muestras para escalar (3), los minutos para fallar (30), el descanso del adquisidor (15 min) y la duración máxima planificable (7 días).
 
 ```gherkin
 Feature: Catálogo de tipos de equipo con límite máximo
@@ -125,6 +140,36 @@ Feature: Catálogo de tipos de equipo con límite máximo
     When registro el tipo de equipo "Ultracongeladora" con límite máximo "-60,0" °C
     Then el tipo queda activo con límite máximo -60,00 °C
     And su duración mínima de sesión es 60 minutos
+
+  Scenario: Registrar un tipo de equipo con banda de tolerancia
+    When registro el tipo de equipo "Cámara ambiental" con criterio "Band" y tolerancia "2,0" K
+    Then el tipo queda activo con banda de ±2,00 K alrededor de la consigna de cada sesión
+    And no tiene límite máximo
+    And sus puntos de medición mínimos son 9
+
+  Scenario: Fijar los puntos de medición mínimos de un tipo de equipo
+    When fijo en 27 los puntos de medición mínimos de "Incubadora" (DIN 12880, más de 50 L)
+    Then las sesiones nuevas de incubadoras exigen 27 puntos para no advertir
+    And las sesiones ya registradas conservan su mínimo copiado
+
+  Scenario Outline: Rechazar un valor que no corresponde al criterio de límite
+    When intento registrar un tipo con criterio "<criterio>", límite máximo "<maximo>" y tolerancia "<tolerancia>"
+    Then el sistema rechaza el registro con el mensaje "<mensaje>"
+
+    Examples:
+      | criterio | maximo | tolerancia | mensaje                                             |
+      | Maximum  | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band          |
+      | Band     | 5,0    | 2,0        | El límite máximo solo se usa con el modo Maximum    |
+      | Band     |        | 0          | La tolerancia debe ser mayor que 0                  |
+
+  Scenario Outline: Rechazar puntos de medición mínimos fuera de rango
+    When intento fijar los puntos de medición mínimos de "Congeladora" en <puntos>
+    Then el sistema rechaza el valor con el mensaje "Los puntos de medición mínimos deben estar entre 1 y 27"
+
+    Examples:
+      | puntos |
+      | 0      |
+      | 28     |
 
   Scenario: Exigir una duración mínima mayor para un tipo de equipo
     When fijo la duración mínima de sesión de "Incubadora" en 120 minutos
@@ -200,9 +245,9 @@ Feature: Catálogo de tipos de equipo con límite máximo
 
 ## HU-03 · Configurar una sesión de medición
 
-**Como** técnico de calibración **quiero** configurar la sesión eligiendo el equipo, el puerto COM, el adquisidor detectado y de 1 a 10 canales con su tipo de termopar y su ubicación **para** iniciar una captura trazable.
+**Como** técnico de calibración **quiero** configurar la sesión eligiendo el equipo, el puerto COM, el adquisidor detectado y de 1 a 27 canales con su tipo de termopar y su ubicación **para** iniciar una captura trazable.
 
-Reglas: RN-01. La sesión se crea con `Status` = `Configured`. El técnico responsable es el usuario autenticado. Un puerto COM no puede estar en dos sesiones `Running` a la vez (supuesto S-01). La aplicación exige un adquisidor detectado para iniciar, aunque `AcquisitionDeviceId` admita NULL mientras la sesión está en configuración.
+Reglas: RN-01, RN-06 y D-05, D-06. Hasta 27 canales. Si el tipo de equipo usa criterio de banda, la **consigna** de la sesión es obligatoria. La sesión se crea con `Status` = `Configured`. El técnico responsable es el usuario autenticado. Un puerto COM no puede estar en dos sesiones `Running` a la vez (supuesto S-01). La aplicación exige un adquisidor detectado para iniciar, aunque `AcquisitionDeviceId` admita NULL mientras la sesión está en configuración.
 
 ```gherkin
 Feature: Configuración de la sesión de medición
@@ -272,7 +317,16 @@ Feature: Configuración de la sesión de medición
       | 10          | 0       | 0   | rechaza con "Debe activar al menos 1 canal"                        |
       | 10          | 1       | 1   | acepta la configuración                                            |
       | 10          | 10      | 10  | acepta la configuración                                            |
+      | 27          | 27      | 27  | acepta la configuración                                            |
+      | 27          | 12      | 28  | rechaza con "El número de canal debe estar entre 1 y 27"           |
       | 8           | 3       | 9   | rechaza con "El adquisidor solo tiene 8 canales"                   |
+
+  Scenario: Consigna obligatoria en un equipo con banda de tolerancia
+    Given el equipo es de tipo "Cámara ambiental", con criterio "Band" y tolerancia ±2,00 K
+    When intento guardar la configuración sin consigna
+    Then el sistema pide "Indique la consigna de temperatura de la sesión"
+    When indico la consigna 20,0 °C y guardo
+    Then la sesión queda en estado "Configured" con banda 20,00 ± 2,00 °C
 
   Scenario: Cada canal activo requiere tipo y ubicación
     When activo el canal 2 sin indicar tipo de termopar o sin ubicación
@@ -355,7 +409,7 @@ Feature: Advertencia por mezcla de tipos de termopar
 
 **Como** técnico de calibración **quiero** saber que el tipo de equipo no tiene límite máximo definido **para** entender que la sesión se capturará sin evaluar ese límite.
 
-Reglas: RN-09. `MeasurementSession.MaxTemperatureC` = NULL. Alerta `LimitNotDefined`, severidad `Info`.
+Reglas: RN-09 y D-05. `MeasurementSession.MaxTemperatureC` = NULL (criterio máximo) o `ToleranceK` = NULL (criterio banda). Alerta `LimitNotDefined`, severidad `Info`.
 
 ```gherkin
 Feature: Advertencia de límite máximo no definido
@@ -367,6 +421,13 @@ Feature: Advertencia de límite máximo no definido
     Then el sistema muestra "El tipo de equipo Refrigeradora no tiene límite máximo definido. Se capturarán las lecturas sin evaluar límite."
     And al pulsar "Continuar" la sesión pasa a "Esperando datos" con límite aplicado vacío
     And se registra una alerta "LimitNotDefined" con severidad "Info" reconocida por mí
+
+  Scenario: Banda con tolerancia pendiente
+    Given el tipo "Incubadora" usa criterio "Band" con la tolerancia pendiente
+    And tengo configurada una sesión de una incubadora con consigna 37,0 °C
+    When pulso "Iniciar captura"
+    Then el sistema muestra "El tipo de equipo Incubadora no tiene tolerancia definida. Se capturarán las lecturas sin evaluar límite."
+    And se registra una alerta "LimitNotDefined" con severidad "Info"
 
   Scenario: Las lecturas no se marcan fuera de límite
     Given una sesión en curso con límite aplicado vacío
@@ -527,7 +588,7 @@ Feature: Registro de lecturas inválidas
 
 **Como** supervisor **quiero** que cada lectura mayor que el límite aplicado genere una alerta asociada al sensor y a la marca de tiempo **para** revisar si fue una variación mínima o una falla del sensor.
 
-Reglas: RN-07, RN-10, RN-13, RN-18, RN-19 y [01 §6.4](01-vision-document.md#64-fuera-de-límite-sostenido-sensor-o-equipo). Comparación estricta: `TemperatureC > MaxTemperatureC`. Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite. Es una **advertencia**: se registra y se resalta, pero **no** interrumpe al técnico con avisos, porque la temperatura puede variar por distintas causas (HU-15).
+Reglas: RN-07, RN-10, RN-13, RN-18, RN-19, D-05 y [01 §6.4](01-vision-document.md#64-fuera-de-límite-sostenido-sensor-o-equipo). Comparación estricta: `TemperatureC > MaxTemperatureC` con criterio máximo; con criterio banda, `TemperatureC > SetpointC + ToleranceK` (`AboveLimit`) o `TemperatureC < SetpointC − ToleranceK` (`BelowLimit`, `IsBelowLimit` = 1). Solo se evalúan lecturas con estado `OK`. Alerta `AboveLimit` con severidad `Warning` por **cada** lectura fuera de límite. Es una **advertencia**: se registra y se resalta, pero **no** interrumpe al técnico con avisos, porque la temperatura puede variar por distintas causas (HU-15).
 
 ```gherkin
 Feature: Alerta por lectura mayor que el límite máximo
@@ -547,6 +608,23 @@ Feature: Alerta por lectura mayor que el límite máximo
       | -4,99  | Sí    | se genera una alerta "AboveLimit"          |
       | -4,90  | Sí    | se genera una alerta "AboveLimit"          |
       | 2,00   | Sí    | se genera una alerta "AboveLimit"          |
+
+  Scenario Outline: Evaluación estricta de la banda de tolerancia
+    Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo
+    When el canal 3 reporta <valor> °C con estado "OK"
+    Then la lectura queda <resultado>
+
+    Examples:
+      | valor | resultado                                                  |
+      | 22,01 | fuera de límite por arriba, con una alerta "AboveLimit"    |
+      | 22,00 | dentro de la banda, sin alerta                             |
+      | 18,00 | dentro de la banda, sin alerta                             |
+      | 17,99 | fuera de límite por abajo, con una alerta "BelowLimit"     |
+
+  Scenario: Un sensor por debajo de la banda 30 minutos
+    Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo
+    When el canal 10 está por debajo de 18,00 °C desde la muestra 20 y los demás canales están dentro de la banda
+    Then a los 30 min se genera una alerta "BelowLimitSustained" con severidad "Critical" y causa probable "Sensor"
 
   Scenario: Contenido de la alerta fuera de límite
     When el canal 5 (ubicación "Puerta") reporta -4,90 °C en la muestra 32 a las 09:02:00
@@ -1172,18 +1250,18 @@ Feature: Duración planificada y descanso del adquisidor
 
 ---
 
-## HU-17 · Advertir menos de 9 puntos de medición
+## HU-17 · Advertir menos puntos que el mínimo del tipo de equipo
 
-**Como** técnico de calibración **quiero** que el sistema me advierta si configuro menos de 9 puntos de medición **para** saber que la sesión no cumple el mínimo de IEC 60068-3-5 y DKD-R 5-7 (8 esquinas y el centro), y dejar constancia si aun así debo iniciarla.
+**Como** técnico de calibración **quiero** que el sistema me advierta si configuro menos puntos de medición que los que exige la norma del tipo de equipo (9 en general, 8 esquinas y el centro según IEC 60068-3-5 y DKD-R 5-7; 27 en incubadoras de más de 50 L según DIN 12880) **para** saber que la sesión no cumple el mínimo normativo, y dejar constancia si aun así debo iniciarla.
 
-Reglas: RN-20. Parámetro `MinMeasurementPoints` (9), copiado en la sesión. `MeasurementSession.IsBelowMinimumPoints` = 1. Alerta `BelowMinimumPoints` con severidad `Warning`. La confirmación rellena `BelowMinimumAcknowledgedAt`. La base impide pasar a `Running` sin confirmación (`CK_MeasurementSession_BelowMinAck`). Mismo patrón que la mezcla T/K (HU-04).
+Reglas: RN-20 y D-06. `EquipmentType.MinMeasurementPoints` (9 por defecto; 27 en incubadoras), copiado en la sesión. `MeasurementSession.IsBelowMinimumPoints` = 1. Alerta `BelowMinimumPoints` con severidad `Warning`. La confirmación rellena `BelowMinimumAcknowledgedAt`. La base impide pasar a `Running` sin confirmación (`CK_MeasurementSession_BelowMinAck`). Mismo patrón que la mezcla T/K (HU-04).
 
 ```gherkin
 Feature: Advertencia por menos puntos de medición que el mínimo normativo
 
   Background:
     Given que he iniciado sesión con el rol "Technician"
-    And el mínimo de puntos de medición es 9
+    And el tipo de equipo de la sesión exige 9 puntos de medición
 
   Scenario: Sesión con 9 puntos no muestra advertencia
     Given asigné 9 canales en las 8 esquinas y el centro
@@ -1204,6 +1282,14 @@ Feature: Advertencia por menos puntos de medición que el mínimo normativo
       (las 8 esquinas y el centro) para calibrar el volumen útil de equipos menores de 2000 L.
       Si continúa, la sesión quedará marcada como por debajo del mínimo normativo.
       """
+    And registra una alerta "BelowMinimumPoints" con severidad "Warning"
+    And la captura no inicia hasta que yo confirme
+
+  Scenario: Una incubadora de más de 50 L exige 27 puntos
+    Given el equipo es una "Incubadora", cuyo tipo exige 27 puntos de medición (DIN 12880)
+    And asigné 12 canales
+    When pulso "Iniciar captura"
+    Then el sistema muestra "La sesión tiene 12 puntos de medición. El tipo de equipo Incubadora exige al menos 27 (DIN 12880, más de 50 L)."
     And registra una alerta "BelowMinimumPoints" con severidad "Warning"
     And la captura no inicia hasta que yo confirme
 
@@ -1271,8 +1357,8 @@ Formato ficha (etiqueta en la columna A, valor en la columna B), seguido de la t
 | Marca / Modelo | `Equipment.Brand` / `Equipment.Model` | Haier / HBF-205 |
 | N.º de serie | `Equipment.SerialNumber` | SN-88231 |
 | Código interno | `Equipment.InternalCode` | ACT-00451 |
-| Límite máximo aplicado (°C) | `MeasurementSession.MaxTemperatureC` o "No definido (no se evaluó)" | -5,00 |
-| Criterio de límite | Texto fijo | Fuera de límite si la lectura es mayor que el límite |
+| Límite aplicado (°C) | Criterio máximo: `MaxTemperatureC`. Criterio banda: `SetpointC ± ToleranceK`. Sin valor: "No definido (no se evaluó)" | -5,00 · o 20,00 ± 2,00 |
+| Criterio de límite | `LimitMode` traducido | Máximo: fuera de límite si la lectura es mayor que el límite. Banda: fuera de límite si se aleja de la consigna más que la tolerancia |
 | Umbral de pérdida de sensores | `SensorLossThresholdPct` | 60 % (muestra afectada si más del 60 % de los canales no tiene dato válido) |
 | Técnico responsable | `AppUser.FullName` (técnico) | María Quispe |
 | Adquisidor | `AcquisitionDevice.DeviceIdentifier`, `Platform`, `FirmwareVersion`, `AcquisitionMode` | ADQ-ARD-0001 (Arduino, fw 1.2.0, POLL) |
@@ -1327,6 +1413,7 @@ Una fila por **muestra programada**, de 1 hasta la última muestra de la sesión
 | Caso | `SensorStatus` / condición | Contenido de la celda | Formato |
 |---|---|---|---|
 | Lectura válida dentro del límite | `OK`, `IsAboveLimit` = 0 | Número, p. ej. `-18,25` | Normal |
+| Lectura **por debajo de la banda** | `OK`, `IsBelowLimit` = 1 | Número, p. ej. `17,90` | Fondo azul claro `#DDEBF7`, fuente azul oscura `#1F4E78`, negrita |
 | Lectura **fuera de límite** | `OK`, `IsAboveLimit` = 1 | Número, p. ej. `-4,90` | Fondo rojo claro `#FFC7CE`, fuente roja oscura `#9C0006`, negrita |
 | Termopar abierto | `OpenCircuit` | Texto `ABIERTO` | Fondo gris `#D9D9D9`, fuente gris oscura |
 | Cortocircuito | `ShortCircuit` | Texto `CORTO` | Fondo gris `#D9D9D9` |
@@ -1339,7 +1426,7 @@ Notas:
 
 - Las celdas con texto no afectan las fórmulas numéricas que el usuario agregue después: Excel las ignora en `PROMEDIO`, `MIN` y `MAX`.
 - La base es la vista `dbo.vSessionReadingPivot` para los valores y `dbo.vSessionSampleCoverage` para las filas (incluidas las perdidas) y el estado de la muestra. Para el formato, el generador también consulta `SensorStatus` e `IsAboveLimit` por celda.
-- Una sesión base de 1 h produce 31 filas. Una de 24 h con 10 canales, 721 filas × 13 columnas. Una de 7 días, 5 041 filas.
+- Una sesión base de 1 h produce 31 filas. Una de 24 h con 10 canales, 721 filas × 13 columnas; con 27 canales, 30 columnas. Una de 7 días, 5 041 filas.
 
 ### Hoja "Alertas"
 
@@ -1348,7 +1435,7 @@ Una fila por alerta de la sesión, ordenadas por `OccurredAt` y después por `Al
 | Columna | Encabezado | Origen |
 |---|---|---|
 | A | `Fecha y hora` | `Alert.OccurredAt` |
-| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Fuera de límite sostenido, Mezcla de termopares, Menos puntos que el mínimo, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de sensores persistente, Sesión fallida, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
+| B | `Tipo de alerta` | `AlertType` traducido: Fuera de límite, Fuera de límite sostenido, Bajo la banda, Bajo la banda sostenido, Mezcla de termopares, Menos puntos que el mínimo, Tipo no coincidente, Falla de sensor, Pérdida de sensores, Pérdida de sensores persistente, Sesión fallida, Pérdida de comunicación, Adquisidor o grupo distinto, Límite no definido |
 | C | `Severidad` | `Severity`: Info, Advertencia, Crítica |
 | D | `Sensor` | `S{ChannelNumber} ({ubicación})` o vacío si la alerta es de toda la sesión |
 | E | `Muestra` | `Reading.SampleNumber` o la muestra de inicio del episodio, o vacío |

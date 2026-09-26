@@ -17,7 +17,10 @@ internal sealed class EquipmentTypeConfiguration : IEntityTypeConfiguration<Equi
         builder.Property(e => e.Name).HasMaxLength(EquipmentType.NameMaxLength).IsRequired();
         builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("UQ_EquipmentType_Name");
 
+        builder.Property(e => e.LimitMode).HasConversion<string>().HasMaxLength(10).IsRequired();
         builder.Property(e => e.MaxTemperatureC).HasPrecision(6, 2);
+        builder.Property(e => e.ToleranceK).HasPrecision(4, 2);
+        builder.Property(e => e.MinMeasurementPoints).HasConversion<byte>().IsRequired();
         builder.Property(e => e.MinSessionDurationMinutes).IsRequired();
         builder.Property(e => e.Description).HasMaxLength(EquipmentType.DescriptionMaxLength);
         builder.Property(e => e.IsActive).IsRequired();
@@ -27,6 +30,6 @@ internal sealed class EquipmentTypeConfiguration : IEntityTypeConfiguration<Equi
         builder.Property(e => e.UpdatedAt).HasPrecision(0);
         builder.Property(e => e.RowVersion).IsRowVersion();
 
-        builder.Ignore(e => e.MaxTemperature);
+        builder.Ignore(e => e.Limit);
     }
 }

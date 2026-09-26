@@ -1,10 +1,10 @@
 # HU-03 · Configurar una sesión de medición
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
-# Como técnico de calibración quiero configurar la sesión eligiendo el equipo, el puerto COM, el adquisidor detectado y de 1 a 10 canales con su tipo de termopar y su ubicación para iniciar una captura trazable.
+# Como técnico de calibración quiero configurar la sesión eligiendo el equipo, el puerto COM, el adquisidor detectado y de 1 a 27 canales con su tipo de termopar y su ubicación para iniciar una captura trazable.
 # Perfil: Técnico · Escenarios de prueba: TD-01, TD-11
 
-@HU-03 @SM @AS @RN-01 @TD-01 @TD-11
+@HU-03 @SM @AS @RN-01 @RN-06 @TD-01 @TD-11
 Feature: Configuración de la sesión de medición
 
   Background:
@@ -72,7 +72,16 @@ Feature: Configuración de la sesión de medición
       | 10          | 0       | 0   | rechaza con "Debe activar al menos 1 canal"                        |
       | 10          | 1       | 1   | acepta la configuración                                            |
       | 10          | 10      | 10  | acepta la configuración                                            |
+      | 27          | 27      | 27  | acepta la configuración                                            |
+      | 27          | 12      | 28  | rechaza con "El número de canal debe estar entre 1 y 27"           |
       | 8           | 3       | 9   | rechaza con "El adquisidor solo tiene 8 canales"                   |
+
+  Scenario: Consigna obligatoria en un equipo con banda de tolerancia
+    Given el equipo es de tipo "Cámara ambiental", con criterio "Band" y tolerancia ±2,00 K
+    When intento guardar la configuración sin consigna
+    Then el sistema pide "Indique la consigna de temperatura de la sesión"
+    When indico la consigna 20,0 °C y guardo
+    Then la sesión queda en estado "Configured" con banda 20,00 ± 2,00 °C
 
   Scenario: Cada canal activo requiere tipo y ubicación
     When activo el canal 2 sin indicar tipo de termopar o sin ubicación

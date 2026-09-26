@@ -1,5 +1,5 @@
 # HU-11 · Exportar una sesión a Excel
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico o supervisor quiero exportar una sesión cerrada a un archivo .xlsx con formato estándar para revisarla y entregarla sin transcripciones manuales.
 # Perfil: Técnico, Supervisor · Escenarios de prueba: Todos

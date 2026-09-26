@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Thermal.Application.EquipmentTypes;
+using Thermal.Domain.EquipmentTypes;
 
 namespace Thermal.Api.EquipmentTypes;
 
@@ -12,7 +13,13 @@ public sealed record CreateEquipmentTypeRequest
     [Required]
     public string? Name { get; init; }
 
+    public LimitMode? LimitMode { get; init; }
+
     public decimal? MaxTemperatureC { get; init; }
+
+    public decimal? ToleranceK { get; init; }
+
+    public int? MinMeasurementPoints { get; init; }
 
     public int? MinSessionDurationMinutes { get; init; }
 
@@ -25,7 +32,13 @@ public sealed record UpdateEquipmentTypeRequest
     [Required]
     public string? Name { get; init; }
 
+    public LimitMode? LimitMode { get; init; }
+
     public decimal? MaxTemperatureC { get; init; }
+
+    public decimal? ToleranceK { get; init; }
+
+    public int? MinMeasurementPoints { get; init; }
 
     public int? MinSessionDurationMinutes { get; init; }
 
@@ -39,8 +52,11 @@ public sealed record UpdateEquipmentTypeRequest
 public sealed record EquipmentTypeResponse(
     int Id,
     string Name,
+    LimitMode LimitMode,
     decimal? MaxTemperatureC,
+    decimal? ToleranceK,
     bool IsLimitDefined,
+    int MinMeasurementPoints,
     int MinSessionDurationMinutes,
     string? Description,
     bool IsActive,
@@ -50,8 +66,11 @@ public sealed record EquipmentTypeResponse(
     public static EquipmentTypeResponse From(EquipmentTypeDto dto) => new(
         dto.Id,
         dto.Name,
+        dto.LimitMode,
         dto.MaxTemperatureC,
+        dto.ToleranceK,
         dto.IsLimitDefined,
+        dto.MinMeasurementPoints,
         dto.MinSessionDurationMinutes,
         dto.Description,
         dto.IsActive,

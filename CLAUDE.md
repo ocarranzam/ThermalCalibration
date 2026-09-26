@@ -11,6 +11,7 @@ Sistema de monitoreo térmico para calibración de equipos de refrigeración. We
 - Base de datos (base primero, sin migraciones de EF): [docs/db/01-schema.sql](docs/db/01-schema.sql) y [05-data-model.md](docs/specs/functional/05-data-model.md).
 - Trazabilidad, cobertura de pruebas y auditorías: [docs/validation.md](docs/validation.md).
 - Plantillas de la documentación de entrega: [docs/delivery/](docs/delivery/README.md).
+- Registros reales de campo y su análisis (base de los perfiles de eficacia por modelo): [docs/data/](docs/data/README.md). Marca y modelo del equipo son **obligatorios**; un modelo deducido se marca como inferido.
 
 ## Convenciones obligatorias
 
@@ -20,6 +21,8 @@ Sistema de monitoreo térmico para calibración de equipos de refrigeración. We
 - Dominio: constructor primario, setters privados con validación (`field`), `DomainValidationException(nameof(Propiedad), "mensaje igual al de la historia")`.
 - Errores RFC 7807 con títulos en español. `ETag`/`If-Match` en recursos editables.
 - **[PC-01]:** nunca usar los literales `120` ni `31`; derivar todo de `SamplingIntervalSeconds`.
+- Alcance: equipos de hasta 2000 L (uso individual, pequeña y mediana escala, hospitales y clínicas); nada industrial. Hasta **27 canales** (`MeasurementPoints.MaxChannels`); puntos mínimos y criterio de límite (`Maximum` o `Band` con consigna ± tolerancia) **por tipo de equipo** (D-05, D-06).
+- Fuentes públicas descargadas: fichas de fabricantes en [docs/equipment-catalog/](docs/equipment-catalog/README.md) y normas en [docs/standards/](docs/standards/README.md) (solo si la licencia lo permite, con su SHA-256). Los `.xlsx` de clientes en `docs/data/` **no se versionan**.
 - Cada prueba lleva `[Trait("Story", "HU-xx")]` y el comentario `// HU-xx · Scenario: <nombre del escenario Gherkin>`.
 - Archivos en UTF-8 con LF ([.editorconfig](.editorconfig)). Compilación con advertencias como errores.
 - Diagramas Mermaid: sin `;` dentro de los mensajes (separa instrucciones) y sin literales derivados del intervalo (usar el nombre del parámetro).

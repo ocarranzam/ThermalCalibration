@@ -2,9 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.3 (borrador para revisión) |
+| Versión | 0.5 (borrador para revisión) |
 | Cambios en 0.2 | Duración planificada, política de pérdida de sensores (escalamiento y falla), descanso del adquisidor y severidad de las alertas (críticas y advertencias). |
 | Cambios en 0.3 | Fuera de límite sostenido con causa probable (`AboveLimitSustained`, `SuspectedCause`). Mínimo de 9 puntos de medición con confirmación. |
+| Cambios en 0.5 | D-05 y D-06: `EquipmentType` con `LimitMode`, `ToleranceK` y `MinMeasurementPoints`; `TemperatureLimit` evalúa máximo o banda (`Evaluate`); eventos `ReadingBelowLimit` y `BelowLimitSustained`; sesiones de 1 a 27 canales. |
 | Cambios en 0.4 | `EquipmentType` alineado con [01-schema.sql](../db/01-schema.sql) y el contrato [thermal-v1.yaml](../api/thermal-v1.yaml): `MinSessionDurationMinutes` (antes `MinSessionMinutes`), `Description`, `IsActive`, `RowVersion` y sus métodos de edición y desactivación. |
 | Fecha | 2026-09-25 |
 | Enfoque | DDD táctico: agregados con comportamiento (dominio enriquecido). Ver [ADR-001](adr/ADR-001-clean-architecture-cqrs-ddd.md). |
@@ -53,13 +54,18 @@ classDiagram
             <<AggregateRoot>>
             +int Id
             +string Name
-            +TemperatureLimit MaxTemperature
+            +LimitMode LimitMode
+            +decimal MaxTemperatureC
+            +decimal ToleranceK
+            +TemperatureLimit Limit
+            +int MinMeasurementPoints
             +int MinSessionDurationMinutes
             +string Description
             +bool IsActive
             +byte[] RowVersion
             +Rename(string)
             +ChangeLimit(TemperatureLimit)
+            +ChangeMinMeasurementPoints(int)
             +ChangeMinSessionDuration(int)
             +Describe(string)
             +Activate()
@@ -73,6 +79,8 @@ classDiagram
             +SerialNumber Serial
             +string Brand
             +string Model
+            +bool IsModelConfirmed
+            +ConfirmModel(string)
         }
     }
 
@@ -143,9 +151,11 @@ classDiagram
         }
         class TemperatureLimit {
             <<ValueObject>>
+            +LimitMode Mode
             +decimal MaxC
+            +decimal ToleranceK
             +bool IsDefined
-            +IsExceededBy(Temperature) bool
+            +Evaluate(Temperature, Setpoint) LimitEvaluation
         }
         class SensorLossPolicy {
             <<ValueObject>>
@@ -211,12 +221,14 @@ Notas de diseño:
 | Agregado | Invariante | Dónde se protege | Regla |
 |---|---|---|---|
 | `EquipmentType` | Nombre de 1 a 100 caracteres, sin espacios en los extremos y único. | Constructor y `Rename` + `CK_EquipmentType_Name`, `UQ_EquipmentType_Name` | HU-02 |
-| | Límite con 2 decimales como máximo, entre -9999,99 y 9999,99 °C, o pendiente (null). La base redondearía un tercer decimal, así que solo el dominio lo rechaza. | `TemperatureLimit` | RN-06 |
+| | Criterio de límite (D-05): `Maximum` con un máximo de 2 decimales entre -9999,99 y 9999,99 °C, o `Band` con una tolerancia positiva de hasta 99,99 K; cada modo solo admite su valor, y ambos pueden quedar pendientes. La base redondearía un tercer decimal, así que solo el dominio lo rechaza. | `TemperatureLimit.For` | RN-06, D-05 |
+| | Puntos de medición mínimos entre 1 y 27 (D-06). | `ChangeMinMeasurementPoints` + `CK_EquipmentType_MinPoints` | RN-20, D-06 |
 | | Duración mínima entre 60 y 43 200 min. Al planificar se comprueba además que no supere `MaxSessionMinutes`. | `ChangeMinSessionDuration` + `CK_EquipmentType_MinDuration`; `PlanDuration` | RN-04 |
 | | No se borra si tiene equipos: se desactiva. | `Deactivate` | HU-02 |
 | `Equipment` | Serie única dentro de la empresa. | Comprobación en la aplicación + `UQ_Equipment_Company_Serial` | HU-01 |
-| `AcquisitionDevice` | Entre 1 y 10 canales. `DeviceId` único. | Constructor + `UQ_AcquisitionDevice_Identifier` | RN-01 |
-| `MeasurementSession` | De 1 a 10 canales, sin repetir número y sin superar `ChannelCount`. | `AssignChannel`, `RequestStart` | RN-01 |
+| | Marca y modelo obligatorios (clave de los perfiles de eficacia). Un modelo inferido se registra con `IsModelConfirmed` = false hasta confirmarlo en la placa. | Constructor + `CK_Equipment_BrandModel` | HU-01, [DATA-1](../data/DATA-1-analisis.md) |
+| `AcquisitionDevice` | Entre 1 y 27 canales. `DeviceId` único. | Constructor + `UQ_AcquisitionDevice_Identifier` | RN-01 |
+| `MeasurementSession` | De 1 a 27 canales, sin repetir número y sin superar `ChannelCount`. | `AssignChannel`, `RequestStart` | RN-01 |
 | | Con mezcla T/K, no se puede iniciar sin la confirmación del técnico. | `Start` exige `MixedTypesAcknowledgedAt` | RN-05 |
 | | Con menos de 9 canales activos, no se puede iniciar sin la confirmación del técnico. | `Start` exige `BelowMinimumAcknowledgedAt` | RN-20 |
 | | Límite y umbral inmutables una vez iniciada. | Se asignan solo en `RequestStart` | RN-08 |
@@ -224,7 +236,7 @@ Notas de diseño:
 | | Duración planificada ≥ mínimo del tipo, con referencia si la pide el cliente; solo se extiende. | `PlanDuration`, `ExtendDuration` | RN-04 |
 | | No inicia mientras el adquisidor descansa, salvo autorización. | `RequestStart` con `RestWindow` | RN-17 |
 | | Muestra creciente, como máximo la última de la duración planificada. Al llegar a ella se cierra sola. | `RecordSample` | RN-04 |
-| | Fuera de límite solo si la lectura está `OK` y `valor > límite`. | `TemperatureLimit.IsExceededBy` | RN-07 |
+| | Fuera de límite solo si la lectura está `OK`: `valor > máximo`, o fuera de `consigna ± tolerancia` por arriba o por abajo (comparación estricta). La consigna es obligatoria para iniciar una sesión con banda. | `TemperatureLimit.Evaluate` | RN-07, D-05 |
 | | Un canal fuera de límite 30 min seguidos genera una crítica por racha, con la causa probable según la proporción de canales fuera de límite en esa muestra. | `RecordSample` (`SessionChannel.AboveLimitRun`) | RN-19 |
 | | Muestra afectada si `(activos − OK) × 100 > umbral × activos`. | `SensorLossPolicy.IsAffected` | RN-14 |
 | | Crítica en la 3.ª muestra afectada consecutiva. `Invalid`/`DataLoss` a los 30 min consecutivos (incluidas las muestras perdidas). | `SensorLossPolicy`, `RecordSample`, `RegisterMissedSample` | RN-15, 01 §6.2 |
@@ -243,7 +255,9 @@ Notas de diseño:
 | `BelowMinimumPointsDetected` | `RequestStart` | `BelowMinimumPoints` | Warning |
 | `LimitNotDefined` | `RequestStart` | `LimitNotDefined` | Info |
 | `ReadingAboveLimit` | `RecordSample` (una por lectura) | `AboveLimit` | Warning |
+| `ReadingBelowLimit` | `RecordSample` (una por lectura, solo con banda) | `BelowLimit` | Warning |
 | `AboveLimitSustained` | `RecordSample` (30 min seguidos en un canal, con la causa probable `Sensor` o `Equipment`) | `AboveLimitSustained` | **Critical** |
+| `BelowLimitSustained` | `RecordSample` (30 min seguidos por debajo de la banda) | `BelowLimitSustained` | **Critical** |
 | `SensorFaultStarted` | `RecordSample` (inicio del episodio) | `SensorFault` | Warning |
 | `TypeMismatchStarted` | `RecordSample` (inicio del episodio) | `TypeMismatch` | Warning |
 | `SensorLossStarted` | `RecordSample` (inicio del episodio) | `SensorLoss` | Warning |

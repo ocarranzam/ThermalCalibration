@@ -1,7 +1,7 @@
-# HU-17 · Advertir menos de 9 puntos de medición
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# HU-17 · Advertir menos puntos que el mínimo del tipo de equipo
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
-# Como técnico de calibración quiero que el sistema me advierta si configuro menos de 9 puntos de medición para saber que la sesión no cumple el mínimo de IEC 60068-3-5 y DKD-R 5-7 (8 esquinas y el centro), y dejar constancia si aun así debo iniciarla.
+# Como técnico de calibración quiero que el sistema me advierta si configuro menos puntos de medición que los que exige la norma del tipo de equipo (9 en general, 8 esquinas y el centro según IEC 60068-3-5 y DKD-R 5-7; 27 en incubadoras de más de 50 L según DIN 12880) para saber que la sesión no cumple el mínimo normativo, y dejar constancia si aun así debo iniciarla.
 # Perfil: Técnico · Escenarios de prueba: TD-15, TD-22 y los de 5 canales
 
 @HU-17 @SM @RN-20 @TD-15 @TD-22
@@ -9,7 +9,7 @@ Feature: Advertencia por menos puntos de medición que el mínimo normativo
 
   Background:
     Given que he iniciado sesión con el rol "Technician"
-    And el mínimo de puntos de medición es 9
+    And el tipo de equipo de la sesión exige 9 puntos de medición
 
   Scenario: Sesión con 9 puntos no muestra advertencia
     Given asigné 9 canales en las 8 esquinas y el centro
@@ -30,6 +30,14 @@ Feature: Advertencia por menos puntos de medición que el mínimo normativo
       (las 8 esquinas y el centro) para calibrar el volumen útil de equipos menores de 2000 L.
       Si continúa, la sesión quedará marcada como por debajo del mínimo normativo.
       """
+    And registra una alerta "BelowMinimumPoints" con severidad "Warning"
+    And la captura no inicia hasta que yo confirme
+
+  Scenario: Una incubadora de más de 50 L exige 27 puntos
+    Given el equipo es una "Incubadora", cuyo tipo exige 27 puntos de medición (DIN 12880)
+    And asigné 12 canales
+    When pulso "Iniciar captura"
+    Then el sistema muestra "La sesión tiene 12 puntos de medición. El tipo de equipo Incubadora exige al menos 27 (DIN 12880, más de 50 L)."
     And registra una alerta "BelowMinimumPoints" con severidad "Warning"
     And la captura no inicia hasta que yo confirme
 

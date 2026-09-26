@@ -5,19 +5,21 @@ Fase 1: Sesión de Medición, Adquisición Serial y Exportación a Excel
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.5 (borrador para revisión) |
+| Versión | 0.7 (borrador para revisión) |
 | Fecha | 2026-09-25 |
 | Cambios en 0.2 | Resueltas las preguntas P-01 (muestra en t = 0, inicio al llegar datos), P-02 (umbral de pérdida de sensores) y P-05 (otro adquisidor o grupo de sensores invalida la sesión). Se añaden el simulador de adquisidor, el set de datos de prueba y la base normativa. |
 | Cambios en 0.3 | Sesión base de 1 h con **duración planificada** según el tipo de equipo o el pedido del cliente (hasta varios días), en lugar del tope fijo de 24 h. **Descanso** del adquisidor entre sesiones. Alertas separadas en **críticas** (notificación visual) y **advertencias** (solo registro). **Escalamiento** de la pérdida de sensores a crítica en la 3.ª muestra consecutiva y **falla de sesión** tras 30 min sin datos suficientes. |
 | Cambios en 0.5 | P-11: se mantiene el intervalo de 120 s, marcado como **punto de cambio PC-01** con la guía para cambiarlo (§12). P-13: mínimo de **9 puntos de medición** (8 esquinas y el centro), con advertencia y confirmación si hay menos (RN-20). |
 | Cambios en 0.4 | Confirmadas P-15 (descanso de 15 min del kit de medición), P-16 y P-17. Nueva alerta crítica **`AboveLimitSustained`**: un canal fuera de límite 30 min seguidos, con la **causa probable** (sensor o equipo). |
+| Cambios en 0.7 | Decisiones **D-05** (criterio de límite por tipo: máximo o banda alrededor de la consigna; antes P-19) y **D-06** (hasta 27 canales y puntos mínimos por tipo de equipo según su norma; antes P-18). Alcance acotado a equipos de uso individual, de pequeña y mediana escala y de hospitales y clínicas, de hasta 2000 L. |
+| Cambios en 0.6 | Primer registro real ([DATA-1](../../data/DATA-1-analisis.md)): cámara ambiental Memmert, 12 termopares tipo T, 5 min, 72 h. Se añaden las cámaras ambientales al alcance y las preguntas P-18 (más de 10 canales) y P-19 (banda de tolerancia). Marca y modelo del equipo obligatorios. |
 | Documentos relacionados | [02-serial-protocol.md](02-serial-protocol.md), [03-user-stories.md](03-user-stories.md), [04-sequence-diagrams.md](04-sequence-diagrams.md), [05-data-model.md](05-data-model.md), [06-test-data.md](06-test-data.md), [../../db/01-schema.sql](../../db/01-schema.sql), [normas técnicas](../../standards/README.md) |
 
 ---
 
 ## 1. Problema
 
-El laboratorio calibra y verifica equipos de refrigeración (refrigeradoras, congeladoras, conservadoras, incubadoras) de diferentes empresas cliente. Para ello instrumenta cada equipo con varios termopares y registra la temperatura durante una sesión que normalmente dura **1 hora**. Después, el kit de medición descansa y pasa al siguiente equipo. Algunos tipos de equipo, por su forma de funcionar, exigen sesiones más largas. Algunos clientes, por sus propias exigencias de control, piden registros de 24 horas o, en casos extremos, de varios días.
+El laboratorio calibra y verifica equipos de refrigeración (refrigeradoras, congeladoras, conservadoras, incubadoras) y cámaras ambientales o climáticas de diferentes empresas cliente. Para ello instrumenta cada equipo con varios termopares y registra la temperatura durante una sesión que normalmente dura **1 hora**. Después, el kit de medición descansa y pasa al siguiente equipo. Algunos tipos de equipo, por su forma de funcionar, exigen sesiones más largas. Algunos clientes, por sus propias exigencias de control, piden registros de 24 horas o, en casos extremos, de varios días.
 
 Hoy ese registro presenta los siguientes problemas:
 
@@ -52,6 +54,8 @@ Módulos especificados en este paquete:
 3. **Exportación a Excel.** Generación del .xlsx con cuatro hojas (Resumen, Lecturas, Alertas y Comunicación) y registro de cada exportación.
 4. **Simulación y datos de prueba.** Adquisidor simulado que implementa el mismo protocolo, más un set de 22 escenarios de datos de prueba con sus resultados esperados, para probar el sistema sin sensores ([06-test-data.md](06-test-data.md)).
 
+**Equipos cubiertos:** de uso individual, de pequeña y mediana escala, y de hospitales y clínicas, con un volumen útil de **hasta 2000 L** (refrigeradoras, congeladoras, conservadoras, incubadoras, estufas y cámaras ambientales o climáticas de laboratorio).
+
 Datos crudos solamente: el sistema **no** calcula estadísticas en esta fase. Sí presenta conteos simples (muestras programadas, válidas y afectadas, número de alertas) porque son necesarios para juzgar la integridad de la captura.
 
 ### 3.2 Fuera del alcance (fases futuras)
@@ -60,6 +64,7 @@ Datos crudos solamente: el sistema **no** calcula estadísticas en esta fase. S�
 |---|---|
 | Análisis estadístico | Promedios, desviación estándar, estabilidad y uniformidad entre zonas, detección de outliers, incertidumbre, certificados de calibración. |
 | Inventario de sensores | Registro individual de termopares y grupos de sensores, disponibilidad (en uso/libre), asignación por urgencia y trazabilidad de la calibración de cada sensor. En la fase 1 el técnico declara a mano el tipo y la ubicación de cada canal, y el grupo de sensores solo se usa como identificador que informa el adquisidor (`SensorGroupId`). |
+| Equipos industriales o masivos | Cámaras frigoríficas visitables, almacenes y equipos de más de 2000 L (IEC 60068-3-5 pide 15 puntos o más, y el mapeo de almacenes de la OMS usa rejillas de 5–10 m). No se medirán en este sistema. |
 | Otros | Monitoreo remoto o web, notificaciones por correo o mensajería, firma digital de reportes, integración con ERP o facturación. |
 
 ## 4. Perfiles de usuario
@@ -128,13 +133,13 @@ Decisiones clave:
 
 | Id | Regla |
 |---|---|
-| RN-01 | Una sesión tiene de 1 a 10 canales activos, numerados del 1 al 10, cada uno con su tipo de termopar (T o K) y su ubicación. Lo esperado son **al menos 9** (RN-20). |
+| RN-01 | Una sesión tiene de **1 a 27 canales** activos, numerados del 1 al 27, cada uno con su tipo de termopar (T o K) y su ubicación. El mínimo esperado lo fija el tipo de equipo (RN-20). 27 es lo que exige DIN 12880 para incubadoras y estufas de más de 50 L, la norma más exigente dentro del alcance (D-06). |
 | RN-02 | **[PC-01]** Frecuencia fija: una lectura por canal cada **120 s** (parámetro `SamplingIntervalSeconds`, copiado en la sesión; ver §12 para cambiarlo). La muestra 1 es la primera recibida después de "Iniciar" (t = 0 = `StartedAt`), y la muestra *n* corresponde a `StartedAt + (n − 1) × 120 s`. |
 | RN-03 | Una sesión solo queda **completa** si alcanza su **duración planificada** **y** tiene al menos **1 h de datos válidos**: `BaseSessionMinutes × 60 / intervalo + 1` muestras válidas, es decir **31** con el intervalo de 120 s **[PC-01]** (30 intervalos más la muestra inicial). Si no, queda **incompleta**. |
 | RN-04 | **Duración planificada.** Base: **60 min**. Se alarga si el tipo de equipo exige más (`EquipmentType.MinSessionDurationMinutes`) o si el cliente lo solicita (con una referencia, p. ej. la orden de servicio). Esto puede llegar a 24 h o, en casos extremos, a varios días. El máximo que se puede planificar es un parámetro (7 días por defecto; la base admite hasta 30). La duración se puede **extender** mientras la sesión está en curso. Al llegar a la duración planificada, la sesión se cierra sola. |
 | RN-05 | Se permite mezclar T y K, pero el sistema muestra una advertencia de mala práctica, registra la alerta `MixedThermocoupleTypes` y exige la confirmación del técnico antes de iniciar. La mezcla queda marcada en la sesión y en el Excel. |
-| RN-06 | Límite máximo por tipo de equipo, configurable, que admite quedar *pendiente* (NULL). |
-| RN-07 | Una lectura está fuera de límite si `TemperatureC > MaxTemperatureC` (estrictamente mayor). Con un límite de -5,0 °C: -5,0 cumple y -4,9 está fuera de límite. |
+| RN-06 | **Criterio de límite por tipo de equipo** (D-05), configurable y copiado en la sesión: **máximo** (`Maximum`: refrigeradoras, congeladoras, conservadoras) o **banda** alrededor de la consigna (`Band`: incubadoras, cámaras ambientales), con una tolerancia ± en K. La consigna la indica el técnico en cada sesión con banda y es obligatoria para iniciar. El máximo o la tolerancia pueden quedar *pendientes* (NULL). |
+| RN-07 | Comparación **estricta**. Máximo: fuera de límite si `TemperatureC > MaxTemperatureC` (con -5,0 °C: -5,0 cumple y -4,9 no). Banda: fuera de límite si `TemperatureC > SetpointC + ToleranceK` (por arriba, alerta `AboveLimit`) o `TemperatureC < SetpointC − ToleranceK` (por abajo, alerta `BelowLimit`); con 20,0 ± 2,0 °C, 22,0 y 18,0 cumplen, y 22,1 y 17,9 no. |
 | RN-08 | Al iniciar la sesión se copian el límite vigente (`MaxTemperatureC`) y la política de pérdida de sensores vigente (umbral, muestras para escalar y minutos para fallar). Editarlos después no altera las sesiones ya registradas. |
 | RN-09 | Si el tipo de equipo no tiene límite definido, se advierte, se registra la alerta `LimitNotDefined` y se captura igual, sin evaluar el límite. |
 | RN-10 | Una lectura fuera de límite **no invalida** la sesión: genera una alerta `AboveLimit` asociada al canal, a la lectura y a la marca de tiempo. |
@@ -145,9 +150,9 @@ Decisiones clave:
 | RN-15 | **Sesión fallida.** La sesión se cierra como **fallida** (`Invalid`), conserva sus datos como evidencia pero no puede presentarse como calibración, y se registra una alerta crítica, en dos casos: (a) al reconectar responde un adquisidor con otro `DeviceId` u otro `SensorGroupId` (motivo `DeviceMismatch`); (b) las muestras siguen afectadas durante **30 min consecutivos** (motivo `DataLoss`, §6.2). |
 | RN-16 | **Sesiones simuladas.** Una sesión que use el adquisidor simulado se marca como simulación, se asocia a un escenario del set de pruebas y se excluye del historial por defecto. Su Excel lleva el aviso "DATOS SIMULADOS – NO VÁLIDOS PARA CALIBRACIÓN". |
 | RN-17 | **Descanso del kit de medición.** Entre el fin de una sesión y el inicio de la siguiente con el mismo adquisidor (y su grupo de sensores) debe pasar un **periodo de descanso** (parámetro `RestPeriodMinutes`, **15 min**), para no saturar el equipo de medición mientras se traslada a otro equipo. Mientras dura, el sistema muestra el tiempo restante y no permite iniciar. Un supervisor o administrador puede autorizar el inicio anticipado, indicando el motivo, que queda registrado. |
-| RN-20 | **Mínimo de puntos de medición.** Una sesión debería tener al menos **9 canales activos**, ubicados en las **8 esquinas y el centro** del volumen útil (parámetro `MinMeasurementPoints`, copiado en la sesión). Es el mínimo de IEC 60068-3-5 §4.4 y DKD-R 5-7 §5 y §7.1.1 para volúmenes menores de 2000 L. Con menos canales se permite iniciar, igual que con la mezcla T/K: el sistema advierte que la sesión **no cumple el mínimo normativo**, registra la alerta `BelowMinimumPoints` (Warning), exige la **confirmación** del técnico y lo marca en la sesión y en el Excel. |
+| RN-20 | **Mínimo de puntos de medición por tipo de equipo** (D-06). Cada tipo fija sus puntos mínimos según su norma, y se copian en la sesión al iniciar: **9** (8 esquinas y centro) en cámaras ambientales, refrigeradoras, congeladoras y conservadoras de hasta 2000 L (IEC 60068-3-5 §4.4, DKD-R 5-7 §5 y §7.1.1, USP <1079.4>), y **27** en incubadoras y estufas de más de 50 L (DIN 12880; 9 si son de 50 L o menos). Con menos canales se permite iniciar: el sistema advierte que la sesión **no cumple el mínimo normativo**, registra la alerta `BelowMinimumPoints` (Warning), exige la **confirmación** del técnico y lo marca en la sesión y en el Excel. |
 | RN-18 | **Prioridad de las alertas.** Las alertas **críticas** (`Critical`) exigen actuar: se notifican visualmente de forma destacada y deben reconocerse. Las **advertencias** (`Warning`) y las **informativas** (`Info`) solo se registran: aparecen en contadores, en la lista de alertas y resaltadas en la tabla de lecturas, sin interrumpir al técnico. Las variaciones de temperatura son esperables por distintas causas, así que `AboveLimit` es una advertencia. Clasificación completa en la §6.3. |
-| RN-19 | **Fuera de límite sostenido.** Si un mismo canal tiene todas sus lecturas fuera de límite durante **30 min seguidos** (parámetro `AboveLimitCriticalMinutes`), se genera **una** alerta crítica `AboveLimitSustained` para ese canal. La alerta indica la **causa probable**, porque el problema puede ser del sensor y no del equipo (§6.4). No invalida la sesión: los datos siguen siendo válidos. |
+| RN-19 | **Fuera de límite sostenido.** Si un mismo canal tiene todas sus lecturas fuera de límite **del mismo lado** durante **30 min seguidos** (parámetro `AboveLimitCriticalMinutes`), se genera **una** alerta crítica para ese canal: `AboveLimitSustained` (por encima) o `BelowLimitSustained` (por debajo de la banda). La alerta indica la **causa probable**, porque el problema puede ser del sensor y no del equipo (§6.4). No invalida la sesión: los datos siguen siendo válidos. |
 
 ### 6.1 Umbral de muestras afectadas según el número de canales
 
@@ -165,6 +170,23 @@ Con el umbral por defecto del 60 % (hay que **superarlo**, no basta con alcanzar
 | 8 | 5 o más |
 | 9 | 6 o más |
 | 10 | 7 o más (6 de 10 = 60 % **no** afecta) |
+| 11 | 7 o más |
+| 12 | 8 o más (DATA-1: 7 de 12 = 58 % no afecta) |
+| 13 | 8 o más |
+| 14 | 9 o más |
+| 15 | 10 o más |
+| 16 | 10 o más |
+| 17 | 11 o más |
+| 18 | 11 o más |
+| 19 | 12 o más |
+| 20 | 13 o más |
+| 21 | 13 o más |
+| 22 | 14 o más |
+| 23 | 14 o más |
+| 24 | 15 o más |
+| 25 | 16 o más |
+| 26 | 16 o más |
+| 27 | 17 o más |
 
 ### 6.2 Escalamiento de la pérdida de sensores
 
@@ -223,8 +245,10 @@ Para orientar al técnico, la alerta incluye la **causa probable** (`Alert.Suspe
 | **Canal** | Entrada física numerada (1…10) del adquisidor, a la que se conecta un termopar. En la sesión, cada canal activo tiene un tipo declarado y una ubicación. Entidad `SessionChannel`. En el Excel se rotula S1…S10. |
 | **Termopar tipo T** | Termopar cobre–constantán. Rango físico según el catálogo: -200 a 350 °C. Recomendado para bajas temperaturas por su mejor exactitud en ese rango. |
 | **Termopar tipo K** | Termopar cromel–alumel. Rango físico según el catálogo: -200 a 1260 °C. De uso general. |
-| **Límite máximo** | Temperatura máxima admisible para un tipo de equipo. Una lectura mayor es una lectura fuera de límite. Puede estar *pendiente* (sin definir). |
-| **Límite aplicado** | Copia del límite máximo que se toma al iniciar la sesión y que se usa durante toda ella. |
+| **Límite máximo** | Temperatura máxima admisible para un tipo de equipo con criterio `Maximum`. Una lectura mayor es una lectura fuera de límite. Puede estar *pendiente* (sin definir). |
+| **Banda de tolerancia** | Criterio `Band`: intervalo consigna ± tolerancia. Una lectura por encima o por debajo es una lectura fuera de límite (RN-07). Se usa en incubadoras y cámaras ambientales. |
+| **Consigna** | Temperatura de trabajo del equipo en la sesión (`SetpointC`), indicada por el técnico; obligatoria en los tipos con banda. |
+| **Límite aplicado** | Copia del criterio de límite (máximo, o consigna y tolerancia) que se toma al iniciar la sesión y que se usa durante toda ella. |
 | **Alerta** | Evento registrado que requiere atención: `AboveLimit`, `AboveLimitSustained`, `MixedThermocoupleTypes`, `BelowMinimumPoints`, `TypeMismatch`, `SensorFault`, `SensorLoss`, `SensorLossPersistent`, `SessionFailed`, `CommunicationLost`, `DeviceMismatch` o `LimitNotDefined`. Tiene una severidad (§6.3). Puede reconocerse, pero no borrarse. |
 | **Mínimo de puntos de medición** | 9 canales, en las 8 esquinas y el centro del volumen útil (RN-20). Con menos, la sesión se marca como por debajo del mínimo normativo. |
 | **Mezcla de termopares** | Situación en la que los canales activos de una sesión no son todos del mismo tipo (T y K a la vez). Se permite con advertencia y confirmación. |
@@ -301,13 +325,15 @@ Fichas, copias locales (cuando la licencia lo permite) y matriz de trazabilidad 
 | P-17 | ¿Un corte de comunicación de 30 min hace fallar la sesión? | **Sí**, igual que la pérdida de sensores (RN-15). |
 | P-13 | ¿Cuántos puntos de medición como mínimo? (se pidió 8, si no contraviene las normas) | **9**: 8 puntos contravienen IEC 60068-3-5 §4.4 y DKD-R 5-7 §7.1.1, que exigen 9 (8 esquinas y centro) en volúmenes menores de 2000 L. Con menos canales: **advertir y exigir confirmación**, como con la mezcla T/K (RN-20). Evaluar qué posiciones concretas faltan por fallas (p. ej. una esquina) queda para una fase futura, porque requiere posiciones normalizadas en lugar de texto libre. |
 | P-11 | ¿Se mantiene el intervalo de 2 min, aunque IEC 60068-3-5 y DKD-R 5-7 piden 60 s o menos? | **Sí**, en la fase 1. Queda marcado como **punto de cambio PC-01**, con todas sus ubicaciones y lo que se recalcula, por si el Product Owner decide cambiarlo (§12). |
+| D-05 (P-19) | ¿Basta un límite máximo para equipos que trabajan alrededor de una consigna? | **No.** Cada tipo de equipo tiene un **criterio de límite**: `Maximum` (refrigeración) o `Band` (consigna ± tolerancia: incubadoras, cámaras ambientales). La consigna se registra en la sesión. Lecturas fuera de banda por abajo: `IsBelowLimit` y alertas `BelowLimit` / `BelowLimitSustained` (RN-06, RN-07, RN-19). Origen: [DATA-1](../../data/DATA-1-analisis.md), cámara a ~19,4 °C. Resuelve también P-04 para esos tipos. |
+| D-06 (P-18) | ¿Cuántos canales como máximo, y el mínimo es igual para todos los equipos? | **Hasta 27 canales** por sesión y **puntos mínimos por tipo de equipo** según su norma: 9 (IEC 60068-3-5, DKD-R 5-7, USP <1079.4>, hasta 2000 L) y 27 en incubadoras de más de 50 L (DIN 12880). Alcance: equipos de uso individual, de pequeña y mediana escala y de hospitales y clínicas; sin equipos industriales. Origen: DATA-1 usó 12 termopares. |
 
 ## 11. Preguntas abiertas
 
 | Id | Pregunta | Impacto | Propuesta provisional |
 |---|---|---|---|
 | P-03 | ¿Límites máximos de refrigeradora, conservadora e incubadora? | Evaluación de las alertas. | Quedan pendientes (NULL) hasta que el cliente o la norma los definan. |
-| P-04 | ¿Hace falta un límite **mínimo** (p. ej. una refrigeradora no debe congelar)? | Modelo y reglas. | Fuera de la fase 1. Solo existe límite máximo. |
+| P-04 | ¿Hace falta un límite **mínimo** (p. ej. una refrigeradora no debe congelar)? | Modelo y reglas. | **Resuelto para incubadoras y cámaras ambientales** por D-05 (banda). Para refrigeración sigue solo el máximo; si se necesitara un mínimo, se configuraría el tipo con banda. |
 | P-06 | ¿Se pueden exportar sesiones canceladas? | Alcance de la exportación. | No. Se exportan las completas, las incompletas y las no válidas (estas últimas con un aviso). |
 | P-07 | ¿Las alertas `SensorFault` y `TypeMismatch` se generan por cada lectura o por episodio? | Volumen de alertas. | Por episodio: al pasar de lectura válida a inválida en un canal. `AboveLimit` se genera por cada lectura. |
 | P-08 | ¿La reconexión debe buscar el adquisidor en otros puertos COM si Windows lo reenumera? | Robustez. | Sí: si el puerto original no existe, buscar por `DeviceId` entre los puertos disponibles. |
@@ -352,4 +378,4 @@ Decisiones que el Product Owner podría cambiar más adelante. Cada una tiene un
 
 **Condición para el desarrollo:** el código **no** debe usar el literal `120` ni el número `31`. Siempre debe leer `SamplingIntervalSeconds` de la sesión y calcular los valores derivados con las fórmulas de arriba (ver [ADR-001 §5](../../architecture/adr/ADR-001-clean-architecture-cqrs-ddd.md#5-cumplimiento)).
 
-**Otros cambios a revisar si se pasa a 60 s:** el volumen se duplica (620 lecturas en la sesión base de 10 canales) y el adquisidor debe completar cada bloque en menos de 5 s (F-09), algo que ya se cumple con 10 canales.
+**Otros cambios a revisar si se pasa a 60 s:** el volumen se duplica (620 lecturas en la sesión base de 10 canales) y el adquisidor debe completar cada bloque en menos de 10 s (F-09), lo que con 27 canales exige conversiones de unos 250 ms por canal o menos.

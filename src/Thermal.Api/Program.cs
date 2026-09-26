@@ -20,8 +20,12 @@ builder.Services
         options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
     })
     .AddJsonOptions(options =>
+    {
         // additionalProperties: false en los schemas de request.
-        options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow);
+        options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+        // Enumeraciones como texto (limitMode: "Maximum" | "Band"), igual que el contrato.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+    });
 
 builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context => ProblemTitles.Translate(context.ProblemDetails));

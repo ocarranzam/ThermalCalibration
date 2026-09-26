@@ -11,7 +11,10 @@ namespace Thermal.Application.EquipmentTypes.Update;
 public sealed record UpdateEquipmentTypeCommand(
     int Id,
     string Name,
+    LimitMode? LimitMode,
     decimal? MaxTemperatureC,
+    decimal? ToleranceK,
+    int? MinMeasurementPoints,
     int? MinSessionDurationMinutes,
     string? Description,
     bool IsActive,
@@ -33,7 +36,9 @@ internal sealed class UpdateEquipmentTypeCommandHandler(
         }
 
         equipmentType.Rename(command.Name);
-        equipmentType.ChangeLimit(TemperatureLimit.Create(command.MaxTemperatureC));
+        equipmentType.ChangeLimit(TemperatureLimit.For(
+            command.LimitMode ?? LimitMode.Maximum, command.MaxTemperatureC, command.ToleranceK));
+        equipmentType.ChangeMinMeasurementPoints(command.MinMeasurementPoints ?? MeasurementPoints.DefaultMinimum);
         equipmentType.ChangeMinSessionDuration(
             command.MinSessionDurationMinutes ?? EquipmentType.BaseSessionDurationMinutes);
         equipmentType.Describe(command.Description);

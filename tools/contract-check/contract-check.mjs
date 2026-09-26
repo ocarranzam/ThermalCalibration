@@ -29,12 +29,23 @@ const spec = yaml.load(fs.readFileSync(path.resolve(here, '../../docs/api/therma
 const ajv = new Ajv({ strict: false, allErrors: true });
 addFormats(ajv);
 
-// OpenAPI 3.0 → JSON Schema: `nullable` pasa a tipo con null y las $ref apuntan a un esquema registrado.
+// OpenAPI 3.0 → JSON Schema: `nullable` pasa a tipo con null, `exclusiveMinimum/Maximum` booleanos pasan a su
+// forma numérica y las $ref apuntan a un esquema registrado.
 const toJsonSchema = schema => JSON.parse(JSON.stringify(schema), (_, value) => {
   if (value && typeof value === 'object') {
     if (value.nullable === true && value.type) {
       value.type = [value.type, 'null'];
       delete value.nullable;
+    }
+    for (const [exclusive, bound] of [['exclusiveMinimum', 'minimum'], ['exclusiveMaximum', 'maximum']]) {
+      if (typeof value[exclusive] === 'boolean') {
+        if (value[exclusive] && value[bound] !== undefined) {
+          value[exclusive] = value[bound];
+          delete value[bound];
+        } else {
+          delete value[exclusive];
+        }
+      }
     }
     if (typeof value.$ref === 'string') value.$ref = value.$ref.replace('#/components/schemas/', 'schemas#/');
   }

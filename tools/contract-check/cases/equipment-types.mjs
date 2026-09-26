@@ -15,6 +15,14 @@ export async function cases(check) {
     check(label, { method: 'PUT', path: at, operation: I, token: 'admin', body, ...extra }, expected);
 
   await post('POST límite pendiente', { name: `${name} P`, maxTemperatureC: null }, 201);
+  const band = await post('POST banda 27 puntos (D-05, D-06)', { name: `${name} B`, limitMode: 'Band', toleranceK: 0.5, minMeasurementPoints: 27 }, 201);
+  if (band.json && (band.json.limitMode !== 'Band' || band.json.minMeasurementPoints !== 27 || band.json.maxTemperatureC !== null)) {
+    band.problems.push('la respuesta no refleja la banda de 27 puntos');
+  }
+  await post('POST máximo con tolerancia', { name: 'X', limitMode: 'Maximum', toleranceK: 1 }, 400);
+  await post('POST banda con máximo', { name: 'X', limitMode: 'Band', maxTemperatureC: 5 }, 400);
+  await post('POST modo inválido', { name: 'X', limitMode: 'Rango' }, 400);
+  await post('POST 28 puntos', { name: 'X', minMeasurementPoints: 28 }, 400);
   await post('POST 3 decimales', { name: 'X', maxTemperatureC: -5.123 }, 400);
   await post('POST duración 45', { name: 'X', minSessionDurationMinutes: 45 }, 400);
   await post('POST sin nombre', { maxTemperatureC: 2 }, 400);

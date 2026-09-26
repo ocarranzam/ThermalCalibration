@@ -19,7 +19,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
     private async Task<int> InsertAsync(string name, decimal? maxTemperatureC = -5.00m)
     {
         await using var context = database.CreateDbContext();
-        var equipmentType = new EquipmentType(name, maxTemperatureC, 60, null);
+        var equipmentType = new EquipmentType(name, LimitMode.Maximum, maxTemperatureC, null, 9, 60, null);
         new EquipmentTypeRepository(context).Add(equipmentType);
         await new UnitOfWork(context).SaveChangesAsync(Token);
         return equipmentType.Id;
@@ -29,7 +29,7 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
     public async Task Add_AssignsIdCreatedAtAndRowVersionFromTheDatabase()
     {
         await using var context = database.CreateDbContext();
-        var equipmentType = new EquipmentType(UniqueName("Ultracongeladora"), -60.00m, 60, null);
+        var equipmentType = new EquipmentType(UniqueName("Ultracongeladora"), LimitMode.Maximum, -60.00m, null, 9, 60, null);
 
         new EquipmentTypeRepository(context).Add(equipmentType);
         await new UnitOfWork(context).SaveChangesAsync(Token);
@@ -125,6 +125,28 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         ensure.Should().Throw<ConcurrencyConflictException>();
     }
 
+    [Fact] // HU-02 · Regla D-05 y D-06: banda y 27 puntos se guardan y se leen (LimitMode como texto, TINYINT)
+    public async Task Add_BandTypeWith27Points_RoundTrips()
+    {
+        int id;
+        await using (var context = database.CreateDbContext())
+        {
+            var incubator = new EquipmentType(UniqueName("Incubadora"), LimitMode.Band, null, 0.5m, 27, 60, null);
+            new EquipmentTypeRepository(context).Add(incubator);
+            await new UnitOfWork(context).SaveChangesAsync(Token);
+            id = incubator.Id;
+        }
+
+        await using var readContext = database.CreateDbContext();
+        var dto = await new EquipmentTypeReadStore(readContext).GetByIdAsync(id, Token);
+
+        dto!.LimitMode.Should().Be(LimitMode.Band);
+        dto.ToleranceK.Should().Be(0.50m);
+        dto.MaxTemperatureC.Should().BeNull();
+        dto.IsLimitDefined.Should().BeTrue();
+        dto.MinMeasurementPoints.Should().Be(27);
+    }
+
     [Fact] // HU-02 · Scenario: Registrar un tipo de equipo con límite pendiente (lectura del catálogo inicial)
     public async Task ReadStore_ReturnsSeededTypesWithDefinedAndPendingLimits()
     {
@@ -140,5 +162,8 @@ public sealed class EquipmentTypePersistenceTests(SqlServerFixture database)
         freezer!.MaxTemperatureC.Should().Be(-5.00m);
         freezer.IsLimitDefined.Should().BeTrue();
         freezer.Version.Should().NotBeNullOrEmpty();
+        var incubator = await readStore.GetByIdAsync(4, Token);
+        incubator!.LimitMode.Should().Be(LimitMode.Band);
+        incubator.MinMeasurementPoints.Should().Be(27);
     }
 }

@@ -28,7 +28,10 @@ public sealed class EquipmentTypesController(
         var equipmentType = await createHandler.HandleAsync(
             new CreateEquipmentTypeCommand(
                 request.Name!,
+                request.LimitMode,
                 request.MaxTemperatureC,
+                request.ToleranceK,
+                request.MinMeasurementPoints,
                 request.MinSessionDurationMinutes,
                 request.Description),
             cancellationToken);
@@ -62,7 +65,10 @@ public sealed class EquipmentTypesController(
             new UpdateEquipmentTypeCommand(
                 id,
                 request.Name!,
+                request.LimitMode,
                 request.MaxTemperatureC,
+                request.ToleranceK,
+                request.MinMeasurementPoints,
                 request.MinSessionDurationMinutes,
                 request.Description,
                 request.IsActive!.Value,

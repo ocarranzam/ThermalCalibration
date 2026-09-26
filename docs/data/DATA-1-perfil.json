@@ -1,0 +1,292 @@
+{
+  "source": "DATA-1-.xlsx",
+  "sheet": "TEMPERATURA",
+  "equipment": {
+    "type": "Cámara ambiental",
+    "brand": "Memmert",
+    "model": "TTC256",
+    "modelStatus": "inferred",
+    "thermocoupleType": "T"
+  },
+  "start": "2024-09-01T12:30:05",
+  "end": "2024-09-04T12:30:05",
+  "samples": 865,
+  "intervalSeconds": 300,
+  "durationHours": 72.0,
+  "channels": 12,
+  "readings": {
+    "total": 10380,
+    "missing": 13,
+    "availabilityPct": 99.87
+  },
+  "steadyWindow": {
+    "fromSample": 25,
+    "toSample": 845,
+    "hours": 68.3,
+    "meanC": 19.43,
+    "uniformityK": 0.5,
+    "maxDeviationFromMeanK": 0.6,
+    "fluctuationK": {
+      "median": 0.45,
+      "max": 0.55
+    },
+    "meanSdK": 0.177,
+    "instantGradientK": {
+      "mean": 1.07,
+      "max": 2.0
+    },
+    "instability30MinK": {
+      "mean": 0.22,
+      "max": 0.7
+    }
+  },
+  "sensorLoss": {
+    "thresholdPct": 60,
+    "affectedSamples": 0
+  },
+  "sensors": [
+    {
+      "sensor": 1,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.704,
+        "sd": 0.159,
+        "min": 19.2,
+        "max": 21.1,
+        "fluctuationK": 0.95
+      },
+      "steady": {
+        "mean": 19.694,
+        "sd": 0.127,
+        "min": 19.3,
+        "max": 20,
+        "fluctuationK": 0.35
+      }
+    },
+    {
+      "sensor": 2,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.075,
+        "sd": 0.252,
+        "min": 18.7,
+        "max": 21.2,
+        "fluctuationK": 1.25
+      },
+      "steady": {
+        "mean": 19.048,
+        "sd": 0.206,
+        "min": 18.7,
+        "max": 19.8,
+        "fluctuationK": 0.55
+      }
+    },
+    {
+      "sensor": 3,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.274,
+        "sd": 0.163,
+        "min": 18.8,
+        "max": 20.2,
+        "fluctuationK": 0.7
+      },
+      "steady": {
+        "mean": 19.261,
+        "sd": 0.145,
+        "min": 18.8,
+        "max": 19.7,
+        "fluctuationK": 0.45
+      }
+    },
+    {
+      "sensor": 4,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.578,
+        "sd": 0.192,
+        "min": 19.2,
+        "max": 20.3,
+        "fluctuationK": 0.55
+      },
+      "steady": {
+        "mean": 19.561,
+        "sd": 0.171,
+        "min": 19.2,
+        "max": 20.1,
+        "fluctuationK": 0.45
+      }
+    },
+    {
+      "sensor": 5,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.454,
+        "sd": 0.176,
+        "min": 19.1,
+        "max": 20.7,
+        "fluctuationK": 0.8
+      },
+      "steady": {
+        "mean": 19.438,
+        "sd": 0.148,
+        "min": 19.1,
+        "max": 19.9,
+        "fluctuationK": 0.4
+      }
+    },
+    {
+      "sensor": 6,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.547,
+        "sd": 0.183,
+        "min": 19.1,
+        "max": 20.7,
+        "fluctuationK": 0.8
+      },
+      "steady": {
+        "mean": 19.539,
+        "sd": 0.174,
+        "min": 19.1,
+        "max": 19.9,
+        "fluctuationK": 0.4
+      }
+    },
+    {
+      "sensor": 7,
+      "validReadings": 864,
+      "missingSamples": [
+        865
+      ],
+      "full": {
+        "mean": 19.852,
+        "sd": 0.211,
+        "min": 19.5,
+        "max": 20.8,
+        "fluctuationK": 0.65
+      },
+      "steady": {
+        "mean": 19.834,
+        "sd": 0.188,
+        "min": 19.5,
+        "max": 20.4,
+        "fluctuationK": 0.45
+      }
+    },
+    {
+      "sensor": 8,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.445,
+        "sd": 0.216,
+        "min": 19.1,
+        "max": 20.7,
+        "fluctuationK": 0.8
+      },
+      "steady": {
+        "mean": 19.428,
+        "sd": 0.193,
+        "min": 19.1,
+        "max": 20,
+        "fluctuationK": 0.45
+      }
+    },
+    {
+      "sensor": 9,
+      "validReadings": 853,
+      "missingSamples": [
+        854,
+        855,
+        856,
+        857,
+        858,
+        859,
+        860,
+        861,
+        862,
+        863,
+        864,
+        865
+      ],
+      "full": {
+        "mean": 19.77,
+        "sd": 0.224,
+        "min": 19.2,
+        "max": 21.4,
+        "fluctuationK": 1.1
+      },
+      "steady": {
+        "mean": 19.753,
+        "sd": 0.202,
+        "min": 19.2,
+        "max": 20.3,
+        "fluctuationK": 0.55
+      }
+    },
+    {
+      "sensor": 10,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 18.846,
+        "sd": 0.242,
+        "min": 18.3,
+        "max": 20.8,
+        "fluctuationK": 1.25
+      },
+      "steady": {
+        "mean": 18.836,
+        "sd": 0.217,
+        "min": 18.3,
+        "max": 19.3,
+        "fluctuationK": 0.5
+      }
+    },
+    {
+      "sensor": 11,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.497,
+        "sd": 0.18,
+        "min": 19,
+        "max": 22.4,
+        "fluctuationK": 1.7
+      },
+      "steady": {
+        "mean": 19.484,
+        "sd": 0.116,
+        "min": 19,
+        "max": 19.8,
+        "fluctuationK": 0.4
+      }
+    },
+    {
+      "sensor": 12,
+      "validReadings": 865,
+      "missingSamples": [],
+      "full": {
+        "mean": 19.34,
+        "sd": 0.277,
+        "min": 19,
+        "max": 20.4,
+        "fluctuationK": 0.7
+      },
+      "steady": {
+        "mean": 19.312,
+        "sd": 0.242,
+        "min": 19,
+        "max": 20.1,
+        "fluctuationK": 0.55
+      }
+    }
+  ]
+}

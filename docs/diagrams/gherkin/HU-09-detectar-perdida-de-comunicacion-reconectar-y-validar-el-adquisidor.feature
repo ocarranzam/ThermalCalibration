@@ -1,5 +1,5 @@
 # HU-09 · Detectar pérdida de comunicación, reconectar y validar el adquisidor
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como laboratorio quiero que el sistema detecte la pérdida de comunicación con el puerto COM, intente reconectar, registre los huecos de datos y verifique que reconecta el mismo adquisidor con el mismo grupo de sensores para no perder la sesión por una desconexión momentánea y no mezclar datos de otro equipo de medición.
 # Perfil: Sistema · Escenarios de prueba: TD-06, TD-07, TD-08

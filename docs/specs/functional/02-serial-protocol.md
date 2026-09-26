@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Versión del protocolo | **1.0** (propuesta) |
-| Versión del documento | 0.3. Duración planificada en lugar del tope de 721 muestras y falla de sesión por 30 min sin datos. 0.2: modo `Stream`, el grupo de sensores en `IDN`, el inicio de la sesión con la primera muestra recibida, la invalidación por cambio de adquisidor o de grupo, y el simulador. |
+| Versión del documento | 0.4. Hasta 27 canales (D-06): máscara de `START` de 1 a 7 dígitos hexadecimales (la de 3 dígitos sigue siendo válida), `ChannelCount` y `Canal` de 1 a 27, y bloque `READ` de hasta 10 s. Sin cambio de la versión del protocolo (compatible con 1.0). 0.3. Duración planificada en lugar del tope de 721 muestras y falla de sesión por 30 min sin datos. 0.2: modo `Stream`, el grupo de sensores en `IDN`, el inicio de la sesión con la primera muestra recibida, la invalidación por cambio de adquisidor o de grupo, y el simulador. |
 | Estado | Borrador. El hardware está en diseño y este documento es el contrato que deben cumplir tanto el firmware como el adquisidor simulado. |
 | Relacionado | [01-vision-document.md](01-vision-document.md), [04-sequence-diagrams.md](04-sequence-diagrams.md), [05-data-model.md](05-data-model.md), [06-test-data.md](06-test-data.md) |
 
@@ -72,7 +72,7 @@ Ejemplo: `$RD,16,1,T,-18.25,OK*51` (el XOR de `RD,16,1,T,-18.25,OK` es 0x51).
 | Comando | Formato | Respuesta esperada | Modos | Descripción |
 |---|---|---|---|---|
 | **Identificar** | `$IDN*43` | `IDN` | Ambos | Solicita la identidad, las capacidades y el grupo de sensores. Se puede enviar en cualquier estado. |
-| **Iniciar** | `$START,<Mascara>*CS` | `ACK,START` o `NAK,START,<Err>` | Ambos | Arma el adquisidor para los canales indicados. `Mascara`: 3 dígitos hexadecimales. El bit 0 corresponde al canal 1 y el bit 9 al canal 10. Ej.: canales 1–5 → `01F`. En `STREAM` limita los canales transmitidos. Si no se recibe, el adquisidor transmite todos sus canales. |
+| **Iniciar** | `$START,<Mascara>*CS` | `ACK,START` o `NAK,START,<Err>` | Ambos | Arma el adquisidor para los canales indicados. `Mascara`: de 1 a 7 dígitos hexadecimales (27 bits como máximo; los ceros a la izquierda son opcionales). El bit 0 corresponde al canal 1 y el bit 26 al canal 27. Ej.: canales 1–5 → `01F`; canales 1–12 → `FFF`; canales 1–27 → `7FFFFFF`. En `STREAM` limita los canales transmitidos. Si no se recibe, el adquisidor transmite todos sus canales. |
 | **Leer muestra** | `$READ,<Muestra>*CS` | *k* tramas `RD` + 1 trama `EOS`, o `NAK,READ,<Err>` | Solo `POLL` | Pide medir ahora todos los canales armados. `Muestra`: entero desde 1, asignado por la PC (31 en la sesión base de 1 h; el máximo depende de la duración planificada). En `STREAM` responde `NAK,READ,E02`. |
 | **Latido** | `$PING*10` | `ACK,PING` | Ambos | Comprueba el enlace entre muestras. |
 | **Detener** | `$STOP*18` | `ACK,STOP` | Ambos | Desarma el adquisidor. En `POLL`, después `READ` responde `NAK,READ,E04`. En `STREAM`, el adquisidor puede seguir transmitiendo, pero la PC ya no almacena nada. |
@@ -96,12 +96,12 @@ Ejemplo: `$RD,16,1,T,-18.25,OK*51` (el XOR de `RD,16,1,T,-18.25,OK` es 0x51).
 | `DeviceId` | `[A-Z0-9-]{1,50}` | Único y persistente (grabado en la EEPROM o en un archivo). Se corresponde con `AcquisitionDevice.DeviceIdentifier`. Ej.: `ADQ-ARD-0001`. El simulador usa `ADQ-SIM-nnnn`. |
 | `Platform` | `Arduino` \| `RaspberryPi` \| `Other` \| `Simulator` | Se corresponde con `AcquisitionDevice.Platform`. `Simulator` marca la sesión como simulación. |
 | `Firmware` | `[0-9A-Za-z.\-]{1,20}` | Se corresponde con `AcquisitionDevice.FirmwareVersion`. |
-| `ChannelCount` | `1`…`10` | Canales físicos disponibles. Se corresponde con `AcquisitionDevice.ChannelCount`. |
+| `ChannelCount` | `1`…`27` | Canales físicos disponibles. Se corresponde con `AcquisitionDevice.ChannelCount`. |
 | `Mode` | `POLL` \| `STREAM` | Modo de adquisición. Se corresponde con `AcquisitionDevice.AcquisitionMode` (`Poll`/`Stream`). |
 | `SensorGroupId` | `[A-Z0-9-]{0,50}` | Identificador del grupo de sensores conectado (arnés o placa de termopares). **Puede ir vacío** si el hardware no lo soporta. Se guarda en `MeasurementSession.SensorGroupId`. |
 | `Muestra` | `1`…`99999` | Modo `POLL`: eco del número recibido en `READ`. |
 | `Seq` | `1`…`65535` | Modo `STREAM`: contador de bloques del adquisidor. Da la vuelta a 1 después de 65535. Solo se usa para detectar bloques repetidos o saltados. **No** es el número de muestra. |
-| `Canal` | `1`…`10` | Número de canal físico. |
+| `Canal` | `1`…`27` | Número de canal físico. |
 | `Tipo` | `T` \| `K` | Tipo de termopar **configurado en el adquisidor** para ese canal (jumper, configuración o módulo). Se corresponde con `Reading.ReportedThermocoupleType`. |
 | `TempC` | `-?\d{1,4}\.\d{1,2}` | Temperatura en °C con **1 o 2 decimales**, punto decimal y signo solo si es negativa. **Vacío** cuando `Estado` ≠ `OK`. |
 | `Estado` | `OK` \| `OC` \| `SC` \| `OR` | Diagnóstico del sensor. Ver §4.4. |
@@ -142,8 +142,8 @@ Para el umbral de pérdida de sensores ([01 RN-14](01-vision-document.md#6-regla
 | Tolerancia de llegada (`STREAM`) | ± intervalo / 4 (± 30 s con 120 s) respecto del instante programado | Si no llega ningún bloque en la ventana y el enlace sigue vivo (responde `PING`), todos los canales de esa muestra se registran como `InvalidFrame`. |
 | Espera tras abrir el puerto | hasta 3 s o la llegada de `BOOT` | §2, nota Arduino. |
 | Tiempo máximo de respuesta a `IDN`, `START`, `STOP` y `PING` | 2 s | |
-| Tiempo máximo del bloque `READ` (hasta `EOS`) | 5 s | Con 10 canales y conversiones de ≈ 100–250 ms por canal. |
-| Intentos por muestra (`POLL`) | 3 (1 + 2 reintentos, cada 5 s) | Ver §7.1. En `STREAM` no hay reintentos. |
+| Tiempo máximo del bloque `READ` (hasta `EOS`) | 10 s | Con 27 canales y conversiones de ≈ 100–250 ms por canal (≈ 6,8 s en el peor caso). |
+| Intentos por muestra (`POLL`) | 3 (1 + 2 reintentos, cada 10 s) | Ver §7.1. En `STREAM` no hay reintentos. |
 | Latido | `PING` cada 30 s entre muestras | Detecta la pérdida del enlace antes de la siguiente muestra. |
 | Umbral de pérdida de comunicación | 3 fallos consecutivos (sin respuesta válida a `READ` o `PING`) **o** error del sistema operativo en el puerto (dispositivo retirado o puerto cerrado) | Abre un `CommunicationGap`. |
 | Reintento de reconexión | cada 10 s | Hasta que se recupera la comunicación, el técnico cierra la sesión, se cumplen 30 min sin datos (sesión fallida, 01 RN-15) o se llega a la duración planificada. |
@@ -293,7 +293,7 @@ Un canal puede tener como máximo **una** lectura por muestra (`UQ_Reading_Chann
 | F-06 | Hacer la compensación de unión fría y la linealización, y entregar °C con 1 o 2 decimales. |
 | F-07 | Diagnosticar `OC`, `SC` y `OR` usando los bits de falla del amplificador. |
 | F-08 | En modo `POLL`, no enviar tramas `RD` espontáneas: solo en respuesta a `READ`. |
-| F-09 | Enviar el bloque `RD`…`EOS` completo en menos de 5 s. |
+| F-09 | Enviar el bloque `RD`…`EOS` completo en menos de 10 s, con hasta 27 canales. |
 | F-10 | No usar caracteres fuera de ASCII imprimible ni líneas de más de 200 caracteres. |
 | F-11 | Informar en `IDN` el modo (`POLL`/`STREAM`) y, si el hardware lo permite, el `SensorGroupId` del grupo conectado. |
 | F-12 | En modo `STREAM`, emitir un bloque cada 120 s ± 2 s con un `Seq` creciente, y seguir respondiendo `IDN`, `START`, `PING` y `STOP` entre bloques. |

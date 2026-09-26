@@ -4,7 +4,8 @@ Cómo se comprueba que la especificación de la fase 1 es coherente y cómo se v
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.3 |
+| Versión | 0.4 |
+| Cambios en 0.4 | Decisiones D-05 (criterio de límite: máximo o banda) y D-06 (hasta 27 canales, puntos mínimos por tipo) a partir de DATA-1: nuevos escenarios en HU-02, HU-03, HU-05, HU-08 y HU-17 (149 en total), cobertura de HU-02 ampliada (§5.1) y auditoría del contrato 29/29 (§5.2). |
 | Cambios en 0.3 | Artefactos de código, pruebas y auditoría en la §1; estado de implementación por historia (§5.3); mantenimiento al añadir entidades (§7). Plan de las siguientes entidades en [implementation-plan.md](implementation-plan.md). |
 | Cambios en 0.2 | Hallazgos H-01 a H-08 corregidos en 03 v0.6 y 06 v0.5. Diagramas separados en `docs/diagrams/gherkin/` y `docs/diagrams/sequence/`. |
 | Fecha | 2026-09-25 |
@@ -31,6 +32,7 @@ Cómo se comprueba que la especificación de la fase 1 es coherente y cómo se v
 | **Pruebas automatizadas** | Unitarias e integración, vinculadas a cada historia con `[Trait("Story", "HU-xx")]` | [tests/](../tests/) (§5.1) |
 | **Auditoría del contrato** | Respuestas reales de la API contra el contrato | [tools/contract-check/](../tools/contract-check/README.md) (§5.2) |
 | **Plan de implementación** | Orden de las entidades pendientes y definición de terminado | [implementation-plan.md](implementation-plan.md) (§5.3) |
+| **Registros reales** | Ensayos de campo analizados: contraste de las reglas del sistema con datos reales y base de los perfiles de eficacia | [data/](data/README.md) (DATA-1: cámara ambiental Memmert, 72 h, 12 × tipo T, óptima) |
 
 ## 2. Features Gherkin (`docs/diagrams/gherkin/`)
 
@@ -57,14 +59,14 @@ El script borra y vuelve a crear los `.feature`, y hace las comprobaciones de la
 
 | Archivo | Escenarios | Reglas | Escenarios de prueba |
 |---|---|---|---|
-| [HU-01-registrar-empresa-cliente-y-equipo.feature](diagrams/gherkin/HU-01-registrar-empresa-cliente-y-equipo.feature) | 7 | — | — |
-| [HU-02-gestionar-tipos-de-equipo-y-limite-maximo.feature](diagrams/gherkin/HU-02-gestionar-tipos-de-equipo-y-limite-maximo.feature) | 13 | RN-04, 06, 07, 08 | TD-14, TD-19 |
-| [HU-03-configurar-una-sesion-de-medicion.feature](diagrams/gherkin/HU-03-configurar-una-sesion-de-medicion.feature) | 11 | RN-01 | TD-01, TD-11 |
+| [HU-01-registrar-empresa-cliente-y-equipo.feature](diagrams/gherkin/HU-01-registrar-empresa-cliente-y-equipo.feature) | 8 | — | — |
+| [HU-02-gestionar-tipos-de-equipo-y-limite-maximo.feature](diagrams/gherkin/HU-02-gestionar-tipos-de-equipo-y-limite-maximo.feature) | 17 | RN-04, 06, 07, 08, 20 | TD-14, TD-19 |
+| [HU-03-configurar-una-sesion-de-medicion.feature](diagrams/gherkin/HU-03-configurar-una-sesion-de-medicion.feature) | 12 | RN-01, 06 | TD-01, TD-11 |
 | [HU-04-advertir-la-mezcla-de-termopares-t-y-k.feature](diagrams/gherkin/HU-04-advertir-la-mezcla-de-termopares-t-y-k.feature) | 6 | RN-05 | TD-10 |
-| [HU-05-advertir-limite-no-definido.feature](diagrams/gherkin/HU-05-advertir-limite-no-definido.feature) | 3 | RN-09 | TD-14 |
+| [HU-05-advertir-limite-no-definido.feature](diagrams/gherkin/HU-05-advertir-limite-no-definido.feature) | 4 | RN-09 | TD-14 |
 | [HU-06-iniciar-al-llegar-datos-y-capturar-cada-2-minutos.feature](diagrams/gherkin/HU-06-iniciar-al-llegar-datos-y-capturar-cada-2-minutos.feature) | 10 | RN-02 | TD-01, TD-11, TD-12 |
 | [HU-07-registrar-lecturas-invalidas-sin-detener-la-sesion.feature](diagrams/gherkin/HU-07-registrar-lecturas-invalidas-sin-detener-la-sesion.feature) | 7 | RN-11 | TD-09, TD-15 |
-| [HU-08-alertar-lecturas-fuera-de-limite.feature](diagrams/gherkin/HU-08-alertar-lecturas-fuera-de-limite.feature) | 9 | RN-07, 10, 13, 18, 19 | TD-02, TD-15, TD-20, TD-21 |
+| [HU-08-alertar-lecturas-fuera-de-limite.feature](diagrams/gherkin/HU-08-alertar-lecturas-fuera-de-limite.feature) | 11 | RN-07, 10, 13, 18, 19 | TD-02, TD-15, TD-20, TD-21 |
 | [HU-09-detectar-perdida-de-comunicacion-reconectar-y-validar-el-adquisidor.feature](diagrams/gherkin/HU-09-detectar-perdida-de-comunicacion-reconectar-y-validar-el-adquisidor.feature) | 10 | RN-12, 13, 14, 15 | TD-06, TD-07, TD-08 |
 | [HU-10-cerrar-la-sesion-duracion-planificada.feature](diagrams/gherkin/HU-10-cerrar-la-sesion-duracion-planificada.feature) | 9 | RN-03, 04, 14, 15 | TD-05, TD-10, TD-12, TD-13 |
 | [HU-11-exportar-una-sesion-a-excel.feature](diagrams/gherkin/HU-11-exportar-una-sesion-a-excel.feature) | 11 | — | Todos |
@@ -73,8 +75,8 @@ El script borra y vuelve a crear los `.feature`, y hace las comprobaciones de la
 | [HU-14-ejecutar-una-sesion-simulada-con-el-set-de-datos-de-prueba.feature](diagrams/gherkin/HU-14-ejecutar-una-sesion-simulada-con-el-set-de-datos-de-prueba.feature) | 5 | RN-16 | Todos |
 | [HU-15-priorizar-alertas-criticas-y-advertencias.feature](diagrams/gherkin/HU-15-priorizar-alertas-criticas-y-advertencias.feature) | 4 | RN-18 | TD-02, TD-04, TD-16, TD-20, TD-21 |
 | [HU-16-planificar-la-duracion-y-respetar-el-descanso-del-adquisidor.feature](diagrams/gherkin/HU-16-planificar-la-duracion-y-respetar-el-descanso-del-adquisidor.feature) | 9 | RN-04, 17 | TD-10, TD-12, TD-17, TD-19 |
-| [HU-17-advertir-menos-de-9-puntos-de-medicion.feature](diagrams/gherkin/HU-17-advertir-menos-de-9-puntos-de-medicion.feature) | 6 | RN-20 | TD-15, TD-22 |
-| **Total** | **139** (128 `Scenario` y 11 `Scenario Outline`) | | |
+| [HU-17-advertir-menos-puntos-que-el-minimo-del-tipo-de-equipo.feature](diagrams/gherkin/HU-17-advertir-menos-puntos-que-el-minimo-del-tipo-de-equipo.feature) | 7 | RN-20 | TD-15, TD-22 |
+| **Total** | **149** (134 `Scenario` y 15 `Scenario Outline`) | | |
 
 ## 3. Cobertura de las reglas de negocio
 
@@ -152,7 +154,7 @@ Resumen de [06 §7](specs/functional/06-test-data.md#7-uso-en-las-pruebas), con 
 
 ### 5.1 Cobertura automatizada de HU-02 (2026-09-25)
 
-Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **59/59 correctas** (51 unitarias, 8 de integración con SQL Server 2022 en Docker).
+Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx`: **82/82 correctas** (73 unitarias, 9 de integración con SQL Server 2022 en Docker).
 
 | Escenario Gherkin de HU-02 | Pruebas | Estado |
 |---|---|---|
@@ -169,12 +171,16 @@ Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resu
 | Rechazar un umbral fuera de rango | — | ⏳ Pendiente de `AppSetting` |
 | Un técnico no puede editar límites | `EquipmentTypesControllerAuthorizationTests.WriteActions_RequireAdminRole` | ✅ (verificado además con la API en ejecución: 403) |
 | Desactivar un tipo con equipos asociados | `Deactivate_MarksTheTypeInactive_…`, `Update_WithIsActiveFalse_…` | ⚠️ Parcial: la API no tiene `DELETE` (responde 405) y se desactiva con `PUT` e `isActive: false`; ofrecer la desactivación al intentar borrar es de la interfaz, y comprobar los equipos asociados requiere `Equipment` (HU-01) |
+| Registrar un tipo de equipo con banda de tolerancia (D-05) | `Create_WithBand_StoresToleranceAndNoMaximum`, `Create_BandWith27Points_KeepsTheCriterion`, `Add_BandTypeWith27Points_RoundTrips`, contract-check "POST banda 27 puntos" | ✅ |
+| Fijar los puntos de medición mínimos de un tipo de equipo (D-06) | `ChangeMinMeasurementPoints_ForIncubator_Requires27`, `Update_ToBand_…` | ⚠️ Parcial: la copia en la sesión requiere `MeasurementSession` |
+| Rechazar un valor que no corresponde al criterio de límite (D-05) | `Create_WithValueOfTheOtherMode_IsRejected` (4 casos), contract-check "POST máximo con tolerancia", "POST banda con máximo", "POST modo inválido" | ✅ |
+| Rechazar puntos de medición mínimos fuera de rango (D-06) | `Create_MinMeasurementPoints_IsBetween1And27`, contract-check "POST 28 puntos" | ✅ |
 
-Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00) y lecturas sin límite de HU-05, en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración; `UpdatedAt` nunca anterior a `CreatedAt` (`ThermalDbContextTests`, `Update_RightAfterCreate_…`).
+Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 / -5,00 / -4,99 / -4,90 / 2,00), **evaluación de la banda** 20,00 ± 2,00 °C por arriba y por abajo (22,01 / 22,00 / 20,00 / 18,00 / 17,99, D-05) y lecturas sin límite de HU-05 (máximo y banda pendientes), en `TemperatureLimitTests`; concurrencia optimista (`If-Match` → 412) en pruebas unitarias y de integración; `UpdatedAt` nunca anterior a `CreatedAt` (`ThermalDbContextTests`, `Update_RightAfterCreate_…`).
 
 ### 5.2 Auditoría código ↔ contrato ↔ Gherkin (2026-09-25)
 
-Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** (ahora automatizadas en [tools/contract-check/](../tools/contract-check/README.md), casos de [equipment-types.mjs](../tools/contract-check/cases/equipment-types.mjs)) con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias.
+Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** (ahora automatizadas en [tools/contract-check/](../tools/contract-check/README.md), casos de [equipment-types.mjs](../tools/contract-check/cases/equipment-types.mjs)) con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias. Tras D-05 y D-06 (contrato v1.1.0, 5 casos nuevos): **29/29 conformes**.
 
 | Id | Desviación encontrada | Corrección |
 |---|---|---|
@@ -198,14 +204,14 @@ Resumen para planificar las siguientes sesiones. El orden, las dependencias y la
 
 | Historia | Escenarios | Entidades | Ola | Estado |
 |---|---|---|---|---|
-| HU-01 Registrar empresa cliente y equipo | 7 | `Company`, `Equipment` | 1 | ⏳ Pendiente |
-| HU-02 Gestionar tipos de equipo y límite máximo | 13 | `EquipmentType`, `AppSetting` | 0 y 1 | ⚠️ Parcial: 7 completos, 3 parciales y 3 pendientes (§5.1) |
-| HU-03 Configurar una sesión de medición | 11 | `MeasurementSession`, `SessionChannel`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
+| HU-01 Registrar empresa cliente y equipo | 8 | `Company`, `Equipment` | 1 | ⏳ Pendiente (marca y modelo obligatorios desde DATA-1) |
+| HU-02 Gestionar tipos de equipo y límite máximo | 17 | `EquipmentType`, `AppSetting` | 0 y 1 | ⚠️ Parcial: 10 completos, 4 parciales y 3 pendientes (§5.1) |
+| HU-03 Configurar una sesión de medición | 12 | `MeasurementSession`, `SessionChannel`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
 | HU-04 Advertir la mezcla de termopares T y K | 6 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
-| HU-05 Advertir límite no definido | 3 | `MeasurementSession`, `Alert` | 4 | ⚠️ Parcial: regla del límite pendiente en `TemperatureLimit` (1 escenario) |
+| HU-05 Advertir límite no definido | 4 | `MeasurementSession`, `Alert` | 4 | ⚠️ Parcial: regla del límite pendiente en `TemperatureLimit` (1 escenario) |
 | HU-06 Iniciar al llegar datos y capturar cada 2 minutos | 10 | `MeasurementSession`, `Reading`, protocolo serial | 3 y 4 | ⏳ Pendiente |
 | HU-07 Registrar lecturas inválidas sin detener la sesión | 7 | `Reading`, `Alert`, `ThermocoupleType` | 1 y 4 | ⏳ Pendiente |
-| HU-08 Alertar lecturas fuera de límite | 9 | `Reading`, `Alert` | 4 | ⚠️ Parcial: evaluación estricta del límite en `TemperatureLimit` (Scenario Outline) |
+| HU-08 Alertar lecturas fuera de límite | 11 | `Reading`, `Alert` | 4 | ⚠️ Parcial: evaluación estricta del límite en `TemperatureLimit` (Scenario Outline del máximo y evaluación de la banda) |
 | HU-09 Pérdida de comunicación y validación del adquisidor | 10 | `CommunicationGap`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
 | HU-10 Cerrar la sesión | 9 | `MeasurementSession` | 4 | ⏳ Pendiente |
 | HU-11 Exportar una sesión a Excel | 11 | `SessionExport` | 5 | ⏳ Pendiente |
@@ -214,8 +220,17 @@ Resumen para planificar las siguientes sesiones. El orden, las dependencias y la
 | HU-14 Sesión simulada con el set de datos de prueba | 5 | Simulador, todas | 3 y 6 | ⏳ Pendiente |
 | HU-15 Priorizar alertas: críticas y advertencias | 4 | `Alert`, SignalR | 4 | ⏳ Pendiente |
 | HU-16 Planificar la duración y respetar el descanso | 9 | `MeasurementSession`, `AppSetting` | 1 y 4 | ⏳ Pendiente |
-| HU-17 Advertir menos de 9 puntos de medición | 6 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
-| **Total** | **139** | | | 7 escenarios completos (5 %) |
+| HU-17 Advertir menos puntos que el mínimo del tipo de equipo | 7 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente (puntos mínimos por tipo ya en `EquipmentType`) |
+| **Total** | **149** | | | 10 escenarios completos (7 %) |
+
+### 5.4 Cambios por el primer registro real (D-05 y D-06, 2026-09-25)
+
+El análisis de [DATA-1](data/DATA-1-analisis.md) (cámara ambiental Memmert, 12 termopares tipo T, 72 h) obligó a ajustar la especificación a la realidad. Ambas decisiones se aplicaron de extremo a extremo: especificación (01, 02, 03, 05), esquema verificado en SQL Server, dominio, contrato v1.1.0, API, pruebas (82/82) y auditoría del contrato (29/29).
+
+| Decisión | Qué cambió | Base |
+|---|---|---|
+| **D-05** (antes P-19) | Criterio de límite por tipo: `Maximum` (refrigeración) o `Band` (consigna ± tolerancia: incubadoras, cámaras ambientales). Consigna obligatoria en la sesión con banda; lecturas por debajo de la banda (`IsBelowLimit`, alertas `BelowLimit` y `BelowLimitSustained`). | DATA-1: cámara a ~19,4 °C; un máximo no describe su tolerancia |
+| **D-06** (antes P-18) | Hasta **27 canales** por sesión (base, protocolo, vista pivote, Excel) y **puntos mínimos por tipo de equipo** (9 por defecto; 27 en incubadoras de más de 50 L). Alcance acotado a equipos de hasta 2000 L, de uso individual, pequeña y mediana escala, hospitales y clínicas. | DATA-1 usó 12 termopares; IEC 60068-3-5, DKD-R 5-7, USP <1079.4>: 9 puntos; DIN 12880: 27 puntos en incubadoras de más de 50 L ([standards/](standards/README.md)) |
 
 ## 6. Verificación de la especificación (2026-09-25)
 

@@ -1,10 +1,10 @@
 # HU-02 · Gestionar tipos de equipo y límite máximo
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como administrador quiero mantener el catálogo de tipos de equipo con su temperatura máxima admisible, o dejarla pendiente, para que las sesiones evalúen el límite correcto sin alterar las mediciones ya registradas.
 # Perfil: Admin · Escenarios de prueba: TD-14, TD-19
 
-@HU-02 @SM @RN-04 @RN-06 @RN-07 @RN-08 @TD-14 @TD-19
+@HU-02 @SM @RN-04 @RN-06 @RN-07 @RN-08 @RN-20 @TD-14 @TD-19
 Feature: Catálogo de tipos de equipo con límite máximo
 
   Background:
@@ -14,6 +14,36 @@ Feature: Catálogo de tipos de equipo con límite máximo
     When registro el tipo de equipo "Ultracongeladora" con límite máximo "-60,0" °C
     Then el tipo queda activo con límite máximo -60,00 °C
     And su duración mínima de sesión es 60 minutos
+
+  Scenario: Registrar un tipo de equipo con banda de tolerancia
+    When registro el tipo de equipo "Cámara ambiental" con criterio "Band" y tolerancia "2,0" K
+    Then el tipo queda activo con banda de ±2,00 K alrededor de la consigna de cada sesión
+    And no tiene límite máximo
+    And sus puntos de medición mínimos son 9
+
+  Scenario: Fijar los puntos de medición mínimos de un tipo de equipo
+    When fijo en 27 los puntos de medición mínimos de "Incubadora" (DIN 12880, más de 50 L)
+    Then las sesiones nuevas de incubadoras exigen 27 puntos para no advertir
+    And las sesiones ya registradas conservan su mínimo copiado
+
+  Scenario Outline: Rechazar un valor que no corresponde al criterio de límite
+    When intento registrar un tipo con criterio "<criterio>", límite máximo "<maximo>" y tolerancia "<tolerancia>"
+    Then el sistema rechaza el registro con el mensaje "<mensaje>"
+
+    Examples:
+      | criterio | maximo | tolerancia | mensaje                                             |
+      | Maximum  | -5,0   | 1,0        | La tolerancia solo se usa con el modo Band          |
+      | Band     | 5,0    | 2,0        | El límite máximo solo se usa con el modo Maximum    |
+      | Band     |        | 0          | La tolerancia debe ser mayor que 0                  |
+
+  Scenario Outline: Rechazar puntos de medición mínimos fuera de rango
+    When intento fijar los puntos de medición mínimos de "Congeladora" en <puntos>
+    Then el sistema rechaza el valor con el mensaje "Los puntos de medición mínimos deben estar entre 1 y 27"
+
+    Examples:
+      | puntos |
+      | 0      |
+      | 28     |
 
   Scenario: Exigir una duración mínima mayor para un tipo de equipo
     When fijo la duración mínima de sesión de "Incubadora" en 120 minutos

@@ -1,5 +1,5 @@
 # HU-12 · Consultar el historial de sesiones
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como supervisor quiero consultar las sesiones por empresa, equipo y rango de fechas para revisar el historial de mediciones de cada equipo.
 # Perfil: Todos · Escenarios de prueba: —

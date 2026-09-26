@@ -1,5 +1,5 @@
 # HU-01 · Registrar empresa cliente y equipo
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como técnico de calibración quiero registrar la empresa cliente (RUC) y sus equipos para asociar cada sesión de medición a un equipo identificable y mantener su historial.
 # Perfil: Técnico, Admin · Escenarios de prueba: —
@@ -55,6 +55,19 @@ Feature: Registro de empresas cliente y equipos
     When registro para la empresa "20601234561" un equipo con serie "SN-88231"
     Then el equipo queda registrado
 
-  Scenario: Datos obligatorios del equipo
-    When intento registrar un equipo sin número de serie o sin tipo de equipo
+  Scenario Outline: Datos obligatorios del equipo
+    When intento registrar un equipo sin <campo>
     Then el sistema no guarda el equipo e indica los campos obligatorios faltantes
+
+    Examples:
+      | campo            |
+      | número de serie  |
+      | tipo de equipo   |
+      | marca            |
+      | modelo           |
+
+  Scenario: Registrar un equipo con el modelo inferido
+    Given el cliente no recuerda el modelo de su cámara ambiental marca "Memmert"
+    When registro el equipo con el modelo "TTC256" marcado como "inferido"
+    Then el equipo queda registrado con el modelo pendiente de confirmar en la placa
+    And las sesiones de ese equipo se agrupan igual en el perfil de eficacia del modelo "TTC256", indicando que el modelo es inferido

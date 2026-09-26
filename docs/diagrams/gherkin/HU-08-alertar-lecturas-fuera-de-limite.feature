@@ -1,5 +1,5 @@
 # HU-08 · Alertar lecturas fuera de límite
-# Generado desde docs/specs/functional/03-user-stories.md (v0.6). No editar a mano:
+# Generado desde docs/specs/functional/03-user-stories.md (v0.8). No editar a mano:
 # la fuente es la historia de usuario; ante cualquier diferencia, prevalece 03.
 # Como supervisor quiero que cada lectura mayor que el límite aplicado genere una alerta asociada al sensor y a la marca de tiempo para revisar si fue una variación mínima o una falla del sensor.
 # Perfil: Sistema · Escenarios de prueba: TD-02, TD-15, TD-20, TD-21
@@ -22,6 +22,23 @@ Feature: Alerta por lectura mayor que el límite máximo
       | -4,99  | Sí    | se genera una alerta "AboveLimit"          |
       | -4,90  | Sí    | se genera una alerta "AboveLimit"          |
       | 2,00   | Sí    | se genera una alerta "AboveLimit"          |
+
+  Scenario Outline: Evaluación estricta de la banda de tolerancia
+    Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo
+    When el canal 3 reporta <valor> °C con estado "OK"
+    Then la lectura queda <resultado>
+
+    Examples:
+      | valor | resultado                                                  |
+      | 22,01 | fuera de límite por arriba, con una alerta "AboveLimit"    |
+      | 22,00 | dentro de la banda, sin alerta                             |
+      | 18,00 | dentro de la banda, sin alerta                             |
+      | 17,99 | fuera de límite por abajo, con una alerta "BelowLimit"     |
+
+  Scenario: Un sensor por debajo de la banda 30 minutos
+    Given la sesión es de una "Cámara ambiental" con consigna 20,00 °C y tolerancia ±2,00 K, en lugar del límite máximo
+    When el canal 10 está por debajo de 18,00 °C desde la muestra 20 y los demás canales están dentro de la banda
+    Then a los 30 min se genera una alerta "BelowLimitSustained" con severidad "Critical" y causa probable "Sensor"
 
   Scenario: Contenido de la alerta fuera de límite
     When el canal 5 (ubicación "Puerta") reporta -4,90 °C en la muestra 32 a las 09:02:00

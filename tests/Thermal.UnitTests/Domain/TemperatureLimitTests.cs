@@ -23,6 +23,35 @@ public sealed class TemperatureLimitTests
     public void IsExceededBy_UsesStrictlyGreaterThan(decimal readingC, bool expectedAboveLimit) =>
         FreezerLimit.IsExceededBy(readingC).Should().Be(expectedAboveLimit);
 
+    public static TheoryData<decimal, LimitEvaluation> BandExamples => new()
+    {
+        { 22.01m, LimitEvaluation.Above },
+        { 22.00m, LimitEvaluation.Within },
+        { 20.00m, LimitEvaluation.Within },
+        { 18.00m, LimitEvaluation.Within },
+        { 17.99m, LimitEvaluation.Below },
+    };
+
+    [Theory] // HU-08 · Regla D-05: banda 20,00 ± 2,00 °C con comparación estricta por arriba y por abajo
+    [Trait("Story", "HU-08")]
+    [MemberData(nameof(BandExamples))]
+    public void Evaluate_Band_IsStrictOnBothSides(decimal readingC, LimitEvaluation expected) =>
+        TemperatureLimit.Band(2.00m).Evaluate(readingC, setpointC: 20.00m).Should().Be(expected);
+
+    [Fact] // HU-08 · Regla D-05: en modo banda la consigna es obligatoria
+    [Trait("Story", "HU-08")]
+    public void Evaluate_BandWithoutSetpoint_IsRejected()
+    {
+        var evaluate = () => TemperatureLimit.Band(2.00m).Evaluate(21m);
+
+        evaluate.Should().Throw<DomainValidationException>().WithMessage("La consigna es obligatoria en modo Band");
+    }
+
+    [Fact] // HU-05 · Regla D-05: una banda sin tolerancia (pendiente) no marca lecturas
+    [Trait("Story", "HU-05")]
+    public void Evaluate_PendingBand_IsAlwaysWithin() =>
+        TemperatureLimit.Band(null).Evaluate(35m, setpointC: 20m).Should().Be(LimitEvaluation.Within);
+
     [Fact] // HU-05 · Scenario: Las lecturas no se marcan fuera de límite
     [Trait("Story", "HU-05")]
     public void IsExceededBy_WithPendingLimit_IsNeverTrue() =>

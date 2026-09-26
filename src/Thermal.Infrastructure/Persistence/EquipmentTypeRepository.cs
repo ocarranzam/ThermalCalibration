@@ -40,7 +40,10 @@ internal sealed class EquipmentTypeReadStore(ThermalDbContext context) : IEquipm
             {
                 e.Id,
                 e.Name,
+                e.LimitMode,
                 e.MaxTemperatureC,
+                e.ToleranceK,
+                e.MinMeasurementPoints,
                 e.MinSessionDurationMinutes,
                 e.Description,
                 e.IsActive,
@@ -55,8 +58,11 @@ internal sealed class EquipmentTypeReadStore(ThermalDbContext context) : IEquipm
             : new EquipmentTypeDto(
                 row.Id,
                 row.Name,
+                row.LimitMode,
                 row.MaxTemperatureC,
-                row.MaxTemperatureC.HasValue,
+                row.ToleranceK,
+                row.LimitMode == LimitMode.Maximum ? row.MaxTemperatureC.HasValue : row.ToleranceK.HasValue,
+                row.MinMeasurementPoints,
                 row.MinSessionDurationMinutes,
                 row.Description,
                 row.IsActive,

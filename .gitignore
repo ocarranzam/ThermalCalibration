@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 # Transcripciones seriales de los escenarios de prueba (se versionan)
 !test-data/scenarios/**/transcript.log
+
+# Datos reales de clientes: no se versionan (solo el análisis y el perfil)
+docs/data/*.xlsx

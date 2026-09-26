@@ -1,6 +1,6 @@
 # ThermalCalibration · Monitoreo térmico para calibración de equipos de refrigeración
 
-Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de refrigeración (refrigeradoras, congeladoras, conservadoras, incubadoras) de empresas cliente. Los datos llegan de hasta 10 termopares tipo T o K, conectados a un adquisidor de bajo costo (Arduino o Raspberry Pi) por puerto serial.
+Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de refrigeración y de laboratorio (refrigeradoras, congeladoras, conservadoras, incubadoras y cámaras ambientales, de uso individual, pequeña y mediana escala, hospitales y clínicas; hasta 2000 L) de empresas cliente. Los datos llegan de hasta 27 termopares tipo T o K, conectados a un adquisidor de bajo costo (Arduino o Raspberry Pi) por puerto serial.
 
 **Fase 1:** Sesión de Medición, Adquisición Serial y Exportación a Excel, solo con datos crudos. El análisis estadístico, los certificados y el inventario de sensores quedan para fases futuras.
 
@@ -8,7 +8,7 @@ Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de re
 |---|---|
 | Especificación y arquitectura | Completas ([docs/](docs/)) |
 | Backend implementado | Catálogo de **tipos de equipo** (HU-02): `POST`, `GET` y `PUT` de `/api/v1/equipment-types` |
-| Pruebas | 59 automatizadas (51 unitarias y 8 de integración), todas correctas |
+| Pruebas | 82 automatizadas (73 unitarias y 9 de integración), todas correctas |
 | Contrato | [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml), verificado contra la API en ejecución ([validation.md §5.2](docs/validation.md#52-auditoría-código--contrato--gherkin-2026-09-25)) |
 
 > Ante cualquier diferencia entre este README y la especificación, prevalece [docs/specs/functional/](docs/specs/functional/).
@@ -238,8 +238,8 @@ Todo lo que es código o contrato va en **inglés**, con los mismos nombres en t
 
 | Proyecto | Qué prueba | Requiere |
 |---|---|---|
-| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (51) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
-| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (8) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia y fechas | Docker en ejecución |
+| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (73) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
+| [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (9) | Persistencia contra el esquema real: valores que genera la base, unicidad, concurrencia y fechas | Docker en ejecución |
 
 ```bash
 dotnet test --solution Thermal.slnx                                             # todas
@@ -256,14 +256,14 @@ dotnet test --project tests/Thermal.UnitTests -- --filter-trait "Story=HU-02"   
 
 | Tema | Valor | Regla |
 |---|---|---|
-| Canales por sesión | 1 a 10 termopares, tipo T o K, cada uno con su ubicación | RN-01 |
-| Mínimo de puntos de medición | **9** (8 esquinas y el centro, según IEC 60068-3-5 y DKD-R 5-7). Con menos se advierte y se exige confirmación | RN-20 |
+| Canales por sesión | **1 a 27** termopares, tipo T o K, cada uno con su ubicación (27: DIN 12880 en incubadoras de más de 50 L) | RN-01, D-06 |
+| Mínimo de puntos de medición | **Por tipo de equipo**: 9 (8 esquinas y el centro, IEC 60068-3-5, DKD-R 5-7, USP <1079.4>) y 27 en incubadoras de más de 50 L (DIN 12880). Con menos se advierte y se exige confirmación | RN-20, D-06 |
 | Intervalo de muestreo **[PC-01]** | **120 s**, una lectura por canal cada 2 min | RN-02 |
 | Inicio de la sesión | Con la **primera muestra recibida** después de pulsar "Iniciar" (muestra 1, t = 0) | RN-02 |
 | Duración de la sesión | Base de **1 h**. Mayor si lo exige el tipo de equipo o lo pide el cliente (con referencia), hasta varios días (máximo 7 por defecto). Se cierra sola al cumplirse | RN-04 |
 | Sesión completa | Cumplió la duración planificada **y** tiene 1 h de datos válidos (31 muestras con 120 s) | RN-03 |
 | Descanso del kit de medición | **15 min** entre sesiones con el mismo adquisidor. Un supervisor puede autorizar un inicio anticipado | RN-17 |
-| Límite máximo | Por tipo de equipo, con 2 decimales como máximo, o pendiente. Fuera de límite si la lectura es **estrictamente mayor**: con -5,0 °C, -5,0 cumple y -4,9 no. Se copia en la sesión al iniciar | RN-06 a RN-08 |
+| Límite | **Por tipo de equipo** (D-05): **máximo** (refrigeración; fuera si la lectura es **estrictamente mayor**: con -5,0 °C, -5,0 cumple y -4,9 no) o **banda** consigna ± tolerancia (incubadoras, cámaras ambientales; fuera por arriba o por abajo). Se copia en la sesión al iniciar | RN-06 a RN-08, D-05 |
 | Mezcla de termopares T y K | Se permite, con advertencia y confirmación | RN-05 |
 | Muestra afectada | **Más del 60 %** de los canales sin lectura válida (6 de 10 no la afecta, 7 de 10 sí) | RN-14 |
 | Pérdida de sensores | Advertencia en la 1.ª muestra afectada, **crítica en la 3.ª** seguida y **sesión fallida a los 30 min** seguidos. Un corte de comunicación de 30 min también hace fallar la sesión | RN-14, RN-15 |
@@ -292,6 +292,8 @@ Los parámetros se guardan en la tabla `AppSetting`, los mantiene el administrad
 | [docs/diagrams/gherkin/](docs/diagrams/gherkin/) | Un `.feature` por historia, generado desde 03 con `node docs/diagrams/generate-features.mjs` |
 | [docs/diagrams/sequence/](docs/diagrams/sequence/) | Diagramas de secuencia en Mermaid, con su versión SVG en [svg/](docs/diagrams/sequence/svg/). Validar y regenerar con `node docs/diagrams/render-sequence-svg.mjs` |
 | [docs/validation.md](docs/validation.md) | Trazabilidad HU ↔ RN ↔ TD, cobertura de pruebas, estado por historia y auditoría código ↔ contrato |
+| [docs/equipment-catalog/](docs/equipment-catalog/README.md) | Fichas públicas de fabricantes (Memmert CTC/TTC, HPP, ICH) con sus especificaciones de temperatura |
+| [docs/data/](docs/data/README.md) | Registros reales de temperatura con su análisis y su perfil (DATA-1: cámara ambiental Memmert TTC256 inferida, 72 h, 12 × tipo T, óptima) |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Orden de las entidades pendientes, definición de terminado, guía paso a paso y lecciones aprendidas |
 | [docs/delivery/](docs/delivery/README.md) | Plantillas de la documentación de entrega: despliegue, usuario, administrador y cierre técnico con acta de aceptación |
 | [tools/contract-check/](tools/contract-check/README.md) | Auditoría automática de la API en ejecución contra el contrato OpenAPI |

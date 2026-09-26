@@ -14,8 +14,11 @@ public sealed class EquipmentTypeTests
         string name = "Congeladora",
         decimal? maxTemperatureC = -5.00m,
         int minSessionDurationMinutes = EquipmentType.BaseSessionDurationMinutes,
-        string? description = null) =>
-        new(name, maxTemperatureC, minSessionDurationMinutes, description);
+        string? description = null,
+        LimitMode limitMode = LimitMode.Maximum,
+        decimal? toleranceK = null,
+        int minMeasurementPoints = MeasurementPoints.DefaultMinimum) =>
+        new(name, limitMode, maxTemperatureC, toleranceK, minMeasurementPoints, minSessionDurationMinutes, description);
 
     [Fact] // HU-02 · Scenario: Registrar un tipo de equipo con límite definido
     public void Create_WithDefinedLimit_IsActiveWithLimitAndBaseDuration()
@@ -25,7 +28,7 @@ public sealed class EquipmentTypeTests
         equipmentType.Name.Should().Be("Ultracongeladora");
         equipmentType.IsActive.Should().BeTrue();
         equipmentType.MaxTemperatureC.Should().Be(-60.00m);
-        equipmentType.MaxTemperature.IsDefined.Should().BeTrue();
+        equipmentType.Limit.IsDefined.Should().BeTrue();
         equipmentType.MinSessionDurationMinutes.Should().Be(60);
     }
 
@@ -36,8 +39,8 @@ public sealed class EquipmentTypeTests
 
         equipmentType.IsActive.Should().BeTrue();
         equipmentType.MaxTemperatureC.Should().BeNull();
-        equipmentType.MaxTemperature.Should().Be(TemperatureLimit.Pending);
-        equipmentType.MaxTemperature.IsDefined.Should().BeFalse();
+        equipmentType.Limit.Should().Be(TemperatureLimit.Pending);
+        equipmentType.Limit.IsDefined.Should().BeFalse();
     }
 
     [Fact] // HU-02 · Scenario: Rechazar un límite con formato inválido
@@ -112,7 +115,7 @@ public sealed class EquipmentTypeTests
 
         fridge.ChangeLimit(TemperatureLimit.Create(8.00m));
 
-        fridge.MaxTemperature.IsDefined.Should().BeTrue();
+        fridge.Limit.IsDefined.Should().BeTrue();
         fridge.MaxTemperatureC.Should().Be(8.00m);
     }
 
@@ -184,5 +187,81 @@ public sealed class EquipmentTypeTests
         describe.Should().Throw<DomainValidationException>()
             .Which.Property.Should().Be(nameof(EquipmentType.Description));
         freezer.Description.Should().BeNull();
+    }
+
+    [Fact] // HU-02 · Regla D-05: tipo con banda de tolerancia alrededor de la consigna (cámara ambiental, incubadora)
+    public void Create_WithBand_StoresToleranceAndNoMaximum()
+    {
+        var chamber = NewEquipmentType("Cámara ambiental", maxTemperatureC: null, limitMode: LimitMode.Band, toleranceK: 2.0m);
+
+        chamber.LimitMode.Should().Be(LimitMode.Band);
+        chamber.ToleranceK.Should().Be(2.00m);
+        chamber.MaxTemperatureC.Should().BeNull();
+        chamber.Limit.IsDefined.Should().BeTrue();
+    }
+
+    [Fact] // HU-02 · Regla D-05: banda con tolerancia pendiente
+    public void Create_WithBandWithoutTolerance_LeavesLimitPending()
+    {
+        var incubator = NewEquipmentType("Incubadora", maxTemperatureC: null, limitMode: LimitMode.Band);
+
+        incubator.Limit.IsDefined.Should().BeFalse();
+    }
+
+    [Theory] // HU-02 · Regla D-05: cada modo usa solo su valor (CK_EquipmentType_LimitMode)
+    [InlineData(LimitMode.Maximum, null, 1.0, "ToleranceK")]
+    [InlineData(LimitMode.Band, -5.0, null, "MaxTemperatureC")]
+    [InlineData(LimitMode.Band, null, 0.0, "ToleranceK")]
+    [InlineData(LimitMode.Band, null, -1.0, "ToleranceK")]
+    public void Create_WithValueOfTheOtherMode_IsRejected(LimitMode mode, double? max, double? tolerance, string property)
+    {
+        var create = () => NewEquipmentType(
+            maxTemperatureC: (decimal?)max, limitMode: mode, toleranceK: (decimal?)tolerance);
+
+        create.Should().Throw<DomainValidationException>().Which.Property.Should().Be(property);
+    }
+
+    [Fact] // HU-02 · Regla D-05: cambiar de máximo a banda borra el máximo y guarda la tolerancia
+    public void ChangeLimit_FromMaximumToBand_ReplacesTheCriterion()
+    {
+        var type = NewEquipmentType(maxTemperatureC: -5.00m);
+
+        type.ChangeLimit(TemperatureLimit.Band(1.5m));
+
+        type.LimitMode.Should().Be(LimitMode.Band);
+        type.MaxTemperatureC.Should().BeNull();
+        type.ToleranceK.Should().Be(1.5m);
+    }
+
+    [Theory] // HU-02 / HU-17 · Regla D-06: puntos mínimos por tipo entre 1 y 27 (CK_EquipmentType_MinPoints)
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(9, true)]
+    [InlineData(27, true)]
+    [InlineData(28, false)]
+    public void Create_MinMeasurementPoints_IsBetween1And27(int points, bool isValid)
+    {
+        var create = () => NewEquipmentType(minMeasurementPoints: points);
+
+        if (isValid)
+        {
+            create.Should().NotThrow();
+        }
+        else
+        {
+            create.Should().Throw<DomainValidationException>()
+                .WithMessage("Los puntos de medición mínimos deben estar entre 1 y 27")
+                .Which.Property.Should().Be(nameof(EquipmentType.MinMeasurementPoints));
+        }
+    }
+
+    [Fact] // HU-17 · Regla D-06: una incubadora de más de 50 L exige 27 puntos (DIN 12880)
+    public void ChangeMinMeasurementPoints_ForIncubator_Requires27()
+    {
+        var incubator = NewEquipmentType("Incubadora", maxTemperatureC: null, limitMode: LimitMode.Band);
+
+        incubator.ChangeMinMeasurementPoints(27);
+
+        incubator.MinMeasurementPoints.Should().Be(27);
     }
 }

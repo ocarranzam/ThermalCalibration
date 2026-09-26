@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ThermalCalibration API
-  version: 1.0.1
+  version: 1.1.0
   description: |
     API REST del Sistema de Monitoreo Térmico para Calibración de Equipos de Refrigeración.
 
@@ -20,6 +20,9 @@ info:
     - Errores en formato Problem Details (RFC 7807), con el tipo de contenido `application/problem+json`.
     - Control de concurrencia optimista: `POST`, `GET` y `PUT` devuelven `ETag`, y `PUT` acepta `If-Match`.
     - Fechas en la zona del laboratorio (America/Lima, `-05:00`), redondeadas al segundo.
+    - Criterio de límite por tipo (D-05): `Maximum` (fuera de límite si la lectura es mayor que `maxTemperatureC`,
+      refrigeración) o `Band` (fuera de límite si se aleja de la consigna de la sesión más que `toleranceK`, por
+      arriba o por abajo; incubadoras y cámaras ambientales). Puntos de medición mínimos por tipo (D-06), de 1 a 27.
     - No hay `DELETE`: un tipo de equipo no se borra, se desactiva con `PUT` e `isActive: false` (HU-02).
       Un método no admitido responde 405.
 
@@ -66,9 +69,10 @@ paths:
       operationId: createEquipmentType
       summary: Registrar un tipo de equipo
       description: |
-        Crea un tipo de equipo activo. Sin `maxTemperatureC` (o con `null`), el límite queda **pendiente**
+        Crea un tipo de equipo activo. Por defecto el modo de límite es `Maximum`, los puntos de medición mínimos
+        son 9 y la duración mínima de sesión es la base de 60 minutos.
+        Sin `maxTemperatureC` (modo `Maximum`) o sin `toleranceK` (modo `Band`), el límite queda **pendiente**
         y las sesiones de ese tipo se capturarán sin evaluar el límite (RN-09).
-        Si no se indica `minSessionDurationMinutes`, se usa la duración base de 60 minutos.
         Requiere el rol `Admin`.
       requestBody:
         required: true
@@ -89,6 +93,13 @@ paths:
                 value:
                   name: Cámara de vacunas
                   maxTemperatureC: null
+              bandaIncubadora:
+                summary: Incubadora de más de 50 L con banda de ±0,5 K y 27 puntos (DIN 12880)
+                value:
+                  name: Incubadora de CO2
+                  limitMode: Band
+                  toleranceK: 0.5
+                  minMeasurementPoints: 27
       responses:
         '201':
           description: Tipo de equipo creado.
@@ -104,8 +115,11 @@ paths:
               example:
                 id: 5
                 name: Ultracongeladora
+                limitMode: Maximum
                 maxTemperatureC: -60
+                toleranceK: null
                 isLimitDefined: true
+                minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Equipos de -80 °C para vacunas y reactivos
                 isActive: true
@@ -143,8 +157,11 @@ paths:
               example:
                 id: 2
                 name: Refrigeradora
+                limitMode: Maximum
                 maxTemperatureC: null
+                toleranceK: null
                 isLimitDefined: false
+                minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Refrigeradoras de laboratorio de 2 a 8 °C
                 isActive: true
@@ -161,7 +178,8 @@ paths:
       summary: Reemplazar un tipo de equipo
       description: |
         Reemplaza todos los datos editables del tipo de equipo. Las propiedades que no se envían toman su valor
-        por defecto: `maxTemperatureC` pasa a pendiente, `description` se vacía y `minSessionDurationMinutes` vuelve a 60.
+        por defecto: `limitMode` vuelve a `Maximum` con el límite pendiente, `minMeasurementPoints` vuelve a 9,
+        `description` se vacía y `minSessionDurationMinutes` vuelve a 60.
 
         - Cambiar el límite o la duración mínima solo afecta a las sesiones que se inicien después (RN-08).
           Las sesiones en curso y las registradas conservan su límite aplicado y su duración planificada.
@@ -198,8 +216,11 @@ paths:
               example:
                 id: 1
                 name: Congeladora
+                limitMode: Maximum
                 maxTemperatureC: -8
+                toleranceK: null
                 isLimitDefined: true
+                minMeasurementPoints: 9
                 minSessionDurationMinutes: 60
                 description: Congeladoras horizontales y verticales
                 isActive: true
@@ -271,8 +292,14 @@ components:
       properties:
         name:
           $ref: '#/components/schemas/EquipmentTypeName'
+        limitMode:
+          $ref: '#/components/schemas/LimitMode'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
+        toleranceK:
+          $ref: '#/components/schemas/ToleranceK'
+        minMeasurementPoints:
+          $ref: '#/components/schemas/MinMeasurementPoints'
         minSessionDurationMinutes:
           $ref: '#/components/schemas/MinSessionDurationMinutes'
         description:
@@ -287,8 +314,14 @@ components:
       properties:
         name:
           $ref: '#/components/schemas/EquipmentTypeName'
+        limitMode:
+          $ref: '#/components/schemas/LimitMode'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
+        toleranceK:
+          $ref: '#/components/schemas/ToleranceK'
+        minMeasurementPoints:
+          $ref: '#/components/schemas/MinMeasurementPoints'
         minSessionDurationMinutes:
           $ref: '#/components/schemas/MinSessionDurationMinutes'
         description:
@@ -303,8 +336,11 @@ components:
       required:
         - id
         - name
+        - limitMode
         - maxTemperatureC
+        - toleranceK
         - isLimitDefined
+        - minMeasurementPoints
         - minSessionDurationMinutes
         - description
         - isActive
@@ -320,13 +356,19 @@ components:
           example: 1
         name:
           $ref: '#/components/schemas/EquipmentTypeName'
+        limitMode:
+          $ref: '#/components/schemas/LimitMode'
         maxTemperatureC:
           $ref: '#/components/schemas/MaxTemperatureC'
+        toleranceK:
+          $ref: '#/components/schemas/ToleranceK'
         isLimitDefined:
           type: boolean
           readOnly: true
-          description: '`false` si el límite está pendiente de definir (`maxTemperatureC` es `null`).'
+          description: '`false` si el límite está pendiente de definir (`maxTemperatureC` en modo `Maximum` o `toleranceK` en modo `Band` es `null`).'
           example: true
+        minMeasurementPoints:
+          $ref: '#/components/schemas/MinMeasurementPoints'
         minSessionDurationMinutes:
           $ref: '#/components/schemas/MinSessionDurationMinutes'
         description:
@@ -359,12 +401,48 @@ components:
       maxLength: 100
       pattern: ^\S(.*\S)?$
       example: Congeladora
+    LimitMode:
+      type: string
+      enum:
+        - Maximum
+        - Band
+      default: Maximum
+      description: |
+        Criterio de límite del tipo de equipo (D-05). `Maximum`: fuera de límite si la lectura es estrictamente mayor
+        que `maxTemperatureC` (refrigeradoras, congeladoras, conservadoras). `Band`: fuera de límite si la lectura se
+        aleja de la consigna de la sesión más que `toleranceK`, por arriba o por abajo (incubadoras, cámaras ambientales).
+      example: Maximum
+    ToleranceK:
+      type: number
+      format: double
+      nullable: true
+      description: |
+        Tolerancia ± en K alrededor de la consigna, solo con `limitMode: Band` (`DECIMAL(4,2)`, 2 decimales como máximo).
+        `null` = tolerancia pendiente. Con `limitMode: Maximum` debe omitirse o ser `null`.
+      exclusiveMinimum: true
+      minimum: 0
+      maximum: 99.99
+      multipleOf: 0.01
+      default: null
+      example: 0.5
+    MinMeasurementPoints:
+      type: integer
+      format: int32
+      description: |
+        Puntos de medición mínimos que exige la norma del tipo de equipo (D-06); se copian en cada sesión y, con menos
+        canales, el sistema advierte y exige confirmación (RN-20). 9 = 8 esquinas y el centro (IEC 60068-3-5,
+        DKD-R 5-7, USP <1079.4>, hasta 2000 L); 27 = incubadoras y estufas de más de 50 L (DIN 12880).
+        Máximo 27, el número máximo de canales por sesión.
+      minimum: 1
+      maximum: 27
+      default: 9
+      example: 9
     MaxTemperatureC:
       type: number
       format: double
       nullable: true
       description: |
-        Temperatura máxima admisible en °C, con 2 decimales como máximo (`DECIMAL(6,2)`).
+        Temperatura máxima admisible en °C, solo con `limitMode: Maximum`, con 2 decimales como máximo (`DECIMAL(6,2)`).
         `null` o ausente = límite **pendiente**: las sesiones se capturan sin evaluar el límite.
         Una lectura está fuera de límite si es estrictamente mayor que este valor (RN-07).
       minimum: -9999.99

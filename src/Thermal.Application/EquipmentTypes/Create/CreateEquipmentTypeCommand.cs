@@ -4,10 +4,16 @@ using Thermal.Domain.EquipmentTypes;
 
 namespace Thermal.Application.EquipmentTypes.Create;
 
-/// <summary>Registra un tipo de equipo activo (HU-02). Sin duración mínima se usa la base de 60 min.</summary>
+/// <summary>
+/// Registra un tipo de equipo activo (HU-02). Valores por defecto: modo <see cref="LimitMode.Maximum"/>,
+/// 9 puntos de medición y la duración base de 60 min.
+/// </summary>
 public sealed record CreateEquipmentTypeCommand(
     string Name,
+    LimitMode? LimitMode,
     decimal? MaxTemperatureC,
+    decimal? ToleranceK,
+    int? MinMeasurementPoints,
     int? MinSessionDurationMinutes,
     string? Description) : ICommand<EquipmentTypeDto>;
 
@@ -20,7 +26,10 @@ internal sealed class CreateEquipmentTypeCommandHandler(
     {
         var equipmentType = new EquipmentType(
             command.Name,
+            command.LimitMode ?? LimitMode.Maximum,
             command.MaxTemperatureC,
+            command.ToleranceK,
+            command.MinMeasurementPoints ?? MeasurementPoints.DefaultMinimum,
             command.MinSessionDurationMinutes ?? EquipmentType.BaseSessionDurationMinutes,
             command.Description);
 
