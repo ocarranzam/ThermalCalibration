@@ -8,6 +8,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <!-- Scalar: referencia interactiva de la API (MIT), en lugar de Swagger UI. -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.17.10" />
   </ItemGroup>
   <ItemGroup Label="Pruebas">
     <!-- 7.x: última línea con licencia Apache 2.0; desde la 8.0 FluentAssertions es comercial (Xceed). -->

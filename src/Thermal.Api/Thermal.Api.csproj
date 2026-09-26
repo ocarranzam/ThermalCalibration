@@ -12,6 +12,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- El contrato (fuente de verdad) se sirve en /openapi/thermal-v1.yaml para Scalar. -->
+    <EmbeddedResource Include="..\..\docs\api\thermal-v1.yaml" LogicalName="thermal-v1.yaml" />
   </ItemGroup>
 
 </Project>

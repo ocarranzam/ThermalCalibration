@@ -36,7 +36,7 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
 builder.Services.AddAuthorization();
 
-builder.Services.AddOpenApi();
+builder.Services.AddApiReference();
 
 var app = builder.Build();
 
@@ -44,9 +44,10 @@ app.UseExceptionHandler();
 // 401, 403, 404 y 415 sin cuerpo también responden con Problem Details.
 app.UseStatusCodePages();
 
+// Referencia de la API con Scalar: /scalar (contrato y OpenAPI generado). Solo en desarrollo.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapApiReference();
 }
 
 app.UseHttpsRedirection();

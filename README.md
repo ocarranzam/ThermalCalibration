@@ -8,7 +8,7 @@ Captura, almacena y exporta a Excel las lecturas de temperatura de equipos de re
 |---|---|
 | Especificación y arquitectura | Completas ([docs/](docs/)) |
 | Backend implementado | **Tipos de equipo** (HU-02), **parámetros del sistema** y **tipos de termopar** (sprint 1), **empresas cliente y equipos** (HU-01, sprint 2). Ver [docs/sprints.md](docs/sprints.md) |
-| Pruebas | 179 automatizadas (155 unitarias y 24 de integración), todas correctas |
+| Pruebas | 180 automatizadas (156 unitarias y 24 de integración), todas correctas |
 | Contrato | [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml), verificado contra la API en ejecución ([validation.md §5.2](docs/validation.md#52-auditoría-código--contrato--gherkin-2026-09-25)) |
 
 > Ante cualquier diferencia entre este README y la especificación, prevalece [docs/specs/functional/](docs/specs/functional/).
@@ -52,6 +52,7 @@ docker compose up -d --build        # equivalente: docker-compose up -d --build
 # 3. Comprobar
 docker compose ps
 curl -s http://localhost:8080/openapi/v1.json | head -c 200
+# Referencia interactiva de la API (Scalar): http://localhost:8080/scalar
 ```
 
 | Servicio | Qué hace | Puerto | Memoria máxima |
@@ -88,6 +89,19 @@ dotnet run --project src/Thermal.Api                                     # https
 La cadena de conexión de desarrollo está en [appsettings.Development.json](src/Thermal.Api/appsettings.Development.json). También puedes usar [Thermal.Api.http](src/Thermal.Api/Thermal.Api.http) desde VS Code (REST Client) o Visual Studio.
 
 ## 2. Endpoints (colección cURL)
+
+### Referencia interactiva con Scalar
+
+En desarrollo, la API publica una referencia interactiva con [Scalar](https://scalar.com) (MIT), en lugar de Swagger UI:
+
+| Entorno | Ruta |
+|---|---|
+| Docker Compose (opción A) | http://localhost:8080/scalar |
+| `dotnet run` (opción B) | https://localhost:5001/scalar |
+
+- Muestra dos documentos, que se eligen arriba a la izquierda. Por defecto, **Contrato (thermal-v1.yaml)**: el contrato del repositorio, con las descripciones y los ejemplos (`/scalar/thermal-v1`). Además, **Generado desde el código**: el OpenAPI que genera ASP.NET Core (`/scalar/v1`), útil para compararlo con el contrato.
+- **Probar un endpoint:** pega en *Authentication → Bearer Token* un token de `dotnet user-jwts` (ver [Token de desarrollo](#token-de-desarrollo-ambas-opciones)), sin el prefijo `Bearer`. El token se recuerda en el navegador. Las solicitudes van siempre a la instancia que sirve la página.
+- Documentos: `/openapi/thermal-v1.yaml` (contrato), `/openapi/v1.yaml` y `/openapi/v1.json` (generados). Solo en el entorno `Development`.
 
 Contrato completo: [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml). Los ejemplos usan bash y la opción A. Para la opción B, usa `API=https://localhost:5001` y añade `-k` si el certificado de desarrollo no es de confianza. En PowerShell, usa `curl.exe` en lugar de `curl`.
 
@@ -289,7 +303,7 @@ Todo lo que es código o contrato va en **inglés**, con los mismos nombres en t
 
 | Proyecto | Qué prueba | Requiere |
 |---|---|---|
-| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (155) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
+| [tests/Thermal.UnitTests](tests/Thermal.UnitTests/) (156) | Dominio, handlers con dobles (NSubstitute), autorización del controlador y redondeo de fechas | Nada |
 | [tests/Thermal.IntegrationTests](tests/Thermal.IntegrationTests/) (24) | Persistencia contra el esquema real: valores que genera la base, unicidad, `CK_Company_TaxId`, concurrencia y fechas | Docker en ejecución |
 
 ```bash

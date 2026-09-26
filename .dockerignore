@@ -6,5 +6,7 @@
 .git/
 .claude/
 docs/
+# El contrato se incrusta en la API para servirlo en Scalar (/scalar).
+!docs/api/thermal-v1.yaml
 test-data/
 tests/

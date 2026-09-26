@@ -13,6 +13,8 @@ COPY src/Thermal.Api/Thermal.Api.csproj src/Thermal.Api/
 RUN dotnet restore src/Thermal.Api/Thermal.Api.csproj
 
 COPY src/ src/
+# Contrato OpenAPI, incrustado en la API para Scalar.
+COPY docs/api/thermal-v1.yaml docs/api/
 RUN dotnet publish src/Thermal.Api/Thermal.Api.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime

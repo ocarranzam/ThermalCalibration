@@ -50,6 +50,8 @@ dotnet user-jwts create --project src/Thermal.Api --role Admin \
 
 Auditoría del contrato contra la API en Docker: [tools/contract-check/](tools/contract-check/README.md).
 
+Referencia interactiva de la API (Scalar, no Swagger): http://localhost:8080/scalar (compose) o https://localhost:5001/scalar (`dotnet run`). Muestra el contrato incrustado (`docs/api/thermal-v1.yaml`; una prueba unitaria exige que sea idéntico al archivo) y el OpenAPI generado.
+
 ## Docker (la PC tiene poca memoria)
 
 - El compose (`thermal`: SQL Server a 2 GB y API a 256 MB) se **conserva** entre sesiones. Tras usarlo: `SHUTDOWN` por sqlcmd y `docker compose stop`. No borrarlo salvo que dé problemas.

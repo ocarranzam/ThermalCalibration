@@ -156,7 +156,7 @@ Resumen de [06 §7](specs/functional/06-test-data.md#7-uso-en-las-pruebas), con 
 
 ### 5.1 Cobertura automatizada de HU-02 (2026-09-25)
 
-Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx` (2026-09-26, tras los sprints 1 y 2): **179/179 correctas** (155 unitarias, 24 de integración con SQL Server 2022 en Docker), de todas las historias.
+Pruebas en [tests/](../tests/), vinculadas con `[Trait("Story", "HU-02")]`. Resultado de `dotnet test --solution Thermal.slnx` (2026-09-26, tras los sprints 1 y 2 y la referencia Scalar): **180/180 correctas** (156 unitarias, 24 de integración con SQL Server 2022 en Docker), de todas las historias.
 
 | Escenario Gherkin de HU-02 | Pruebas | Estado |
 |---|---|---|
