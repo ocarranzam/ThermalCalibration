@@ -290,8 +290,12 @@ Los parámetros se guardan en la tabla `AppSetting`, los mantiene el administrad
 | [docs/api/thermal-v1.yaml](docs/api/thermal-v1.yaml) | Contrato OpenAPI 3.0. Validar con `npx @redocly/cli lint docs/api/thermal-v1.yaml` |
 | [docs/architecture/](docs/architecture/) | Modelo de dominio, C4 de contenedores y ADR-001 |
 | [docs/diagrams/gherkin/](docs/diagrams/gherkin/) | Un `.feature` por historia, generado desde 03 con `node docs/diagrams/generate-features.mjs` |
-| [docs/diagrams/sequence/](docs/diagrams/sequence/) | Diagramas de secuencia en Mermaid (en VS Code, con la extensión recomendada `bierner.markdown-mermaid`) |
-| [docs/validation.md](docs/validation.md) | Trazabilidad HU ↔ RN ↔ TD, cobertura de pruebas y auditoría código ↔ contrato |
+| [docs/diagrams/sequence/](docs/diagrams/sequence/) | Diagramas de secuencia en Mermaid, con su versión SVG en [svg/](docs/diagrams/sequence/svg/). Validar y regenerar con `node docs/diagrams/render-sequence-svg.mjs` |
+| [docs/validation.md](docs/validation.md) | Trazabilidad HU ↔ RN ↔ TD, cobertura de pruebas, estado por historia y auditoría código ↔ contrato |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Orden de las entidades pendientes, definición de terminado, guía paso a paso y lecciones aprendidas |
+| [docs/delivery/](docs/delivery/README.md) | Plantillas de la documentación de entrega: despliegue, usuario, administrador y cierre técnico con acta de aceptación |
+| [tools/contract-check/](tools/contract-check/README.md) | Auditoría automática de la API en ejecución contra el contrato OpenAPI |
+| [CLAUDE.md](CLAUDE.md) | Convenciones y comandos para las sesiones de trabajo con Claude Code |
 | [docs/standards/](docs/standards/README.md) | Fichas de OMS TRS 961, IEC 60068-3-5, EURAMET cg-20 y DKD-R 5-7 |
 
 ## 7. Pendiente

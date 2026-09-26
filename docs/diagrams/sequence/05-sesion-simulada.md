@@ -1,6 +1,6 @@
 # Diagrama 5 · Sesión simulada con el set de datos de prueba
 
-Diagrama de secuencia de la fase 1. Participantes y convenciones en [04-sequence-diagrams.md](../../specs/functional/04-sequence-diagrams.md).
+Diagrama de secuencia de la fase 1. Participantes y convenciones en [04-sequence-diagrams.md](../../specs/functional/04-sequence-diagrams.md). Vista gráfica: [svg/05-sesion-simulada.svg](svg/05-sesion-simulada.svg) (se regenera con `node docs/diagrams/render-sequence-svg.mjs`).
 
 Cubre HU-14. Ver [06-test-data.md](../../specs/functional/06-test-data.md).
 
@@ -25,21 +25,27 @@ sequenceDiagram
     Ser->>SIM: $IDN*43
     SIM-->>Ser: $IDN,1.0,ADQ-SIM-0001,Simulator,1.0.0,10,POLL,GRP-A*CS
     Tec->>UI: Iniciar captura
-    Note over Ser,SIM: Mismo protocolo y misma lógica que con el hardware.<br/>El reloj virtual avanza 120 veces más rápido.
+    UI->>Ses: Solicitar inicio: advertencias y confirmaciones como en el diagrama 1
+    Ser->>SIM: $START,...*CS
+    SIM-->>Ser: $ACK,START*CS
+    Note over Ser,SIM: Mismo protocolo y misma lógica que con el hardware.<br/>Reloj virtual acelerado (x1, x60, x120 o x720, SIM-06). Se guardan las horas simuladas.
     loop Cada muestra del escenario
         Ser->>SIM: $READ,n*CS
         SIM->>SIM: Tomar las filas de la muestra n y aplicar FrameFault y eventos
         alt Evento COMM_LOST activo
             SIM--xSer: Sin respuesta
+            Ser->>Ses: Muestra perdida, hueco como en el diagrama 3
+        else Evento COMM_RESTORED
+            SIM-->>Ser: $BOOT y $IDN con DeviceId y SensorGroupId del evento
+            Ser->>Ses: Validar identidad como en el diagrama 3
+        else Evento DEVICE_REBOOT
+            SIM-->>Ser: $BOOT y NAK,READ,E04
+            Ser->>SIM: $START y repetir $READ,n
         else Muestra normal
-            SIM-->>Ser: $RD,n,... incluidas tramas corruptas o faltantes y $EOS
+            SIM-->>Ser: $RD,n,... incluidas tramas corruptas o faltantes, y $EOS
+            Ser->>Ses: Procesar como en el diagrama 2
+            Ses->>BD: INSERT Reading, Alert
         end
-        Ser->>Ses: Procesar como en el diagrama 2
-        Ses->>BD: INSERT Reading, Alert
-    end
-    opt Evento COMM_RESTORED
-        SIM-->>Ser: $BOOT y $IDN con DeviceId y SensorGroupId del evento
-        Ser->>Ses: Validar identidad como en el diagrama 3
     end
     Ses->>BD: Cerrar sesión como en el diagrama 4
     Ses->>FS: Leer expected de scenario.json

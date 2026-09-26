@@ -1,0 +1,14 @@
+{
+  "name": "thermal-contract-check",
+  "private": true,
+  "description": "Auditoría de la API en ejecución contra docs/api/thermal-v1.yaml",
+  "type": "module",
+  "scripts": {
+    "check": "node contract-check.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

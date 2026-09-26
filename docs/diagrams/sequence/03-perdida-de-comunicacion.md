@@ -1,6 +1,6 @@
 # Diagrama 3 · Pérdida y recuperación de la comunicación serial
 
-Diagrama de secuencia de la fase 1. Participantes y convenciones en [04-sequence-diagrams.md](../../specs/functional/04-sequence-diagrams.md).
+Diagrama de secuencia de la fase 1. Participantes y convenciones en [04-sequence-diagrams.md](../../specs/functional/04-sequence-diagrams.md). Vista gráfica: [svg/03-perdida-de-comunicacion.svg](svg/03-perdida-de-comunicacion.svg) (se regenera con `node docs/diagrams/render-sequence-svg.mjs`).
 
 Cubre HU-09. Ver [02-serial-protocol.md §9](../../specs/functional/02-serial-protocol.md#9-pérdida-y-recuperación-de-la-comunicación).
 
@@ -27,7 +27,7 @@ sequenceDiagram
     Ses-->>UI: Sin comunicación, reintentando
     Note over Ses: La sesión sigue en Running.<br/>Las muestras programadas quedan perdidas y afectadas.
 
-    loop Cada 10 s hasta recuperar, invalidar, cerrar, cumplir 30 min sin datos o llegar a la duración planificada
+    loop Cada 10 s hasta recuperar, invalidar, cerrar, cumplir SensorLossFailMinutes sin datos o llegar a la duración planificada
         Ser->>Ser: Abrir COM3 o buscar el DeviceId en otros puertos
         alt Puerto disponible
             Ser->>ADQ: $IDN*43
@@ -53,7 +53,7 @@ sequenceDiagram
         end
     end
 
-    opt El hueco llega a 30 min (16 muestras perdidas consecutivas)
+    opt El hueco llega a SensorLossFailMinutes (30 min: 16 muestras perdidas seguidas con 120 s)
         Ses->>BD: INSERT Alert SessionFailed, Critical
         Ses->>BD: UPDATE MeasurementSession Status Invalid, CloseReason DataLoss, EndedAt
         Ses-->>UI: Sesión fallida por pérdida sostenida de datos

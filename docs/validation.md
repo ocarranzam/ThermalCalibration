@@ -4,7 +4,8 @@ Cómo se comprueba que la especificación de la fase 1 es coherente y cómo se v
 
 | Campo | Valor |
 |---|---|
-| Versión | 0.2 |
+| Versión | 0.3 |
+| Cambios en 0.3 | Artefactos de código, pruebas y auditoría en la §1; estado de implementación por historia (§5.3); mantenimiento al añadir entidades (§7). Plan de las siguientes entidades en [implementation-plan.md](implementation-plan.md). |
 | Cambios en 0.2 | Hallazgos H-01 a H-08 corregidos en 03 v0.6 y 06 v0.5. Diagramas separados en `docs/diagrams/gherkin/` y `docs/diagrams/sequence/`. |
 | Fecha | 2026-09-25 |
 | Fuentes | [03-user-stories.md](specs/functional/03-user-stories.md) v0.6, [06-test-data.md](specs/functional/06-test-data.md) v0.5, [01-vision-document.md](specs/functional/01-vision-document.md), [test-data/scenarios/index.json](../test-data/scenarios/index.json), [standards/README.md](standards/README.md) |
@@ -25,6 +26,11 @@ Cómo se comprueba que la especificación de la fase 1 es coherente y cómo se v
 | Escenarios TD-01 a TD-22 | Datos reproducibles y resultado esperado (oráculo) | [test-data/scenarios/](../test-data/scenarios/) |
 | Restricciones de base | Segunda línea de defensa (`CHECK`, vistas) | [db/01-schema.sql](db/01-schema.sql) |
 | Matriz norma → especificación | Alineación con OMS, IEC 60068-3-5, EURAMET cg-20 y DKD-R 5-7 | [standards/README.md §3](standards/README.md#3-matriz-de-trazabilidad-norma--especificación) |
+| **Contrato OpenAPI** | Interfaz HTTP de lo implementado; `redocly lint` sin errores ni advertencias | [api/thermal-v1.yaml](api/thermal-v1.yaml) |
+| **Código** | Implementación (Clean Architecture) | [src/](../src/) |
+| **Pruebas automatizadas** | Unitarias e integración, vinculadas a cada historia con `[Trait("Story", "HU-xx")]` | [tests/](../tests/) (§5.1) |
+| **Auditoría del contrato** | Respuestas reales de la API contra el contrato | [tools/contract-check/](../tools/contract-check/README.md) (§5.2) |
+| **Plan de implementación** | Orden de las entidades pendientes y definición de terminado | [implementation-plan.md](implementation-plan.md) (§5.3) |
 
 ## 2. Features Gherkin (`docs/diagrams/gherkin/`)
 
@@ -168,7 +174,7 @@ Además: evaluación estricta del límite de HU-08 (Scenario Outline con -5,10 /
 
 ### 5.2 Auditoría código ↔ contrato ↔ Gherkin (2026-09-25)
 
-Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias.
+Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes reales** (ahora automatizadas en [tools/contract-check/](../tools/contract-check/README.md), casos de [equipment-types.mjs](../tools/contract-check/cases/equipment-types.mjs)) con [thermal-v1.yaml](api/thermal-v1.yaml): código de estado documentado, `Content-Type`, schema del cuerpo (validado con Ajv) y cabeceras (`ETag`, `Location`). Resultado final: **24/24 conformes**, y `redocly lint` sin errores ni advertencias.
 
 | Id | Desviación encontrada | Corrección |
 |---|---|---|
@@ -185,6 +191,31 @@ Se levantó la API con `docker compose up` y se contrastaron **24 solicitudes re
 | A-11 | El README describía `docker-compose up`, pero no existía ningún archivo de Compose ni Dockerfile. | [docker-compose.yml](../docker-compose.yml), [Dockerfile](../src/Thermal.Api/Dockerfile) y `.dockerignore`. |
 
 Los criterios Gherkin de HU-02 **no** se modificaron: siguen siendo la especificación. Las diferencias con el código son funcionalidad aún no implementada (sesiones, `AppSetting`, equipos, interfaz), no contradicciones; están en la §5.1.
+
+### 5.3 Estado de implementación por historia (2026-09-25)
+
+Resumen para planificar las siguientes sesiones. El orden, las dependencias y la definición de terminado están en [implementation-plan.md](implementation-plan.md). Al terminar cada entidad se añade aquí su tabla de cobertura (con la forma de la §5.1) y se actualiza esta tabla.
+
+| Historia | Escenarios | Entidades | Ola | Estado |
+|---|---|---|---|---|
+| HU-01 Registrar empresa cliente y equipo | 7 | `Company`, `Equipment` | 1 | ⏳ Pendiente |
+| HU-02 Gestionar tipos de equipo y límite máximo | 13 | `EquipmentType`, `AppSetting` | 0 y 1 | ⚠️ Parcial: 7 completos, 3 parciales y 3 pendientes (§5.1) |
+| HU-03 Configurar una sesión de medición | 11 | `MeasurementSession`, `SessionChannel`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
+| HU-04 Advertir la mezcla de termopares T y K | 6 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
+| HU-05 Advertir límite no definido | 3 | `MeasurementSession`, `Alert` | 4 | ⚠️ Parcial: regla del límite pendiente en `TemperatureLimit` (1 escenario) |
+| HU-06 Iniciar al llegar datos y capturar cada 2 minutos | 10 | `MeasurementSession`, `Reading`, protocolo serial | 3 y 4 | ⏳ Pendiente |
+| HU-07 Registrar lecturas inválidas sin detener la sesión | 7 | `Reading`, `Alert`, `ThermocoupleType` | 1 y 4 | ⏳ Pendiente |
+| HU-08 Alertar lecturas fuera de límite | 9 | `Reading`, `Alert` | 4 | ⚠️ Parcial: evaluación estricta del límite en `TemperatureLimit` (Scenario Outline) |
+| HU-09 Pérdida de comunicación y validación del adquisidor | 10 | `CommunicationGap`, `AcquisitionDevice` | 3 y 4 | ⏳ Pendiente |
+| HU-10 Cerrar la sesión | 9 | `MeasurementSession` | 4 | ⏳ Pendiente |
+| HU-11 Exportar una sesión a Excel | 11 | `SessionExport` | 5 | ⏳ Pendiente |
+| HU-12 Consultar el historial de sesiones | 8 | Consultas sobre vistas | 5 | ⏳ Pendiente |
+| HU-13 Evaluar, escalar y fallar por pérdida de sensores | 11 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
+| HU-14 Sesión simulada con el set de datos de prueba | 5 | Simulador, todas | 3 y 6 | ⏳ Pendiente |
+| HU-15 Priorizar alertas: críticas y advertencias | 4 | `Alert`, SignalR | 4 | ⏳ Pendiente |
+| HU-16 Planificar la duración y respetar el descanso | 9 | `MeasurementSession`, `AppSetting` | 1 y 4 | ⏳ Pendiente |
+| HU-17 Advertir menos de 9 puntos de medición | 6 | `MeasurementSession`, `Alert` | 4 | ⏳ Pendiente |
+| **Total** | **139** | | | 7 escenarios completos (5 %) |
 
 ## 6. Verificación de la especificación (2026-09-25)
 
@@ -218,9 +249,39 @@ Ninguno cambiaba el comportamiento esperado: eran inconsistencias de trazabilida
 
 Quedan abiertos los puntos que condicionan la validación normativa, sin afectar la coherencia interna: P-11 / PC-01 (intervalo de 120 s frente a los 60 s de IEC 60068-3-5 y DKD-R 5-7), P-12 (duración mínima por tipo) y la edición 2025-01 de DKD-R 5-7 ([standards/README.md §4](standards/README.md#4-hallazgos-para-decidir)).
 
+### 6.1 Diagramas de secuencia (2026-09-25)
+
+Los 5 diagramas de [docs/diagrams/sequence/](diagrams/sequence/) se validaron con `@mermaid-js/mermaid-cli` 12.0.0 y se generó un SVG por diagrama ([svg/](diagrams/sequence/svg/)) con `node docs/diagrams/render-sequence-svg.mjs`. El script falla si algún diagrama tiene un error de sintaxis. Además se revisó cada uno visualmente.
+
+| # | Comprobación | Resultado |
+|---|---|---|
+| V-09 | Sintaxis de los 5 diagramas (mmdc) | ✅ 5/5 |
+| V-10 | Revisión visual y de contenido frente a la especificación | ✅ Tras corregir S-01 a S-07 |
+
+| Id | Hallazgo | Corrección |
+|---|---|---|
+| S-01 | Diagrama 2: fórmulas con el literal `120` (`(n − 1) × 120 s`, `round(… / 120)`, `(consecutivas − 1) × 120 s`), contra la regla [PC-01]. | Escritas con `intervalo` y los parámetros copiados en la sesión (`SensorLossCriticalAfterSamples`, `SensorLossFailMinutes`, `AboveLimitCriticalMinutes`), con una nota de valores por defecto. |
+| S-02 | Diagrama 3: "16 muestras perdidas consecutivas" solo vale con 120 s. | `SensorLossFailMinutes`, con "16 muestras con 120 s" como ejemplo. |
+| S-03 | Diagrama 4: "31 muestras válidas", valor derivado del intervalo. | Mínimo expresado con su fórmula (`BaseSessionMinutes × 60 / intervalo + 1`), con 31 como ejemplo. |
+| S-04 | Diagrama 4: el texto de la hoja Resumen se salía del dibujo y quedaba cortado. | Texto partido en dos líneas. |
+| S-05 | Diagrama 4: faltaban el aviso de menos de 9 puntos (HU-17) y la cancelación de la sesión (HU-10); tampoco estaba el mensaje de confirmación de la interfaz a la sesión. | Añadidos. |
+| S-06 | Diagrama 2: rama "si no" del umbral sin texto (`[ ]`) y condición del último `opt` superpuesta a su recuadro. | "No supera el umbral" y condición abreviada. |
+| S-07 | Diagrama 5: tras "Iniciar captura" no había mensaje a la sesión ni `START`, y `COMM_RESTORED` aparecía después del bucle, cuando ocurre durante él. Faltaba `DEVICE_REBOOT` (SIM-05). | Inicio como en el diagrama 1, `START`, y los tres eventos del simulador dentro del bucle. |
+
+Al introducir las correcciones, el validador detectó dos errores de sintaxis propios: en Mermaid el `;` separa instrucciones y no se puede usar dentro de un mensaje.
+
 ## 7. Mantenimiento
+
+**Al cambiar la especificación:**
 
 1. Cambiar una historia en 03 o un escenario en 06 o en el generador de datos.
 2. Si cambió el set de datos: `node test-data/generate-test-data.mjs`.
 3. `node docs/diagrams/generate-features.mjs` y revisar que termine sin inconsistencias.
-4. Actualizar las tablas de las §2 a §4 y el registro de la §6 de este documento.
+4. Si cambió un diagrama de secuencia: `node docs/diagrams/render-sequence-svg.mjs` (valida y regenera los SVG) y revisarlo visualmente.
+5. Actualizar las tablas de las §2 a §4 y el registro de la §6 de este documento.
+
+**Al terminar una entidad** (definición de terminado en [implementation-plan.md §4](implementation-plan.md#4-definición-de-terminado-por-entidad)):
+
+1. Añadir una subsección de cobertura con la forma de la §5.1 (escenario Gherkin → pruebas → estado). Los escenarios sin prueba se marcan como ⏳ o ⚠️ con el motivo.
+2. Añadir sus casos a [tools/contract-check/](../tools/contract-check/README.md), ejecutarlo contra la API en Docker y registrar el resultado y las desviaciones corregidas, como en la §5.2.
+3. Actualizar la tabla de la §5.3, el total de pruebas de la §5.1 y la §1 de [implementation-plan.md](implementation-plan.md).
